@@ -1,10 +1,10 @@
-# LLM Instruct Dataset 🔥
+# LLM Instruct Dataset
 
-Dataset instruksi berkualitas tinggi untuk fine-tuning Large Language Model (LLM) dalam bahasa Indonesia.
+Dataset instruksi untuk fine-tuning Large Language Model (LLM) dalam bahasa Indonesia.
 
 ## Format
 
-JSONL (JSON Lines) — setiap baris adalah satu contoh training.
+JSONL (JSON Lines): setiap baris adalah satu contoh training.
 
 ```json
 {
@@ -20,57 +20,38 @@ JSONL (JSON Lines) — setiap baris adalah satu contoh training.
 
 | Metrik | Nilai |
 |--------|-------|
-| Total sampel | 20 |
+| Total sampel | 42 |
 | Bahasa | Indonesia |
 | Format | JSONL |
 
-## Kategori
+## Kelompok Topik
 
-| Kategori | Jumlah |
-|----------|--------|
-| computer_science | 1 |
-| coding | 1 |
-| database | 2 |
-| machine_learning | 1 |
-| software_engineering | 1 |
-| devops | 1 |
-| web_development | 1 |
-| security | 1 |
-| version_control | 1 |
-| testing | 1 |
-| data_structures | 1 |
-| design_patterns | 1 |
-| algorithms | 2 |
-| python | 1 |
-| system_design | 1 |
-| distributed_systems | 1 |
-| creative_writing | 1 |
-| critical_thinking | 1 |
-| ai | 1 |
-| networking | 1 |
+| Kelompok | Sampel | Kategori (jumlah) |
+|----------|--------|-------------------|
+| Teknologi & pemrograman | 22 | algorithms (2), database (2), ai, coding, computer_science, creative_writing, critical_thinking, data_structures, design_patterns, devops, distributed_systems, machine_learning, networking, python, security, software_engineering, system_design, testing, version_control, web_development |
+| Matematika | 10 | calculus (2), proof (2), probability (2), algebra, linear_algebra, number_theory, statistics |
+| Sains | 10 | physics (5), biology (3), chemistry, earth_science |
+
+## Topik Matematika & Sains
+
+- **Kalkulus:** turunan, integral, Teorema Fundamental Kalkulus
+- **Pembuktian:** irasionalitas √2, tak hingganya bilangan prima, induksi matematika
+- **Probabilitas & statistik:** Monty Hall, Teorema Bayes, standar deviasi dan distribusi normal
+- **Aljabar:** persamaan kuadrat dan diskriminan, eigenvalue/eigenvector
+- **Fisika:** dilatasi waktu, Hukum Newton, entropi, hamburan Rayleigh, mekanika kuantum
+- **Biologi:** fotosintesis, DNA dan dogma sentral, evolusi seleksi alam
+- **Kimia:** tabel periodik dan ikatan kimia
+- **Ilmu Bumi:** efek rumah kaca dan perubahan iklim
 
 ## Cara Pakai
 
 ```python
 import json
 
-with open("instruct_dataset.jsonl") as f:
+with open("instruct_dataset.jsonl", encoding="utf-8") as f:
     dataset = [json.loads(line) for line in f]
 
-# Format untuk fine-tuning (contoh dengan Alpaca format)
+# Contoh format prompt gaya Alpaca
 for example in dataset:
     prompt = f"### System:\n{example['system']}\n\n### Instruction:\n{example['instruction']}\n\n### Response:\n{example['output']}"
 ```
-
-## Topik yang Dicakup
-
-- **Algoritma & Struktur Data** — time complexity, recursion, linked list, sorting
-- **Software Engineering** — SOLID, design patterns, testing, clean code
-- **Database** — SQL JOIN, indexing, normalization
-- **DevOps** — Docker, CI/CD, infrastructure
-- **Security** — authentication, HTTPS/TLS, OWASP
-- **Distributed Systems** — CAP theorem, microservices, consistency
-- **AI/ML** — neural network, prompt engineering
-- **Python** — async/await, best practices
-- **Creative Writing** — puisi, cerita
-- **Critical Thinking** — problem solving, framework berpikir
