@@ -1,0 +1,42 @@
+# Fine-tuning LoRA Qwen2.5-Coder-7B-Instruct dengan LLaMA-Factory.
+# Jalankan dari root repo ini:  llamafactory-cli train train/qwen2.5-coder-7b-lora.yaml
+
+### model
+model_name_or_path: Qwen/Qwen2.5-Coder-7B-Instruct
+trust_remote_code: true
+# GPU < 24 GB: aktifkan QLoRA 4-bit (butuh bitsandbytes)
+# quantization_bit: 4
+
+### method
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_rank: 16
+lora_alpha: 32
+lora_dropout: 0.05
+lora_target: all
+
+### dataset
+dataset: instruct_id
+dataset_dir: data
+template: qwen              # chat template ChatML milik Qwen2.5
+cutoff_len: 8192           # sampel terpanjang ~6,6 ribu token, jadi tidak ada yang terpotong
+overwrite_cache: true
+preprocessing_num_workers: 4
+
+### output
+output_dir: saves/qwen2.5-coder-7b-instruct-id/lora/sft
+logging_steps: 1
+save_strategy: epoch
+plot_loss: true
+overwrite_output_dir: true
+report_to: none
+
+### train
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+learning_rate: 1.0e-4
+num_train_epochs: 3.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+bf16: true
