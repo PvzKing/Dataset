@@ -68,6 +68,45 @@ Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 
 Contoh kode Python di sampel teknologi juga sudah dijalankan, sehingga output yang tertulis di jawaban sesuai dengan hasil eksekusi sebenarnya.
 
+## Mencampur dengan dataset umum
+
+Melatih model hanya dengan 62 sampel berisiko membuat model "terlalu fokus", misalnya selalu menjawab dengan file HTML walaupun pertanyaannya bukan soal website. Selain itu, kemampuan umumnya bisa menurun. Karena itu, config training memakai data campuran yang dibuat oleh `scripts/mix_general.py`:
+
+| Sumber | Jumlah bawaan | Isi |
+|---|---|---|
+| Dataset ini (`data/train.jsonl`) | 62 | semua sampel, tanpa dikurangi |
+| [`CohereForAI/aya_dataset`](https://huggingface.co/datasets/CohereForAI/aya_dataset), bagian bahasa Indonesia | 600 | tanya-jawab umum yang ditulis manusia |
+| [`ise-uiuc/Magicoder-Evol-Instruct-110K`](https://huggingface.co/datasets/ise-uiuc/Magicoder-Evol-Instruct-110K) | 200 | instruksi pemrograman (bahasa Inggris) |
+| [`HuggingFaceH4/ultrachat_200k`](https://huggingface.co/datasets/HuggingFaceH4/ultrachat_200k), split `train_sft` | 100 | percakapan umum multi-turn (bahasa Inggris) |
+
+```bash
+pip install datasets
+python scripts/mix_general.py                              # menulis data/train_mix.jsonl
+python scripts/mix_general.py --aya-id 800 --code 300 --chat 150 --seed 7   # ubah komposisi
+python scripts/validate.py data/train_mix.jsonl
+```
+
+Hal-hal yang dilakukan script:
+
+- **Streaming:** data diambil secara streaming, jadi dataset besar tidak diunduh penuh. Pengambilannya acak, dengan `--seed` agar hasilnya bisa diulang.
+- **Filter:**
+  - Aya hanya diambil bagian bahasa Indonesianya.
+  - Jawaban yang terlalu pendek (di bawah 15 karakter) dibuang.
+  - Sampel yang melebihi sekitar 7.000 token dibuang, supaya tetap di bawah `cutoff_len`.
+  - Percakapan dengan urutan giliran yang rusak dibuang.
+  - Jawaban yang menyebut identitas model lain ("ChatGPT", "OpenAI", "sebagai model bahasa AI") dibuang, supaya tidak bertentangan dengan identitas Qwen.
+- **Deduplikasi:** prompt yang sama, termasuk yang sudah ada di dataset ini, hanya diambil sekali.
+- **Ringkasan:** jumlah sampel dan perkiraan porsi token setiap sumber dicetak di akhir. Sampel web di dataset ini panjang (±4.200 token), jadi meskipun jumlah sampelnya kecil, porsi tokennya tetap besar. Targetkan porsi dataset sendiri sekitar 20–30% dari total token, dan ubah jumlah per sumber jika perlu.
+- **Skema dicek saat dijalankan:** jika pengelola dataset sumber mengubah nama kolom, script berhenti dan menampilkan kolom yang tersedia. Sesuaikan entri `SOURCES` di dalam script.
+
+`data/train_mix.jsonl` tidak di-commit (ada di `.gitignore`) karena isinya data pihak ketiga. Buat ulang file itu di mesin training.
+
+### Catatan lisensi dan hukum
+
+- **Aya Dataset** ditulis oleh kontributor manusia, bukan dihasilkan model, dan dirilis dengan lisensi terbuka. Lisensi terbuka seperti Apache 2.0 umumnya mewajibkan atribusi dan menyertakan teks lisensi saat data didistribusikan ulang.
+- **Magicoder-Evol-Instruct** dan **UltraChat** dibuat dengan bantuan model OpenAI. Syarat penggunaan OpenAI melarang penggunanya memakai output untuk mengembangkan model yang bersaing dengan OpenAI. Apakah ketentuan kontraktual itu juga mengikat pihak ketiga yang hanya mengunduh datasetnya masih diperdebatkan. Untuk eksperimen pribadi atau riset risikonya kecil, tetapi jika model hasil fine-tuning akan dipakai atau dijual secara komersial, pertimbangkan untuk mengganti kedua sumber ini dengan data yang ditulis manusia atau berlisensi jelas.
+- Periksa kartu dataset (dataset card) masing-masing sumber untuk lisensi terbaru sebelum mendistribusikan dataset campuran atau model hasil training.
+
 ## Training dengan LLaMA-Factory
 
 1. Pasang [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory):
@@ -75,12 +114,16 @@ Contoh kode Python di sampel teknologi juga sudah dijalankan, sehingga output ya
    git clone --depth 1 https://github.com/hiyouga/LLaMA-Factory.git
    cd LLaMA-Factory && pip install -e ".[torch,metrics]"
    ```
-2. Dari root repo ini, jalankan:
+2. Buat data campuran (lihat bagian sebelumnya):
+   ```bash
+   python scripts/mix_general.py
+   ```
+3. Dari root repo ini, jalankan:
    ```bash
    llamafactory-cli train train/qwen2.5-coder-7b-lora.yaml
    ```
-   Dataset sudah terdaftar di `data/dataset_info.json` dengan nama `instruct_id`.
-3. Coba hasilnya:
+   Dataset sudah terdaftar di `data/dataset_info.json` sebagai `instruct_id_mix` (campuran) dan `instruct_id` (hanya dataset ini).
+4. Coba hasilnya:
    ```bash
    llamafactory-cli chat --model_name_or_path Qwen/Qwen2.5-Coder-7B-Instruct \
      --adapter_name_or_path saves/qwen2.5-coder-7b-instruct-id/lora/sft \
@@ -89,7 +132,7 @@ Contoh kode Python di sampel teknologi juga sudah dijalankan, sehingga output ya
 
 Ringkasan konfigurasi di `train/qwen2.5-coder-7b-lora.yaml`:
 
-- LoRA rank 16 di semua layer linear, learning rate `1e-4`, 3 epoch, scheduler cosine, dan batch efektif 8.
+- LoRA rank 16 di semua layer linear, learning rate `1e-4`, 2 epoch, scheduler cosine, dan batch efektif 8. Jika melatih dengan `instruct_id` saja (tanpa campuran), naikkan ke 3 epoch.
 - `template: qwen` dan `cutoff_len: 8192`, sehingga tidak ada sampel yang terpotong.
 - Loss hanya dihitung pada jawaban assistant. Ini perilaku bawaan LLaMA-Factory.
 - Perkiraan VRAM untuk LoRA bf16 adalah sekitar 24 GB. Untuk GPU yang lebih kecil, aktifkan `quantization_bit: 4` (QLoRA).
@@ -108,7 +151,7 @@ Script ini memeriksa struktur JSON, urutan role, ID dan prompt duplikat, kelengk
 
 ## Catatan penting
 
-- **Ukuran dataset kecil.** Fine-tuning dengan 62 sampel terutama membentuk gaya dan format jawaban, misalnya kebiasaan menghasilkan satu file HTML lengkap dengan penjelasan berbahasa Indonesia. Pengetahuan baru tidak banyak bertambah. Untuk hasil yang lebih stabil, tambah sampel atau campur dengan dataset instruksi umum agar kemampuan dasar model tidak menurun.
+- **Ukuran dataset kecil.** Fine-tuning dengan 62 sampel terutama membentuk gaya dan format jawaban, misalnya kebiasaan menghasilkan satu file HTML lengkap dengan penjelasan berbahasa Indonesia. Pengetahuan baru tidak banyak bertambah. Karena itu, config bawaan memakai data campuran dengan dataset umum (lihat bagian *Mencampur dengan dataset umum*).
 - **Hindari overfitting.** Pantau training loss. Dengan data sekecil ini, terlalu banyak epoch membuat model sekadar menghafal jawaban.
 
 ## Menambah sampel
@@ -121,7 +164,9 @@ Script ini memeriksa struktur JSON, urutan role, ID dan prompt duplikat, kelengk
 
 ```
 data/train.jsonl                      dataset (format messages)
+data/train_mix.jsonl                  hasil scripts/mix_general.py (tidak di-commit)
 data/dataset_info.json                registrasi dataset untuk LLaMA-Factory
 train/qwen2.5-coder-7b-lora.yaml      konfigurasi fine-tuning LoRA
+scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
 scripts/validate.py                   validasi dataset
 ```

@@ -1,0 +1,3 @@
+# Dihasilkan oleh scripts/mix_general.py dari dataset pihak ketiga; buat ulang di mesin training.
+data/train_mix.jsonl
+__pycache__/
