@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor Markdown</title>
+  <style>
+    :root { --bg: #f6f8fa; --surface: #ffffff; --text: #1f2328; --muted: #656d76; --border: #d0d7de; --brand: #0969da; --code-bg: #f6f8fa; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; display: flex; flex-direction: column; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+    :focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+    header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem 1rem; background: var(--surface); border-bottom: 1px solid var(--border); }
+    header h1 { margin: 0; font-size: 1.1rem; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: .25rem; }
+    .toolbar button { min-width: 36px; height: 34px; padding: 0 .55rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
+    .toolbar button:hover { background: var(--bg); }
+    .btn { padding: .5rem 1rem; border: 1px solid var(--brand); border-radius: 6px; background: var(--brand); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+
+    .tabs { display: none; background: var(--surface); border-bottom: 1px solid var(--border); }
+    .tabs button { flex: 1; padding: .6rem; border: 0; border-bottom: 2px solid transparent; background: none; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; }
+    .tabs button[aria-selected="true"] { color: var(--brand); border-bottom-color: var(--brand); }
+
+    main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
+    .pane { display: flex; flex-direction: column; min-height: 0; min-width: 0; background: var(--surface); }
+    .pane + .pane { border-left: 1px solid var(--border); }
+    .pane-title { padding: .45rem 1rem; font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
+    textarea { flex: 1; width: 100%; padding: 1.25rem; border: 0; resize: none; outline: none; background: var(--surface); color: var(--text); font: 15px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+    .preview { flex: 1; overflow: auto; padding: 1.25rem 1.5rem; line-height: 1.7; overflow-wrap: anywhere; }
+    .preview > :first-child { margin-top: 0; }
+    .preview h1, .preview h2 { padding-bottom: .3em; border-bottom: 1px solid var(--border); }
+    .preview a { color: var(--brand); }
+    .preview code { padding: .15em .4em; border-radius: 6px; background: var(--code-bg); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .88em; }
+    .preview pre { padding: 1rem; border-radius: 8px; background: var(--code-bg); overflow-x: auto; }
+    .preview pre code { padding: 0; background: none; }
+    .preview blockquote { margin: 1rem 0; padding: 0 1rem; border-left: 4px solid var(--border); color: var(--muted); }
+    .preview hr { border: 0; border-top: 2px solid var(--border); margin: 1.5rem 0; }
+
+    .status { display: flex; justify-content: space-between; gap: 1rem; padding: .35rem 1rem; font-size: .8rem; color: var(--muted); background: var(--surface); border-top: 1px solid var(--border); }
+
+    @media (max-width: 760px) {
+      .tabs { display: flex; }
+      main { grid-template-columns: 1fr; }
+      .pane + .pane { border-left: 0; }
+      main[data-view="editor"] .preview-pane, main[data-view="preview"] .editor-pane { display: none; }
+      .pane-title { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Editor Markdown</h1>
+    <div class="toolbar" role="toolbar" aria-label="Format teks">
+      <button type="button" data-cmd="bold" title="Tebal (Ctrl+B)" aria-label="Tebal">B</button>
+      <button type="button" data-cmd="italic" title="Miring (Ctrl+I)" aria-label="Miring"><i>I</i></button>
+      <button type="button" data-cmd="heading" title="Judul" aria-label="Judul">H</button>
+      <button type="button" data-cmd="link" title="Tautan" aria-label="Tautan">🔗</button>
+      <button type="button" data-cmd="code" title="Kode" aria-label="Kode">&lt;/&gt;</button>
+      <button type="button" data-cmd="list" title="Daftar" aria-label="Daftar">•</button>
+      <button type="button" data-cmd="quote" title="Kutipan" aria-label="Kutipan">❝</button>
+    </div>
+    <button class="btn" id="download" type="button">Unduh .md</button>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Tampilan">
+    <button type="button" role="tab" data-view="editor" aria-selected="true">Tulis</button>
+    <button type="button" role="tab" data-view="preview" aria-selected="false">Pratinjau</button>
+  </div>
+
+  <main id="main" data-view="editor">
+    <section class="pane editor-pane">
+      <div class="pane-title">Markdown</div>
+      <textarea id="editor" spellcheck="false" aria-label="Isi markdown"></textarea>
+    </section>
+    <section class="pane preview-pane">
+      <div class="pane-title">Pratinjau</div>
+      <div class="preview" id="preview" aria-live="off"></div>
+    </section>
+  </main>
+
+  <footer class="status">
+    <span id="counts"></span>
+    <span id="save-status" aria-live="polite"></span>
+  </footer>
+
+  <script>
+    const STORAGE_KEY = 'markdown-editor-content';
+    const FENCE = '`'.repeat(3);
+    const editor = document.getElementById('editor');
+    const preview = document.getElementById('preview');
+
+    // ---------- Parser markdown sederhana ----------
+    // Semua teks di-escape lebih dulu, lalu hanya tag yang kita buat sendiri yang disisipkan.
+    // Dengan begitu tag <script> atau atribut onerror dari pengguna tidak pernah dieksekusi.
+    function escapeHtml(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // Hanya izinkan skema yang aman; "javascript:" dan "data:" diganti "#".
+    const safeUrl = (url) => (/^(https?:\/\/|mailto:|#)/i.test(url) ? url : '#');
+
+    function emphasis(text) {
+      return text
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/~~(.+?)~~/g, '<del>$1</del>');
+    }
+
+    function inline(raw) {
+      const stash = [];
+      const keep = (html) => `\u0000${stash.push(html) - 1}\u0000`;
+      let text = escapeHtml(raw);
+      text = text.replace(/`([^`]+)`/g, (_, code) => keep(`<code>${code}</code>`));
+      text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) =>
+        keep(`<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer">${emphasis(label)}</a>`));
+      text = emphasis(text);
+      const restore = (s) => s.replace(/\u0000(\d+)\u0000/g, (_, i) => restore(stash[i]));
+      return restore(text);
+    }
+
+    const BLOCK_START = /^(#{1,6})\s|^>|^\s*[-*+]\s|^\s*\d+\.\s|^`{3}|^(-{3,}|\*{3,}|_{3,})\s*$/;
+
+    function markdownToHtml(md) {
+      const lines = md.replace(/\u0000/g, '').replace(/\r\n?/g, '\n').split('\n');
+      const out = [];
+      let i = 0;
+      while (i < lines.length) {
+        const line = lines[i];
+
+        if (/^`{3}/.test(line)) {
+          const lang = line.slice(3).trim();
+          const code = [];
+          i++;
+          while (i < lines.length && !/^`{3}/.test(lines[i])) code.push(lines[i++]);
+          i++; // lewati pagar penutup
+          const cls = lang ? ` class="language-${escapeHtml(lang)}"` : '';
+          out.push(`<pre><code${cls}>${escapeHtml(code.join('\n'))}</code></pre>`);
+          continue;
+        }
+        if (/^(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) { out.push('<hr>'); i++; continue; }
+
+        const heading = line.match(/^(#{1,6})\s+(.*)$/);
+        if (heading) {
+          const level = heading[1].length;
+          out.push(`<h${level}>${inline(heading[2])}</h${level}>`);
+          i++;
+          continue;
+        }
+
+        if (/^>/.test(line)) {
+          const quote = [];
+          while (i < lines.length && /^>/.test(lines[i])) quote.push(lines[i++].replace(/^>\s?/, ''));
+          out.push(`<blockquote>${markdownToHtml(quote.join('\n'))}</blockquote>`);
+          continue;
+        }
+
+        const list = line.match(/^\s*([-*+]|\d+\.)\s+/);
+        if (list) {
+          const ordered = /\d/.test(list[1]);
+          const pattern = ordered ? /^\s*\d+\.\s+(.*)$/ : /^\s*[-*+]\s+(.*)$/;
+          const items = [];
+          while (i < lines.length && pattern.test(lines[i])) items.push(lines[i++].match(pattern)[1]);
+          const tag = ordered ? 'ol' : 'ul';
+          out.push(`<${tag}>${items.map((item) => `<li>${inline(item)}</li>`).join('')}</${tag}>`);
+          continue;
+        }
+
+        if (!line.trim()) { i++; continue; }
+
+        const para = [line];
+        i++;
+        while (i < lines.length && lines[i].trim() && !BLOCK_START.test(lines[i])) para.push(lines[i++]);
+        out.push(`<p>${inline(para.join(' '))}</p>`);
+      }
+      return out.join('\n');
+    }
+
+    // ---------- Editor ----------
+    const SAMPLE = [
+      '# Selamat datang di Editor Markdown',
+      '',
+      'Tulis di panel kiri, hasilnya langsung tampil di **panel kanan**. Teks *miring*, ~~coret~~, dan `kode` juga didukung.',
+      '',
+      '## Yang bisa kamu pakai',
+      '- Judul dengan tanda #',
+      '- Tautan seperti [MDN Web Docs](https://developer.mozilla.org)',
+      '- Daftar, kutipan, dan blok kode',
+      '',
+      '1. Tulis catatan',
+      '2. Periksa pratinjau',
+      '3. Unduh sebagai file .md',
+      '',
+      '> Isi editor tersimpan otomatis di browser ini.',
+      '',
+      FENCE + 'js',
+      "console.log('Halo, Markdown!');",
+      FENCE
+    ].join('\n');
+
+    let saveTimer;
+    function update() {
+      preview.innerHTML = markdownToHtml(editor.value);
+      const words = editor.value.trim() ? editor.value.trim().split(/\s+/).length : 0;
+      document.getElementById('counts').textContent = `${words} kata · ${editor.value.length} karakter`;
+      document.getElementById('save-status').textContent = 'Menyimpan…';
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        try {
+          localStorage.setItem(STORAGE_KEY, editor.value);
+          document.getElementById('save-status').textContent = 'Tersimpan otomatis';
+        } catch (e) {
+          document.getElementById('save-status').textContent = 'Tidak bisa menyimpan di browser ini';
+        }
+      }, 400);
+    }
+
+    function wrapSelection(before, after = before, placeholder = 'teks') {
+      const { selectionStart: start, selectionEnd: end, value } = editor;
+      const selected = value.slice(start, end) || placeholder;
+      editor.setRangeText(before + selected + after, start, end, 'end');
+      editor.setSelectionRange(start + before.length, start + before.length + selected.length);
+      editor.focus();
+      update();
+    }
+
+    function prefixLines(prefix) {
+      const { selectionStart: start, selectionEnd: end, value } = editor;
+      const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+      const block = value.slice(lineStart, end);
+      editor.setRangeText(block.split('\n').map((l) => prefix + l).join('\n'), lineStart, end, 'end');
+      editor.focus();
+      update();
+    }
+
+    const COMMANDS = {
+      bold: () => wrapSelection('**'),
+      italic: () => wrapSelection('*'),
+      heading: () => prefixLines('## '),
+      link: () => wrapSelection('[', '](https://)', 'teks tautan'),
+      code: () => wrapSelection('`'),
+      list: () => prefixLines('- '),
+      quote: () => prefixLines('> ')
+    };
+
+    document.querySelector('.toolbar').addEventListener('click', (e) => {
+      const button = e.target.closest('[data-cmd]');
+      if (button) COMMANDS[button.dataset.cmd]();
+    });
+
+    editor.addEventListener('keydown', (e) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const key = e.key.toLowerCase();
+      if (key === 'b' || key === 'i') {
+        e.preventDefault();
+        COMMANDS[key === 'b' ? 'bold' : 'italic']();
+      }
+    });
+    editor.addEventListener('input', update);
+
+    document.getElementById('download').addEventListener('click', () => {
+      const firstHeading = editor.value.match(/^#\s+(.+)$/m);
+      const name = firstHeading
+        ? firstHeading[1].toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').slice(0, 50) || 'catatan'
+        : 'catatan';
+      const url = URL.createObjectURL(new Blob([editor.value], { type: 'text/markdown;charset=utf-8' }));
+      const a = Object.assign(document.createElement('a'), { href: url, download: `${name}.md` });
+      document.body.append(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    // Tab tulis/pratinjau untuk layar kecil
+    const main = document.getElementById('main');
+    document.querySelectorAll('.tabs [role="tab"]').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        main.dataset.view = tab.dataset.view;
+        document.querySelectorAll('.tabs [role="tab"]').forEach((t) => t.setAttribute('aria-selected', String(t === tab)));
+      });
+    });
+
+    let saved = null;
+    try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) { /* abaikan */ }
+    editor.value = saved ?? SAMPLE;
+    update();
+  </script>
+</body>
+</html>

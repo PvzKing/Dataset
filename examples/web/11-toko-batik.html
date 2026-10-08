@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batik Lestari — Toko Batik Online</title>
+  <meta name="description" content="Batik tulis dan cap pilihan dari pengrajin Solo, Pekalongan, dan Lasem.">
+  <style>
+    :root {
+      --bg: #fffaf3; --surface: #ffffff; --text: #2d1b0e; --muted: #7a6150; --border: #eadfce;
+      --brand: #8b4513; --brand-dark: #6b340e; --gold: #c9a227; --danger: #b42318;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+    .container { width: min(100% - 2rem, 1160px); margin-inline: auto; }
+    :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+    button { font: inherit; }
+
+    header { position: sticky; top: 0; z-index: 5; background: rgba(255, 250, 243, .95); border-bottom: 1px solid var(--border); backdrop-filter: blur(6px); }
+    .bar { display: flex; align-items: center; justify-content: space-between; height: 66px; }
+    .logo { font-weight: 800; font-size: 1.25rem; color: var(--brand); }
+    .cart-btn {
+      position: relative; display: inline-flex; align-items: center; gap: .5rem; padding: .6rem 1rem;
+      border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer; font-weight: 600;
+    }
+    .cart-count { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--brand); color: #fff; font-size: .78rem; display: grid; place-items: center; }
+
+    .intro { padding: 2.5rem 0 1.5rem; }
+    .intro h1 { margin: 0 0 .5rem; font-size: clamp(1.8rem, 4vw, 2.6rem); }
+    .intro p { margin: 0; color: var(--muted); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; margin: 1.5rem 0; }
+    .categories { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .categories button { padding: .5rem 1rem; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; font-weight: 600; }
+    .categories button[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: #fff; }
+    .search { padding: .65rem 1rem; border: 1px solid var(--border); border-radius: 999px; font: inherit; width: min(100%, 280px); background: var(--surface); }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1.25rem; padding-bottom: 4rem; }
+    .product { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+    .swatch { aspect-ratio: 4 / 3; }
+    .product-body { padding: 1rem; display: flex; flex-direction: column; gap: .3rem; flex: 1; }
+    .product-body .cat { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    .product-body h2 { margin: 0; font-size: 1.05rem; }
+    .product-body .origin { margin: 0; color: var(--muted); font-size: .9rem; }
+    .product-foot { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: .75rem; }
+    .price { font-weight: 800; color: var(--brand); }
+    .add-btn { padding: .5rem .9rem; border: 0; border-radius: 10px; background: var(--brand); color: #fff; font-weight: 700; cursor: pointer; }
+    .add-btn:hover { background: var(--brand-dark); }
+    .empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 3rem 0; }
+
+    /* Motif sederhana dari CSS sebagai pengganti foto produk */
+    .m-parang { background: repeating-linear-gradient(45deg, var(--c1) 0 14px, var(--c2) 14px 20px, var(--c1) 20px 34px, var(--c3) 34px 38px); }
+    .m-kawung { background: radial-gradient(ellipse 30% 45% at 50% 0, var(--c2) 60%, transparent 62%) 0 0 / 40px 40px, radial-gradient(ellipse 45% 30% at 0 50%, var(--c3) 60%, transparent 62%) 0 0 / 40px 40px, var(--c1); }
+    .m-mega { background: radial-gradient(circle at 50% 100%, var(--c1) 30%, var(--c2) 31% 40%, var(--c1) 41% 50%, var(--c3) 51% 60%, transparent 61%) 0 0 / 60px 40px, var(--c1); }
+    .m-ceplok { background: radial-gradient(circle, var(--c2) 22%, transparent 24%) 0 0 / 28px 28px, radial-gradient(circle, var(--c3) 12%, transparent 14%) 14px 14px / 28px 28px, var(--c1); }
+
+    dialog { width: min(100%, 420px); height: 100%; max-height: none; margin: 0 0 0 auto; padding: 0; border: 0; background: var(--surface); color: var(--text); }
+    dialog::backdrop { background: rgba(45, 27, 14, .45); }
+    .drawer { display: flex; flex-direction: column; height: 100%; }
+    .drawer-head { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem; border-bottom: 1px solid var(--border); }
+    .drawer-head h2 { margin: 0; font-size: 1.2rem; }
+    .icon-btn { width: 36px; height: 36px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; font-size: 1.4rem; color: var(--muted); }
+    .cart-items { list-style: none; margin: 0; padding: 0 1.25rem; overflow-y: auto; flex: 1; }
+    .cart-item { display: grid; grid-template-columns: 56px 1fr auto; gap: .75rem; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--border); }
+    .cart-item .swatch { width: 56px; border-radius: 8px; }
+    .cart-item h3 { margin: 0 0 .2rem; font-size: .95rem; }
+    .cart-item p { margin: 0; color: var(--muted); font-size: .85rem; }
+    .qty { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 8px; margin-top: .4rem; }
+    .qty button { width: 28px; height: 28px; border: 0; background: none; cursor: pointer; }
+    .qty span { min-width: 26px; text-align: center; font-weight: 700; }
+    .remove { border: 0; background: none; color: var(--danger); cursor: pointer; font-size: .85rem; }
+    .drawer-foot { padding: 1.25rem; border-top: 1px solid var(--border); }
+    .total { display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 800; margin-bottom: 1rem; }
+    .checkout { width: 100%; padding: .9rem; border: 0; border-radius: 12px; background: #25d366; color: #063; font-weight: 800; cursor: pointer; }
+    .checkout:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+    .note { color: var(--muted); font-size: .85rem; margin: .75rem 0 0; }
+
+    .toast {
+      position: fixed; bottom: 1.5rem; left: 50%; z-index: 10; max-width: calc(100% - 2rem);
+      padding: .75rem 1.25rem; border-radius: 999px; background: var(--text); color: #fff; font-weight: 600;
+      opacity: 0; transform: translate(-50%, 1rem); pointer-events: none; transition: opacity .2s, transform .2s;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container bar">
+      <span class="logo">Batik Lestari</span>
+      <button class="cart-btn" id="open-cart" type="button" aria-haspopup="dialog">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>
+        Keranjang <span class="cart-count" id="cart-count">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="intro">
+      <h1>Batik pilihan dari tangan pengrajin</h1>
+      <p>Batik tulis dan cap dari Solo, Pekalongan, Cirebon, dan Lasem.</p>
+    </section>
+
+    <div class="toolbar">
+      <div class="categories" id="categories" role="group" aria-label="Kategori"></div>
+      <input class="search" id="search" type="search" placeholder="Cari motif atau produk…" aria-label="Cari produk">
+    </div>
+
+    <section class="grid" id="grid" aria-live="polite"></section>
+  </main>
+
+  <dialog id="cart" aria-labelledby="cart-title">
+    <div class="drawer">
+      <div class="drawer-head">
+        <h2 id="cart-title">Keranjang Belanja</h2>
+        <button class="icon-btn" id="close-cart" type="button" aria-label="Tutup keranjang">×</button>
+      </div>
+      <ul class="cart-items" id="cart-items"></ul>
+      <div class="drawer-foot">
+        <div class="total"><span>Total</span><span id="cart-total">Rp 0</span></div>
+        <button class="checkout" id="checkout" type="button">Pesan via WhatsApp</button>
+        <p class="note" id="checkout-note">Ongkos kirim dihitung saat konfirmasi pesanan.</p>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    // Isi dengan nomor WhatsApp toko berformat internasional tanpa "+", contoh 628123456789.
+    const WHATSAPP_NUMBER = '';
+    const CART_KEY = 'batik-cart-v1';
+
+    const PRODUCTS = [
+      { id: 'p1', name: 'Kemeja Parang Rusak', category: 'Kemeja', origin: 'Batik tulis Solo', price: 425000, motif: 'parang', colors: ['#5b3a1e', '#e9d8b4', '#2b1a0c'] },
+      { id: 'p2', name: 'Kemeja Kawung Klasik', category: 'Kemeja', origin: 'Batik cap Yogyakarta', price: 289000, motif: 'kawung', colors: ['#3d2a1a', '#d9b98a', '#a0703f'] },
+      { id: 'p3', name: 'Dress Mega Mendung', category: 'Dress', origin: 'Batik cap Cirebon', price: 365000, motif: 'mega', colors: ['#1e3a5f', '#4f7cac', '#c9dcef'] },
+      { id: 'p4', name: 'Dress Lasem Merah', category: 'Dress', origin: 'Batik tulis Lasem', price: 540000, motif: 'ceplok', colors: ['#8b1e1e', '#f3d9b1', '#2f4f2f'] },
+      { id: 'p5', name: 'Kain Sidomukti', category: 'Kain', origin: 'Batik tulis Solo, 2 meter', price: 750000, motif: 'kawung', colors: ['#2a1b0f', '#c8a96a', '#f1e6cf'] },
+      { id: 'p6', name: 'Kain Pekalongan Pesisir', category: 'Kain', origin: 'Batik cap Pekalongan, 2 meter', price: 320000, motif: 'ceplok', colors: ['#0f5c5c', '#f6c453', '#e85d75'] },
+      { id: 'p7', name: 'Selendang Truntum', category: 'Aksesoris', origin: 'Batik tulis Yogyakarta', price: 185000, motif: 'ceplok', colors: ['#1b1b3a', '#e8e1c7', '#b08d57'] },
+      { id: 'p8', name: 'Masker Kain Parang', category: 'Aksesoris', origin: 'Batik cap, isi 3', price: 75000, motif: 'parang', colors: ['#3b2f2f', '#d4a373', '#faedcd'] }
+    ];
+    const ALL = 'Semua';
+    const CATEGORIES = [ALL, ...new Set(PRODUCTS.map((p) => p.category))];
+    const byId = Object.fromEntries(PRODUCTS.map((p) => [p.id, p]));
+    const rupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+    const $ = (id) => document.getElementById(id);
+    let category = ALL;
+    let cart = loadCart(); // { productId: qty }
+
+    function loadCart() {
+      try {
+        const data = JSON.parse(localStorage.getItem(CART_KEY) || '{}');
+        // Buang produk yang sudah tidak ada di katalog.
+        return Object.fromEntries(Object.entries(data).filter(([id, qty]) => byId[id] && Number.isInteger(qty) && qty > 0));
+      } catch (e) {
+        return {};
+      }
+    }
+    function saveCart() {
+      try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) { /* abaikan */ }
+    }
+
+    function swatch(product) {
+      const div = document.createElement('div');
+      div.className = `swatch m-${product.motif}`;
+      const [c1, c2, c3] = product.colors;
+      div.style.setProperty('--c1', c1);
+      div.style.setProperty('--c2', c2);
+      div.style.setProperty('--c3', c3);
+      div.setAttribute('role', 'img');
+      div.setAttribute('aria-label', `Motif ${product.name}`);
+      return div;
+    }
+
+    function renderCategories() {
+      $('categories').replaceChildren(...CATEGORIES.map((c) => {
+        const b = Object.assign(document.createElement('button'), { type: 'button', textContent: c });
+        b.setAttribute('aria-pressed', String(c === category));
+        b.addEventListener('click', () => { category = c; renderCategories(); renderGrid(); });
+        return b;
+      }));
+    }
+
+    function renderGrid() {
+      const q = $('search').value.trim().toLowerCase();
+      const list = PRODUCTS.filter((p) =>
+        (category === ALL || p.category === category) &&
+        (!q || `${p.name} ${p.origin}`.toLowerCase().includes(q)));
+      if (!list.length) {
+        $('grid').replaceChildren(Object.assign(document.createElement('p'), { className: 'empty', textContent: 'Produk tidak ditemukan. Coba kata kunci lain.' }));
+        return;
+      }
+      $('grid').replaceChildren(...list.map((p) => {
+        const card = document.createElement('article');
+        card.className = 'product';
+        const body = document.createElement('div');
+        body.className = 'product-body';
+        body.innerHTML = '<span class="cat"></span><h2></h2><p class="origin"></p><div class="product-foot"><span class="price"></span><button class="add-btn" type="button">+ Keranjang</button></div>';
+        body.querySelector('.cat').textContent = p.category;
+        body.querySelector('h2').textContent = p.name;
+        body.querySelector('.origin').textContent = p.origin;
+        body.querySelector('.price').textContent = rupiah.format(p.price);
+        const add = body.querySelector('.add-btn');
+        add.setAttribute('aria-label', `Tambah ${p.name} ke keranjang`);
+        add.addEventListener('click', () => addToCart(p.id));
+        card.append(swatch(p), body);
+        return card;
+      }));
+    }
+
+    function addToCart(id) {
+      cart[id] = (cart[id] || 0) + 1;
+      saveCart();
+      renderCart();
+      toast(`${byId[id].name} ditambahkan ke keranjang`);
+    }
+
+    function setQty(id, qty) {
+      if (qty <= 0) delete cart[id];
+      else cart[id] = Math.min(qty, 99);
+      saveCart();
+      renderCart();
+    }
+
+    function cartLines() {
+      return Object.entries(cart).map(([id, qty]) => ({ product: byId[id], qty, subtotal: byId[id].price * qty }));
+    }
+
+    function renderCart() {
+      const lines = cartLines();
+      const count = lines.reduce((n, l) => n + l.qty, 0);
+      const total = lines.reduce((n, l) => n + l.subtotal, 0);
+      $('cart-count').textContent = count;
+      $('cart-total').textContent = rupiah.format(total);
+      $('checkout').disabled = count === 0;
+
+      if (!lines.length) {
+        $('cart-items').replaceChildren(Object.assign(document.createElement('li'), { className: 'empty', textContent: 'Keranjangmu masih kosong.' }));
+        return;
+      }
+      $('cart-items').replaceChildren(...lines.map(({ product, qty, subtotal }) => {
+        const li = document.createElement('li');
+        li.className = 'cart-item';
+        const info = document.createElement('div');
+        info.innerHTML = '<h3></h3><p></p><div class="qty"><button type="button" data-step="-1">−</button><span></span><button type="button" data-step="1">+</button></div>';
+        info.querySelector('h3').textContent = product.name;
+        info.querySelector('p').textContent = `${rupiah.format(product.price)} × ${qty} = ${rupiah.format(subtotal)}`;
+        info.querySelector('.qty span').textContent = qty;
+        info.querySelectorAll('[data-step]').forEach((b) => {
+          b.setAttribute('aria-label', `${b.dataset.step > 0 ? 'Tambah' : 'Kurangi'} jumlah ${product.name}`);
+          b.addEventListener('click', () => setQty(product.id, qty + Number(b.dataset.step)));
+        });
+        const remove = Object.assign(document.createElement('button'), { type: 'button', className: 'remove', textContent: 'Hapus' });
+        remove.setAttribute('aria-label', `Hapus ${product.name} dari keranjang`);
+        remove.addEventListener('click', () => setQty(product.id, 0));
+        li.append(swatch(product), info, remove);
+        return li;
+      }));
+    }
+
+    function checkout() {
+      const lines = cartLines();
+      const total = lines.reduce((n, l) => n + l.subtotal, 0);
+      const message = [
+        'Halo Batik Lestari, saya ingin memesan:',
+        ...lines.map((l) => `- ${l.product.name} × ${l.qty} = ${rupiah.format(l.subtotal)}`),
+        `Total: ${rupiah.format(total)}`,
+        '',
+        'Nama:',
+        'Alamat pengiriman:'
+      ].join('\n');
+      if (!/^\d{8,15}$/.test(WHATSAPP_NUMBER)) {
+        $('checkout-note').textContent = 'Nomor WhatsApp toko belum diatur. Isi konstanta WHATSAPP_NUMBER di kode.';
+        return;
+      }
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
+    }
+
+    let toastTimer;
+    function toast(text) {
+      $('toast').textContent = text;
+      $('toast').classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => $('toast').classList.remove('show'), 2000);
+    }
+
+    const dialog = $('cart');
+    $('open-cart').addEventListener('click', () => dialog.showModal());
+    $('close-cart').addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); }); // klik backdrop
+    $('checkout').addEventListener('click', checkout);
+    $('search').addEventListener('input', renderGrid);
+
+    renderCategories();
+    renderGrid();
+    renderCart();
+  </script>
+</body>
+</html>

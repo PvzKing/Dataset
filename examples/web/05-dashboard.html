@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Penjualan</title>
+  <style>
+    :root {
+      --bg: #f4f6fb; --surface: #ffffff; --text: #111827; --muted: #6b7280; --border: #e5e7eb;
+      --brand: #2563eb; --brand-soft: #dbeafe; --up: #15803d; --down: #b91c1c;
+      --sidebar: #0f172a; --sidebar-text: #cbd5e1;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg); color: var(--text);
+    }
+    :focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+    .layout { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+    .sidebar { background: var(--sidebar); color: var(--sidebar-text); padding: 1.5rem 1rem; }
+    .brand { color: #fff; font-weight: 800; font-size: 1.2rem; padding: 0 .75rem 1.5rem; }
+    .sidebar ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .25rem; }
+    .sidebar a {
+      display: block; padding: .7rem .75rem; border-radius: 10px;
+      color: inherit; text-decoration: none; font-weight: 500;
+    }
+    .sidebar a:hover { background: rgba(255, 255, 255, .06); color: #fff; }
+    .sidebar a[aria-current="page"] { background: var(--brand); color: #fff; }
+
+    .main { padding: 1.5rem clamp(1rem, 3vw, 2rem); min-width: 0; }
+    .topbar { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+    .topbar h1 { margin: 0; font-size: 1.5rem; }
+    .topbar p { margin: .15rem 0 0; color: var(--muted); }
+    .menu-btn {
+      display: none; width: 42px; height: 42px; place-items: center; flex-shrink: 0;
+      border: 1px solid var(--border); border-radius: 10px; background: var(--surface); cursor: pointer;
+    }
+
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; }
+    .stat-label { color: var(--muted); font-size: .9rem; margin: 0; }
+    .stat-value { font-size: 1.6rem; font-weight: 700; margin: .35rem 0; }
+    .delta { font-size: .85rem; font-weight: 600; margin: 0; }
+    .delta.up { color: var(--up); }
+    .delta.down { color: var(--down); }
+
+    .card h2 { margin: 0 0 1rem; font-size: 1.1rem; }
+    .chart-card { margin-bottom: 1.5rem; }
+    #chart { width: 100%; height: auto; display: block; }
+    #chart .bar { fill: var(--brand); transition: fill .15s; }
+    #chart .bar:hover, #chart .bar:focus { fill: #1d4ed8; outline: none; }
+    #chart .grid { stroke: var(--border); }
+    #chart text { fill: var(--muted); font-size: 12px; }
+    .chart-tooltip { margin: .5rem 0 0; min-height: 1.4em; color: var(--muted); font-size: .9rem; }
+
+    .table-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .table-head h2 { margin: 0; }
+    .search { padding: .6rem .9rem; border: 1px solid var(--border); border-radius: 10px; font: inherit; width: min(100%, 260px); }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 560px; }
+    th, td { text-align: left; padding: .75rem; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th { font-size: .85rem; color: var(--muted); }
+    th button {
+      display: inline-flex; align-items: center; gap: .3rem; padding: 0; border: 0; background: none;
+      font: inherit; font-weight: 600; color: inherit; cursor: pointer;
+    }
+    th[aria-sort="ascending"] button::after { content: "▲"; font-size: .7em; }
+    th[aria-sort="descending"] button::after { content: "▼"; font-size: .7em; }
+    td.num, th.num { text-align: right; }
+    .status { padding: .2rem .6rem; border-radius: 999px; font-size: .8rem; font-weight: 600; }
+    .status.lunas { background: #dcfce7; color: #166534; }
+    .status.diproses { background: #fef9c3; color: #854d0e; }
+    .status.batal { background: #fee2e2; color: #991b1b; }
+    .empty-row td { text-align: center; color: var(--muted); padding: 2rem; }
+
+    @media (max-width: 1080px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; }
+      .menu-btn { display: grid; }
+      .sidebar { position: fixed; inset: 0 auto 0 0; width: 240px; z-index: 20; transform: translateX(-100%); transition: transform .25s; }
+      .sidebar.open { transform: none; box-shadow: 0 0 0 100vmax rgba(15, 23, 42, .4); }
+    }
+    @media (max-width: 480px) { .stats { grid-template-columns: 1fr; } }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav class="sidebar" id="sidebar" aria-label="Menu utama">
+      <div class="brand">TokoKu Admin</div>
+      <ul>
+        <li><a href="#" aria-current="page">Ringkasan</a></li>
+        <li><a href="#">Pesanan</a></li>
+        <li><a href="#">Produk</a></li>
+        <li><a href="#">Pelanggan</a></li>
+        <li><a href="#">Pengaturan</a></li>
+      </ul>
+    </nav>
+
+    <main class="main">
+      <div class="topbar">
+        <button class="menu-btn" id="menu-btn" type="button" aria-label="Buka menu" aria-expanded="false" aria-controls="sidebar">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div>
+          <h1>Ringkasan Penjualan</h1>
+          <p>Data 12 bulan terakhir</p>
+        </div>
+      </div>
+
+      <section class="stats" id="stats" aria-label="Statistik bulan ini"></section>
+
+      <section class="card chart-card">
+        <h2 id="chart-title">Pendapatan per Bulan</h2>
+        <svg id="chart" viewBox="0 0 720 300" role="img" aria-labelledby="chart-title"></svg>
+        <p class="chart-tooltip" id="chart-tooltip" aria-live="polite">Arahkan kursor atau fokus ke batang untuk melihat detail.</p>
+      </section>
+
+      <section class="card">
+        <div class="table-head">
+          <h2>Transaksi Terbaru</h2>
+          <input class="search" id="search" type="search" placeholder="Cari ID atau pelanggan…" aria-label="Cari transaksi">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th data-key="id" aria-sort="none"><button type="button">ID</button></th>
+                <th data-key="customer" aria-sort="none"><button type="button">Pelanggan</button></th>
+                <th data-key="date" aria-sort="descending"><button type="button">Tanggal</button></th>
+                <th data-key="status" aria-sort="none"><button type="button">Status</button></th>
+                <th data-key="total" class="num" aria-sort="none"><button type="button">Total</button></th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const REVENUE = [182, 165, 198, 210, 236, 221, 254, 268, 241, 287, 305, 342].map((v) => v * 1e6);
+    const ORDERS = [802, 731, 868, 905, 1010, 958, 1072, 1119, 1006, 1150, 1190, 1284];
+    const NEW_CUSTOMERS = [240, 212, 255, 261, 298, 280, 305, 321, 290, 331, 340, 312];
+
+    const TRANSACTIONS = [
+      { id: 'TRX-1048', customer: 'Siti Rahmawati', date: '2026-12-18', status: 'Lunas', total: 485000 },
+      { id: 'TRX-1047', customer: 'Agus Setiawan', date: '2026-12-18', status: 'Diproses', total: 1250000 },
+      { id: 'TRX-1046', customer: 'Putri Lestari', date: '2026-12-17', status: 'Lunas', total: 320000 },
+      { id: 'TRX-1045', customer: 'Bambang Wijaya', date: '2026-12-17', status: 'Batal', total: 760000 },
+      { id: 'TRX-1044', customer: 'Dewi Anggraini', date: '2026-12-16', status: 'Lunas', total: 2150000 },
+      { id: 'TRX-1043', customer: 'Rizky Maulana', date: '2026-12-16', status: 'Diproses', total: 98000 },
+      { id: 'TRX-1042', customer: 'Nur Aisyah', date: '2026-12-15', status: 'Lunas', total: 675000 },
+      { id: 'TRX-1041', customer: 'Fajar Nugroho', date: '2026-12-14', status: 'Lunas', total: 1430000 },
+      { id: 'TRX-1040', customer: 'Lina Marlina', date: '2026-12-14', status: 'Batal', total: 255000 },
+      { id: 'TRX-1039', customer: 'Yoga Prasetyo', date: '2026-12-13', status: 'Lunas', total: 890000 }
+    ];
+
+    const rupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    const compact = new Intl.NumberFormat('id-ID', { notation: 'compact', maximumFractionDigits: 1 });
+    const number = new Intl.NumberFormat('id-ID');
+    const dateFmt = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    // ----- Kartu statistik: bulan terakhir dibanding bulan sebelumnya -----
+    function renderStats() {
+      const i = REVENUE.length - 1;
+      const aov = (k) => REVENUE[k] / ORDERS[k];
+      const cards = [
+        { label: 'Pendapatan bulan ini', value: rupiah.format(REVENUE[i]), now: REVENUE[i], prev: REVENUE[i - 1] },
+        { label: 'Jumlah pesanan', value: number.format(ORDERS[i]), now: ORDERS[i], prev: ORDERS[i - 1] },
+        { label: 'Rata-rata nilai pesanan', value: rupiah.format(aov(i)), now: aov(i), prev: aov(i - 1) },
+        { label: 'Pelanggan baru', value: number.format(NEW_CUSTOMERS[i]), now: NEW_CUSTOMERS[i], prev: NEW_CUSTOMERS[i - 1] }
+      ];
+      document.getElementById('stats').replaceChildren(...cards.map((c) => {
+        const change = ((c.now - c.prev) / c.prev) * 100;
+        const card = document.createElement('article');
+        card.className = 'card';
+        const label = Object.assign(document.createElement('p'), { className: 'stat-label', textContent: c.label });
+        const value = Object.assign(document.createElement('p'), { className: 'stat-value', textContent: c.value });
+        const delta = Object.assign(document.createElement('p'), {
+          className: `delta ${change >= 0 ? 'up' : 'down'}`,
+          textContent: `${change >= 0 ? '▲' : '▼'} ${Math.abs(change).toLocaleString('id-ID', { maximumFractionDigits: 1 })}% dari bulan lalu`
+        });
+        card.append(label, value, delta);
+        return card;
+      }));
+    }
+
+    // ----- Grafik batang SVG -----
+    function renderChart() {
+      const svg = document.getElementById('chart');
+      const tooltip = document.getElementById('chart-tooltip');
+      const NS = 'http://www.w3.org/2000/svg';
+      const W = 720, H = 300, pad = { top: 16, right: 12, bottom: 32, left: 64 };
+      const innerW = W - pad.left - pad.right;
+      const innerH = H - pad.top - pad.bottom;
+      const max = Math.ceil(Math.max(...REVENUE) / 1e8) * 1e8;
+      const y = (v) => pad.top + innerH - (v / max) * innerH;
+      const slot = innerW / REVENUE.length;
+      const make = (tag, attrs) => {
+        const node = document.createElementNS(NS, tag);
+        for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+        return node;
+      };
+      svg.replaceChildren();
+
+      for (let v = 0; v <= max; v += 1e8) {
+        svg.append(make('line', { class: 'grid', x1: pad.left, x2: W - pad.right, y1: y(v), y2: y(v) }));
+        const label = make('text', { x: pad.left - 10, y: y(v) + 4, 'text-anchor': 'end' });
+        label.textContent = v === 0 ? '0' : compact.format(v);
+        svg.append(label);
+      }
+
+      REVENUE.forEach((v, i) => {
+        const barW = slot * 0.6;
+        const x = pad.left + i * slot + (slot - barW) / 2;
+        const detail = `${MONTHS[i]}: ${rupiah.format(v)} dari ${number.format(ORDERS[i])} pesanan`;
+        const bar = make('rect', { class: 'bar', x, y: y(v), width: barW, height: y(0) - y(v), rx: 4, tabindex: 0, 'aria-label': detail });
+        const show = () => { tooltip.textContent = detail; };
+        bar.addEventListener('mouseenter', show);
+        bar.addEventListener('focus', show);
+        svg.append(bar);
+        const label = make('text', { x: x + barW / 2, y: H - 10, 'text-anchor': 'middle' });
+        label.textContent = MONTHS[i];
+        svg.append(label);
+      });
+    }
+
+    // ----- Tabel dengan pencarian dan pengurutan -----
+    const tbody = document.getElementById('tbody');
+    const searchInput = document.getElementById('search');
+    const headers = document.querySelectorAll('th[data-key]');
+    let sort = { key: 'date', dir: 'descending' };
+
+    function renderTable() {
+      const q = searchInput.value.trim().toLowerCase();
+      const rows = TRANSACTIONS
+        .filter((t) => !q || t.id.toLowerCase().includes(q) || t.customer.toLowerCase().includes(q))
+        .sort((a, b) => {
+          const A = a[sort.key], B = b[sort.key];
+          const cmp = typeof A === 'number' ? A - B : String(A).localeCompare(String(B), 'id');
+          return sort.dir === 'ascending' ? cmp : -cmp;
+        });
+
+      if (rows.length === 0) {
+        const tr = document.createElement('tr');
+        tr.className = 'empty-row';
+        const td = Object.assign(document.createElement('td'), { colSpan: 5, textContent: `Tidak ada transaksi yang cocok dengan "${searchInput.value}".` });
+        tr.append(td);
+        tbody.replaceChildren(tr);
+        return;
+      }
+
+      tbody.replaceChildren(...rows.map((t) => {
+        const tr = document.createElement('tr');
+        const status = Object.assign(document.createElement('span'), {
+          className: `status ${t.status.toLowerCase()}`, textContent: t.status
+        });
+        const cells = [
+          t.id,
+          t.customer,
+          dateFmt.format(new Date(`${t.date}T00:00:00`)),
+          status,
+          rupiah.format(t.total)
+        ];
+        cells.forEach((content, i) => {
+          const td = document.createElement('td');
+          if (i === 4) td.className = 'num';
+          td.append(content);
+          tr.append(td);
+        });
+        return tr;
+      }));
+    }
+
+    headers.forEach((th) => {
+      th.querySelector('button').addEventListener('click', () => {
+        const key = th.dataset.key;
+        sort = { key, dir: sort.key === key && sort.dir === 'ascending' ? 'descending' : 'ascending' };
+        headers.forEach((h) => h.setAttribute('aria-sort', h.dataset.key === key ? sort.dir : 'none'));
+        renderTable();
+      });
+    });
+    searchInput.addEventListener('input', renderTable);
+
+    // ----- Sidebar mobile -----
+    const sidebar = document.getElementById('sidebar');
+    const menuBtn = document.getElementById('menu-btn');
+    function setSidebar(open) {
+      sidebar.classList.toggle('open', open);
+      menuBtn.setAttribute('aria-expanded', String(open));
+    }
+    menuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setSidebar(!sidebar.classList.contains('open'));
+    });
+    document.addEventListener('click', (e) => {
+      if (sidebar.classList.contains('open') && !sidebar.contains(e.target)) setSidebar(false);
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setSidebar(false); });
+
+    renderStats();
+    renderChart();
+    renderTable();
+  </script>
+</body>
+</html>

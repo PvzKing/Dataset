@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raka Pratama — Web Developer</title>
+  <meta name="description" content="Portfolio Raka Pratama, web developer yang membangun aplikasi web yang cepat dan mudah diakses.">
+  <script>
+    // Terapkan tema sebelum halaman dirender supaya tidak berkedip.
+    (function () {
+      let theme = null;
+      try { theme = localStorage.getItem('theme'); } catch (e) { /* storage diblokir */ }
+      if (theme !== 'light' && theme !== 'dark') {
+        theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
+  <style>
+    :root {
+      --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --muted: #475569;
+      --border: #e2e8f0; --brand: #4f46e5; --brand-soft: #eef2ff;
+      --danger: #dc2626; --success: #15803d;
+    }
+    [data-theme="dark"] {
+      --bg: #0b1120; --surface: #111a2e; --text: #e2e8f0; --muted: #94a3b8;
+      --border: #1e293b; --brand: #818cf8; --brand-soft: #1e1b4b;
+      --danger: #f87171; --success: #4ade80;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.6;
+      transition: background-color .3s, color .3s;
+    }
+    a { color: var(--brand); }
+    .container { width: min(100% - 2rem, 1040px); margin-inline: auto; }
+    :focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+
+    header { border-bottom: 1px solid var(--border); }
+    .nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; height: 64px; }
+    .logo { font-weight: 800; text-decoration: none; color: var(--text); }
+    .nav-right { display: flex; align-items: center; gap: 1.25rem; }
+    .nav-right a { text-decoration: none; color: var(--muted); font-weight: 500; }
+    .nav-right a:hover { color: var(--brand); }
+    .theme-toggle {
+      width: 40px; height: 40px; display: grid; place-items: center; cursor: pointer;
+      border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text);
+    }
+    [data-theme="light"] .icon-sun, [data-theme="dark"] .icon-moon { display: none; }
+
+    .hero { padding: clamp(3rem, 9vw, 6rem) 0 3rem; }
+    .hero small { color: var(--brand); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .hero h1 { font-size: clamp(2.2rem, 6vw, 3.8rem); line-height: 1.1; margin: .5rem 0 1rem; letter-spacing: -.03em; }
+    .hero p { max-width: 38rem; color: var(--muted); font-size: 1.1rem; }
+    .skills { display: flex; flex-wrap: wrap; gap: .5rem; padding: 0; margin: 1.5rem 0 0; list-style: none; }
+    .skills li { padding: .3rem .8rem; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-weight: 600; font-size: .9rem; }
+
+    section { padding: 3rem 0; }
+    h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); margin: 0 0 1.25rem; letter-spacing: -.02em; }
+
+    .filters { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; }
+    .chip {
+      padding: .45rem 1rem; border-radius: 999px; border: 1px solid var(--border); cursor: pointer;
+      background: var(--surface); color: var(--muted); font: inherit; font-size: .9rem; font-weight: 600;
+    }
+    .chip[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: #fff; }
+    .result-count { color: var(--muted); font-size: .9rem; margin: 0 0 1.25rem; }
+    .projects { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
+    .project {
+      display: flex; flex-direction: column; padding: 1.5rem; border-radius: 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      transition: transform .2s, border-color .2s;
+    }
+    .project:hover { transform: translateY(-3px); border-color: var(--brand); }
+    .project h3 { margin: 0 0 .4rem; }
+    .project p { margin: 0 0 1rem; color: var(--muted); flex: 1; }
+    .tags { display: flex; flex-wrap: wrap; gap: .4rem; padding: 0; margin: 0 0 1rem; list-style: none; }
+    .tags li { font-size: .78rem; padding: .15rem .55rem; border-radius: 6px; background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+    .links { display: flex; gap: 1rem; font-weight: 600; }
+
+    form { display: grid; gap: 1rem; max-width: 560px; }
+    label { font-weight: 600; display: block; margin-bottom: .35rem; }
+    input, textarea {
+      width: 100%; padding: .75rem .9rem; border-radius: 10px; font: inherit;
+      border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    }
+    textarea { min-height: 140px; resize: vertical; }
+    [aria-invalid="true"] { border-color: var(--danger); }
+    .error { color: var(--danger); font-size: .88rem; margin: .3rem 0 0; min-height: 1.2em; }
+    .btn {
+      justify-self: start; padding: .8rem 1.6rem; border: 0; border-radius: 10px; cursor: pointer;
+      background: var(--brand); color: #fff; font: inherit; font-weight: 700;
+    }
+    .btn:disabled { opacity: .6; cursor: progress; }
+    .form-status { margin: 0; font-weight: 600; color: var(--success); }
+    footer { padding: 2rem 0; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--border); }
+
+    @media (max-width: 560px) {
+      .nav-right a { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="container nav" aria-label="Navigasi utama">
+      <a href="#" class="logo">raka.dev</a>
+      <div class="nav-right">
+        <a href="#proyek">Proyek</a>
+        <a href="#kontak">Kontak</a>
+        <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Ganti tema">
+          <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <small>Web Developer · Yogyakarta</small>
+        <h1>Halo, saya Raka.<br>Saya membangun web yang cepat dan mudah dipakai.</h1>
+        <p>Lima tahun terakhir saya membantu UMKM, sekolah, dan startup mengubah ide menjadi aplikasi web yang andal, dari desain antarmuka sampai server.</p>
+        <ul class="skills" aria-label="Keahlian">
+          <li>JavaScript</li><li>TypeScript</li><li>React</li><li>Vue</li><li>Node.js</li><li>Laravel</li><li>PostgreSQL</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="proyek">
+      <div class="container">
+        <h2>Proyek Pilihan</h2>
+        <div class="filters" id="filters" role="group" aria-label="Filter teknologi"></div>
+        <p class="result-count" id="result-count" aria-live="polite"></p>
+        <div class="projects" id="projects"></div>
+      </div>
+    </section>
+
+    <section id="kontak">
+      <div class="container">
+        <h2>Mari Bekerja Sama</h2>
+        <form id="contact-form" novalidate>
+          <div>
+            <label for="name">Nama</label>
+            <input id="name" name="name" autocomplete="name" aria-describedby="name-error">
+            <p class="error" id="name-error"></p>
+          </div>
+          <div>
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email" aria-describedby="email-error">
+            <p class="error" id="email-error"></p>
+          </div>
+          <div>
+            <label for="message">Pesan</label>
+            <textarea id="message" name="message" aria-describedby="message-error"></textarea>
+            <p class="error" id="message-error"></p>
+          </div>
+          <button class="btn" type="submit">Kirim Pesan</button>
+          <p class="form-status" id="form-status" role="status"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">© <span id="year"></span> Raka Pratama</div>
+  </footer>
+
+  <script>
+    // ----- Tema -----
+    const root = document.documentElement;
+    const themeToggle = document.getElementById('theme-toggle');
+
+    function applyTheme(theme) {
+      root.dataset.theme = theme;
+      themeToggle.setAttribute('aria-label', theme === 'dark' ? 'Ganti ke mode terang' : 'Ganti ke mode gelap');
+    }
+    themeToggle.addEventListener('click', () => {
+      const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      try { localStorage.setItem('theme', next); } catch (e) { /* abaikan */ }
+    });
+    applyTheme(root.dataset.theme);
+
+    // ----- Proyek -----
+    // Ganti URL example.com dengan tautan demo dan repositori milikmu.
+    const PROJECTS = [
+      { title: 'Kasir UMKM', desc: 'Aplikasi kasir berbasis web dengan laporan penjualan harian dan stok otomatis.', tags: ['React', 'Node.js', 'PostgreSQL'], demo: 'https://example.com/kasir', repo: 'https://example.com/kasir-repo' },
+      { title: 'SiPerpus', desc: 'Sistem peminjaman buku perpustakaan sekolah dengan pengingat jatuh tempo.', tags: ['Laravel', 'MySQL'], demo: 'https://example.com/siperpus', repo: 'https://example.com/siperpus-repo' },
+      { title: 'Cuaca Kita', desc: 'Dashboard prakiraan cuaca dengan grafik suhu per jam dan mode offline.', tags: ['Vue', 'TypeScript'], demo: 'https://example.com/cuaca', repo: 'https://example.com/cuaca-repo' },
+      { title: 'Toko Batik Online', desc: 'Toko online dengan katalog, keranjang, dan pembayaran terintegrasi.', tags: ['React', 'TypeScript', 'Node.js'], demo: 'https://example.com/batik', repo: 'https://example.com/batik-repo' },
+      { title: 'Chat Layanan Pelanggan', desc: 'Chat realtime untuk tim CS dengan riwayat percakapan dan label prioritas.', tags: ['Vue', 'Node.js'], demo: 'https://example.com/chat', repo: 'https://example.com/chat-repo' },
+      { title: 'Portal Koperasi Tani', desc: 'Situs informasi harga panen dan jadwal pertemuan anggota koperasi.', tags: ['Laravel', 'PostgreSQL'], demo: 'https://example.com/koperasi', repo: 'https://example.com/koperasi-repo' }
+    ];
+
+    const filtersEl = document.getElementById('filters');
+    const projectsEl = document.getElementById('projects');
+    const countEl = document.getElementById('result-count');
+    const ALL = 'Semua';
+    const tags = [ALL, ...new Set(PROJECTS.flatMap((p) => p.tags))].sort((a, b) => (a === ALL ? -1 : b === ALL ? 1 : a.localeCompare(b)));
+    let activeTag = ALL;
+
+    function el(tag, props = {}, children = []) {
+      const node = Object.assign(document.createElement(tag), props);
+      node.append(...children);
+      return node;
+    }
+
+    function renderFilters() {
+      filtersEl.replaceChildren(...tags.map((tag) => {
+        const chip = el('button', { type: 'button', className: 'chip', textContent: tag });
+        chip.setAttribute('aria-pressed', String(tag === activeTag));
+        chip.addEventListener('click', () => { activeTag = tag; renderFilters(); renderProjects(); });
+        return chip;
+      }));
+    }
+
+    function renderProjects() {
+      const list = activeTag === ALL ? PROJECTS : PROJECTS.filter((p) => p.tags.includes(activeTag));
+      projectsEl.replaceChildren(...list.map((p) => el('article', { className: 'project' }, [
+        el('h3', { textContent: p.title }),
+        el('p', { textContent: p.desc }),
+        el('ul', { className: 'tags' }, p.tags.map((t) => el('li', { textContent: t }))),
+        el('div', { className: 'links' }, [
+          el('a', { href: p.demo, textContent: 'Lihat demo', target: '_blank', rel: 'noopener' }),
+          el('a', { href: p.repo, textContent: 'Kode sumber', target: '_blank', rel: 'noopener' })
+        ])
+      ])));
+      countEl.textContent = activeTag === ALL
+        ? `Menampilkan semua ${list.length} proyek`
+        : `Menampilkan ${list.length} proyek dengan ${activeTag}`;
+    }
+
+    renderFilters();
+    renderProjects();
+
+    // ----- Form kontak -----
+    const form = document.getElementById('contact-form');
+    const statusEl = document.getElementById('form-status');
+    const RULES = {
+      name: (v) => (v.trim().length >= 2 ? '' : 'Nama minimal 2 karakter.'),
+      email: (v) => (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) ? '' : 'Masukkan alamat email yang valid.'),
+      message: (v) => (v.trim().length >= 20 ? '' : 'Pesan minimal 20 karakter supaya saya paham kebutuhanmu.')
+    };
+
+    function validateField(input) {
+      const message = RULES[input.name](input.value);
+      input.setAttribute('aria-invalid', String(Boolean(message)));
+      document.getElementById(`${input.name}-error`).textContent = message;
+      return !message;
+    }
+
+    form.addEventListener('input', (e) => {
+      if (e.target.getAttribute('aria-invalid') === 'true') validateField(e.target);
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      statusEl.textContent = '';
+      const fields = [...form.querySelectorAll('input, textarea')];
+      const results = fields.map(validateField);
+      const firstInvalid = fields[results.indexOf(false)];
+      if (firstInvalid) {
+        firstInvalid.focus();
+        return;
+      }
+      const button = form.querySelector('button[type="submit"]');
+      button.disabled = true;
+      // Ganti simulasi ini dengan fetch() ke backend atau layanan form pilihanmu.
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      button.disabled = false;
+      form.reset();
+      fields.forEach((f) => f.removeAttribute('aria-invalid'));
+      statusEl.textContent = 'Terima kasih! Pesanmu sudah terkirim. Saya akan membalas dalam 1–2 hari kerja.';
+    });
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adiwangsa &amp; Rekan — Kantor Advokat dan Konsultan Hukum</title>
+  <meta name="description" content="Adiwangsa & Rekan memberikan jasa hukum di bidang perdata, ketenagakerjaan, keluarga, pidana, bisnis, dan pertanahan.">
+  <style>
+    :root { --bg: #ffffff; --soft: #f6f5f2; --navy: #14213d; --text: #1f2933; --muted: #5f6b7a; --border: #e3e1db; --gold: #a88a4a; --danger: #b42318; --ok: #1a7f4b; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: var(--bg); line-height: 1.65; }
+    h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; color: var(--navy); line-height: 1.25; }
+    .container { width: min(100% - 2rem, 1120px); margin-inline: auto; }
+    :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+    .btn { display: inline-block; padding: .85rem 1.5rem; border: 0; border-radius: 4px; background: var(--navy); color: #fff; font: inherit; font-weight: 600; text-decoration: none; cursor: pointer; }
+    .btn:hover { background: #0b1427; }
+    .btn.light { background: #fff; color: var(--navy); }
+
+    header { position: sticky; top: 0; z-index: 10; background: rgba(255, 255, 255, .96); border-bottom: 1px solid var(--border); }
+    .nav { position: relative; display: flex; justify-content: space-between; align-items: center; height: 70px; }
+    .logo { font-family: Georgia, serif; font-size: 1.25rem; font-weight: 700; color: var(--navy); text-decoration: none; }
+    .logo span { color: var(--gold); }
+    .links { display: flex; gap: 1.5rem; list-style: none; margin: 0; padding: 0; }
+    .links a { color: var(--muted); text-decoration: none; font-weight: 500; }
+    .links a:hover { color: var(--navy); }
+    .menu-btn { display: none; border: 0; background: none; padding: .5rem; cursor: pointer; color: var(--navy); }
+
+    .hero { background: linear-gradient(120deg, var(--navy), #24365e); color: #fff; padding: clamp(4rem, 10vw, 7rem) 0; }
+    .hero h1 { color: #fff; font-size: clamp(1.8rem, 5vw, 3.4rem); margin: .5rem 0 1rem; max-width: 24ch; overflow-wrap: break-word; }
+    .hero p { max-width: 40rem; color: #d5dbe6; font-size: 1.1rem; }
+    .eyebrow { color: var(--gold); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: .8rem; }
+    .hero .actions { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2rem; }
+
+    section { padding: clamp(3.5rem, 8vw, 5.5rem) 0; }
+    section.soft { background: var(--soft); }
+    .section-head { max-width: 46rem; margin-bottom: 2.5rem; }
+    .section-head h2 { font-size: clamp(1.8rem, 3.5vw, 2.4rem); margin: .4rem 0 .6rem; }
+    .section-head p { margin: 0; color: var(--muted); }
+
+    .practice { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+    .practice article { padding: 1.75rem; border: 1px solid var(--border); border-top: 3px solid var(--gold); background: #fff; }
+    .practice h3 { margin: 0 0 .5rem; font-size: 1.2rem; }
+    .practice p { margin: 0; color: var(--muted); }
+
+    .team { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+    .member { text-align: center; padding: 2rem 1.5rem; background: #fff; border: 1px solid var(--border); }
+    .avatar { width: 88px; height: 88px; margin: 0 auto 1rem; border-radius: 50%; background: var(--navy); color: var(--gold); display: grid; place-items: center; font-family: Georgia, serif; font-size: 1.8rem; }
+    .member h3 { margin: 0; font-size: 1.15rem; }
+    .member .role { color: var(--gold); font-weight: 600; margin: .2rem 0 .6rem; }
+    .member p { margin: 0; color: var(--muted); font-size: .95rem; }
+
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; list-style: none; padding: 0; margin: 0; counter-reset: step; }
+    .steps li { counter-increment: step; padding: 1.5rem; background: #fff; border: 1px solid var(--border); }
+    .steps li::before { content: counter(step, decimal-leading-zero); display: block; font-family: Georgia, serif; font-size: 2rem; color: var(--gold); }
+    .steps h3 { margin: .25rem 0 .4rem; font-size: 1.1rem; }
+    .steps p { margin: 0; color: var(--muted); font-size: .95rem; }
+    .pro-bono { margin-top: 2rem; padding: 1.25rem 1.5rem; border-left: 4px solid var(--gold); background: #fff; }
+
+    .contact { display: grid; grid-template-columns: 1fr 1.3fr; gap: 3rem; align-items: start; }
+    .contact dl { margin: 1.5rem 0 0; display: grid; gap: .9rem; }
+    .contact dt { font-weight: 700; color: var(--navy); }
+    .contact dd { margin: 0; color: var(--muted); }
+    form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; padding: 2rem; background: #fff; border: 1px solid var(--border); }
+    .field.full { grid-column: 1 / -1; }
+    label { display: block; font-weight: 600; margin-bottom: .3rem; font-size: .95rem; }
+    input, select, textarea { width: 100%; padding: .7rem .8rem; border: 1px solid #c9ced6; border-radius: 4px; font: inherit; background: #fff; color: var(--text); }
+    textarea { min-height: 120px; resize: vertical; }
+    [aria-invalid="true"] { border-color: var(--danger); }
+    .error { color: var(--danger); font-size: .85rem; margin: .25rem 0 0; }
+    .error:empty { display: none; }
+    .hint { color: var(--muted); font-size: .85rem; margin: .25rem 0 0; }
+    .consent { display: flex; gap: .6rem; align-items: flex-start; font-weight: 400; }
+    .consent input { width: auto; margin-top: .3rem; }
+    .form-status { grid-column: 1 / -1; margin: 0; font-weight: 600; color: var(--ok); }
+    .form-status:empty { display: none; }
+
+    footer { background: var(--navy); color: #c3cad6; padding: 2.5rem 0; font-size: .9rem; }
+    footer p { margin: 0 0 .75rem; max-width: 60rem; }
+
+    @media (max-width: 960px) {
+      .practice, .team { grid-template-columns: 1fr 1fr; }
+      .steps { grid-template-columns: 1fr 1fr; }
+      .contact { grid-template-columns: minmax(0, 1fr); }
+    }
+    @media (max-width: 720px) {
+      .menu-btn { display: block; }
+      .links { display: none; position: absolute; top: 70px; left: -1rem; right: -1rem; flex-direction: column; gap: 0; background: #fff; border-bottom: 1px solid var(--border); }
+      .links.open { display: flex; }
+      .links a { display: block; padding: .9rem 1.5rem; }
+      .practice, .team, .steps, form { grid-template-columns: minmax(0, 1fr); }
+      form { padding: 1.25rem; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="container nav" aria-label="Navigasi utama">
+      <a href="#" class="logo">Adiwangsa <span>&amp;</span> Rekan</a>
+      <button class="menu-btn" type="button" aria-expanded="false" aria-controls="links" aria-label="Buka menu">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <ul class="links" id="links">
+        <li><a href="#praktik">Bidang Praktik</a></li>
+        <li><a href="#tim">Tim</a></li>
+        <li><a href="#alur">Alur Konsultasi</a></li>
+        <li><a href="#kontak">Kontak</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <span class="eyebrow">Kantor Advokat &amp; Konsultan Hukum</span>
+        <h1>Pendampingan hukum yang jelas dan dapat dipertanggungjawabkan.</h1>
+        <p>Kami membantu individu dan pelaku usaha memahami posisi hukumnya, menimbang pilihan penyelesaian, dan menjalani setiap proses dengan informasi yang lengkap.</p>
+        <div class="actions">
+          <a href="#kontak" class="btn light">Jadwalkan Konsultasi</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="praktik">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">Bidang Praktik</span>
+          <h2>Layanan hukum kami</h2>
+          <p>Dalam perkara perdata, kami mengutamakan penyelesaian secara damai sebelum menempuh jalur pengadilan.</p>
+        </div>
+        <div class="practice">
+          <article><h3>Perdata &amp; Sengketa Kontrak</h3><p>Wanprestasi, perbuatan melawan hukum, serta penyelesaian sengketa melalui negosiasi, mediasi, atau litigasi.</p></article>
+          <article><h3>Ketenagakerjaan</h3><p>Perselisihan hubungan industrial, PHK, serta penyusunan perjanjian kerja dan peraturan perusahaan.</p></article>
+          <article><h3>Keluarga &amp; Waris</h3><p>Perceraian, hak asuh anak, pembagian harta bersama, dan penyelesaian sengketa waris.</p></article>
+          <article><h3>Pendampingan Pidana</h3><p>Pendampingan sejak pemeriksaan di kepolisian, penuntutan, hingga persidangan.</p></article>
+          <article><h3>Bisnis &amp; Perizinan</h3><p>Pendirian badan usaha, perizinan berusaha, penyusunan kontrak, dan uji tuntas hukum.</p></article>
+          <article><h3>Pertanahan &amp; Properti</h3><p>Sengketa tanah, pemeriksaan dokumen hak atas tanah, dan pendampingan transaksi properti.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="tim" class="soft">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">Tim</span>
+          <h2>Advokat kami</h2>
+        </div>
+        <!-- Ganti dengan data dan foto advokat yang sebenarnya. -->
+        <div class="team">
+          <article class="member"><div class="avatar" aria-hidden="true">RA</div><h3>Raden Adiwangsa, S.H., M.H.</h3><p class="role">Managing Partner</p><p>Fokus pada sengketa perdata dan pertanahan.</p></article>
+          <article class="member"><div class="avatar" aria-hidden="true">LP</div><h3>Larasati Putri, S.H., LL.M.</h3><p class="role">Partner</p><p>Fokus pada hukum bisnis, kontrak, dan ketenagakerjaan.</p></article>
+          <article class="member"><div class="avatar" aria-hidden="true">BS</div><h3>Bima Saputra, S.H.</h3><p class="role">Associate</p><p>Fokus pada hukum keluarga dan pendampingan pidana.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="alur">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">Alur Konsultasi</span>
+          <h2>Bagaimana kami bekerja</h2>
+        </div>
+        <ol class="steps">
+          <li><h3>Ajukan jadwal</h3><p>Isi formulir di bawah dengan ringkasan singkat masalah hukum Anda.</p></li>
+          <li><h3>Konfirmasi</h3><p>Tim kami menghubungi Anda untuk memastikan jadwal dan dokumen yang perlu dibawa.</p></li>
+          <li><h3>Konsultasi awal</h3><p>Kami menjelaskan posisi hukum, pilihan penyelesaian, serta risiko masing-masing pilihan.</p></li>
+          <li><h3>Kesepakatan tertulis</h3><p>Jika Anda melanjutkan, ruang lingkup jasa dan honorarium disepakati secara tertulis dan Anda menandatangani surat kuasa.</p></li>
+        </ol>
+        <p class="pro-bono">Kami memberikan bantuan hukum secara cuma-cuma bagi pencari keadilan yang tidak mampu, sebagaimana diwajibkan Pasal 22 Undang-Undang Nomor 18 Tahun 2003 tentang Advokat.</p>
+      </div>
+    </section>
+
+    <section id="kontak" class="soft">
+      <div class="container contact">
+        <div>
+          <span class="eyebrow">Kontak</span>
+          <h2>Jadwalkan konsultasi</h2>
+          <p>Seluruh informasi yang Anda sampaikan kami jaga kerahasiaannya.</p>
+          <dl>
+            <dt>Alamat</dt><dd>Jl. Contoh Raya No. 45, Lantai 3<br>Jakarta Selatan</dd>
+            <dt>Jam kerja</dt><dd>Senin – Jumat, 09.00 – 17.00 WIB</dd>
+            <dt>Email</dt><dd>konsultasi@example.com</dd>
+          </dl>
+        </div>
+
+        <form id="appointment" novalidate>
+          <div class="field">
+            <label for="name">Nama lengkap</label>
+            <input id="name" name="name" autocomplete="name">
+          </div>
+          <div class="field">
+            <label for="phone">Nomor telepon</label>
+            <input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel">
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="area">Bidang masalah</label>
+            <select id="area" name="area">
+              <option value="">Pilih bidang…</option>
+              <option>Perdata &amp; sengketa kontrak</option>
+              <option>Ketenagakerjaan</option>
+              <option>Keluarga &amp; waris</option>
+              <option>Pendampingan pidana</option>
+              <option>Bisnis &amp; perizinan</option>
+              <option>Pertanahan &amp; properti</option>
+              <option>Lainnya</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="date">Tanggal yang diinginkan</label>
+            <input id="date" name="date" type="date">
+            <p class="hint">Senin–Jumat, paling cepat besok.</p>
+          </div>
+          <div class="field">
+            <label for="time">Waktu</label>
+            <select id="time" name="time">
+              <option>09.00 – 11.00</option>
+              <option>11.00 – 13.00</option>
+              <option>13.00 – 15.00</option>
+              <option>15.00 – 17.00</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label for="summary">Ringkasan masalah</label>
+            <textarea id="summary" name="summary" maxlength="1000" aria-describedby="summary-hint"></textarea>
+            <p class="hint" id="summary-hint">Cukup gambaran umum. Jangan lampirkan dokumen atau informasi sensitif melalui formulir ini.</p>
+          </div>
+          <div class="field full">
+            <label class="consent"><input type="checkbox" id="consent" name="consent"> Saya menyetujui pemrosesan data pribadi saya oleh Adiwangsa &amp; Rekan untuk keperluan penjadwalan konsultasi.</label>
+          </div>
+          <div class="field full"><button class="btn" type="submit">Kirim permintaan</button></div>
+          <p class="form-status" id="form-status" role="status"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p><strong>Penafian:</strong> Informasi di situs ini bersifat umum dan bukan merupakan nasihat hukum. Mengirim formulir atau email tidak dengan sendirinya menimbulkan hubungan advokat dan klien.</p>
+      <p>© <span id="year"></span> Adiwangsa &amp; Rekan.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Menu mobile
+    const menuBtn = document.querySelector('.menu-btn');
+    const links = document.getElementById('links');
+    function setMenu(open) {
+      links.classList.toggle('open', open);
+      menuBtn.setAttribute('aria-expanded', String(open));
+      menuBtn.setAttribute('aria-label', open ? 'Tutup menu' : 'Buka menu');
+    }
+    menuBtn.addEventListener('click', () => setMenu(!links.classList.contains('open')));
+    links.addEventListener('click', (e) => { if (e.target.closest('a')) setMenu(false); });
+
+    // Tanggal minimum = besok (dalam zona waktu pengunjung)
+    const dateInput = document.getElementById('date');
+    const toISODate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    dateInput.min = toISODate(tomorrow);
+
+    const form = document.getElementById('appointment');
+    const RULES = {
+      name: (v) => (v.trim().length >= 3 ? '' : 'Mohon isi nama lengkap.'),
+      phone: (v) => (/^(\+62|62|0)\d{8,13}$/.test(v.replace(/[\s-]/g, '')) ? '' : 'Nomor telepon tidak valid.'),
+      email: (v) => (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) ? '' : 'Format email tidak valid.'),
+      area: (v) => (v ? '' : 'Pilih bidang masalah.'),
+      date: (v) => {
+        if (!v) return 'Pilih tanggal konsultasi.';
+        if (v < dateInput.min) return 'Tanggal paling cepat besok.';
+        const day = new Date(`${v}T00:00:00`).getDay();
+        return day === 0 || day === 6 ? 'Konsultasi hanya tersedia Senin–Jumat.' : '';
+      },
+      summary: (v) => (v.trim().length >= 20 ? '' : 'Ringkasan minimal 20 karakter.'),
+      consent: (_, el) => (el.checked ? '' : 'Persetujuan pemrosesan data diperlukan untuk melanjutkan.')
+    };
+
+    function setError(el, message) {
+      const field = el.closest('.field');
+      let error = field.querySelector('.error');
+      if (!error) {
+        error = Object.assign(document.createElement('p'), { className: 'error', id: `${el.id}-error` });
+        field.append(error);
+        el.setAttribute('aria-describedby', [el.getAttribute('aria-describedby'), error.id].filter(Boolean).join(' '));
+      }
+      error.textContent = message;
+      el.setAttribute('aria-invalid', String(Boolean(message)));
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      let firstInvalid = null;
+      for (const [name, rule] of Object.entries(RULES)) {
+        const el = form.elements[name];
+        const message = rule(el.value, el);
+        setError(el, message);
+        if (message && !firstInvalid) firstInvalid = el;
+      }
+      const status = document.getElementById('form-status');
+      if (firstInvalid) {
+        status.textContent = '';
+        firstInvalid.focus();
+        return;
+      }
+      // Kirim ke backend di sini. Pastikan koneksi HTTPS dan data disimpan dengan aman.
+      const when = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${form.elements.date.value}T00:00:00`));
+      status.textContent = `Terima kasih. Permintaan konsultasi untuk ${when} pukul ${form.elements.time.value} WIB sudah kami terima. Kami akan menghubungi Anda untuk konfirmasi.`;
+      form.reset();
+      form.querySelectorAll('[aria-invalid]').forEach((el) => el.removeAttribute('aria-invalid'));
+    });
+
+    form.addEventListener('input', (e) => {
+      const el = e.target;
+      if (el.getAttribute('aria-invalid') === 'true' && RULES[el.name]) setError(el, RULES[el.name](el.value, el));
+    });
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

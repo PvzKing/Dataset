@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cara Menulis Commit Message yang Baik — Blog Ngoding</title>
+  <meta name="description" content="Panduan singkat menulis commit message Git yang jelas, konsisten, dan mudah dibaca rekan setim.">
+  <style>
+    :root { --bg: #fffdf8; --text: #1c1917; --muted: #78716c; --border: #e7e5e4; --brand: #c2410c; --code-bg: #f5f5f4; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 1.5rem; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+    :focus-visible { outline: 3px solid #fdba74; outline-offset: 2px; }
+    .progress { position: fixed; top: 0; left: 0; height: 4px; width: 100%; background: var(--brand); transform-origin: 0 50%; transform: scaleX(0); z-index: 10; }
+
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 3.5rem; width: min(100% - 2rem, 1040px); margin: 0 auto; padding: 3rem 0 5rem; }
+    article { max-width: 70ch; font-family: Georgia, "Times New Roman", serif; font-size: 1.15rem; line-height: 1.8; }
+    .meta { font-family: system-ui, sans-serif; color: var(--muted); font-size: .95rem; display: flex; gap: .75rem; flex-wrap: wrap; }
+    article h1 { font-family: system-ui, sans-serif; font-size: clamp(2rem, 5vw, 2.8rem); line-height: 1.15; margin: .5rem 0 1rem; letter-spacing: -.02em; }
+    article h2, article h3 { font-family: system-ui, sans-serif; line-height: 1.3; margin-top: 2.5rem; }
+    article h2 { font-size: 1.6rem; }
+    article h3 { font-size: 1.25rem; }
+    article a { color: var(--brand); }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85em; background: var(--code-bg); padding: .1em .35em; border-radius: 4px; }
+    pre { background: #1c1917; color: #f5f5f4; padding: 1.25rem; border-radius: 10px; overflow-x: auto; line-height: 1.6; font-size: .95rem; }
+    pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+    blockquote { margin: 1.5rem 0; padding: .25rem 1.25rem; border-left: 4px solid var(--brand); color: var(--muted); font-style: italic; }
+
+    .toc { position: sticky; top: 2rem; align-self: start; font-size: .95rem; }
+    .toc h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 0 0 .75rem; }
+    .toc ol { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--border); }
+    .toc a { display: block; padding: .35rem 0 .35rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.4; }
+    .toc a.sub { padding-left: 2rem; font-size: .9rem; }
+    .toc a:hover { color: var(--text); }
+    .toc a.active { color: var(--brand); border-left-color: var(--brand); font-weight: 600; }
+
+    .to-top {
+      position: fixed; right: 1.25rem; bottom: 1.25rem; width: 48px; height: 48px; border: 0; border-radius: 50%;
+      background: var(--text); color: #fff; cursor: pointer; display: grid; place-items: center;
+      opacity: 0; pointer-events: none; transform: translateY(10px); transition: opacity .2s, transform .2s;
+    }
+    .to-top.visible { opacity: 1; pointer-events: auto; transform: none; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: minmax(0, 1fr); gap: 0; }
+      .toc { position: static; order: -1; margin-bottom: 1rem; }
+      .toc details { border: 1px solid var(--border); border-radius: 10px; padding: .75rem 1rem; }
+      .toc summary { cursor: pointer; font-weight: 600; }
+      .toc h2 { display: none; }
+      .toc ol { margin-top: .75rem; }
+    }
+    @media (min-width: 901px) {
+      .toc summary { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      * { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" id="progress" aria-hidden="true"></div>
+
+  <div class="layout">
+    <article id="article">
+      <div class="meta">
+        <span>Oleh Tim Blog Ngoding</span>
+        <span aria-hidden="true">·</span>
+        <span id="reading-time"></span>
+      </div>
+      <h1>Cara Menulis Commit Message yang Baik</h1>
+      <p>Riwayat Git adalah catatan harian sebuah proyek. Saat bug muncul enam bulan kemudian, commit message yang jelas bisa menghemat berjam-jam penelusuran. Artikel ini merangkum kebiasaan sederhana yang membuat riwayat Git kamu enak dibaca.</p>
+
+      <h2 id="mengapa-penting">Mengapa commit message penting?</h2>
+      <p>Kode menjelaskan <em>apa</em> yang berubah, tetapi jarang menjelaskan <em>mengapa</em>. Commit message adalah tempat terbaik untuk menyimpan alasan itu, karena ia melekat langsung pada perubahan kodenya. Perintah seperti <code>git log</code>, <code>git blame</code>, dan <code>git bisect</code> semuanya bergantung pada riwayat yang bisa dipahami.</p>
+
+      <h2 id="struktur">Struktur dasar</h2>
+      <p>Commit message yang baik terdiri dari tiga bagian:</p>
+      <ol>
+        <li><strong>Subjek</strong>: satu baris ringkas, idealnya maksimal sekitar 50 karakter.</li>
+        <li><strong>Baris kosong</strong>: pemisah antara subjek dan isi.</li>
+        <li><strong>Isi (opsional)</strong>: penjelasan alasan dan konteks, dibungkus sekitar 72 karakter per baris.</li>
+      </ol>
+      <pre><code>Perbaiki total belanja yang salah saat diskon 100%
+
+Diskon penuh membuat subtotal bernilai nol, lalu pajak dihitung
+dari harga sebelum diskon. Sekarang pajak dihitung setelah diskon
+sehingga pesanan gratis tidak lagi terkena pajak.</code></pre>
+
+      <h3 id="mode-imperatif">Gunakan kalimat perintah</h3>
+      <p>Tulis subjek seolah memberi perintah kepada kode: "Tambahkan validasi email", bukan "Menambahkan validasi email" atau "Validasi email sudah ditambahkan". Gaya ini konsisten dengan pesan yang dibuat Git sendiri, misalnya "Merge branch ...".</p>
+
+      <h3 id="fokus-mengapa">Jelaskan mengapa, bukan bagaimana</h3>
+      <p>Bagaimana perubahan dibuat sudah terlihat di diff. Isi commit sebaiknya menjawab: masalah apa yang diselesaikan, mengapa pendekatan ini dipilih, dan efek samping apa yang perlu diketahui.</p>
+
+      <h2 id="conventional-commits">Konvensi Conventional Commits</h2>
+      <p>Banyak tim memakai format <a href="https://www.conventionalcommits.org/" target="_blank" rel="noopener">Conventional Commits</a> agar riwayat bisa dibaca mesin, misalnya untuk membuat changelog otomatis:</p>
+      <pre><code>feat: tambahkan pencarian produk
+fix: cegah total negatif saat voucher melebihi harga
+docs: perbarui panduan instalasi
+refactor: pisahkan logika ongkir ke modul sendiri</code></pre>
+      <p>Prefiks yang umum adalah <code>feat</code> untuk fitur baru, <code>fix</code> untuk perbaikan bug, <code>docs</code> untuk dokumentasi, <code>refactor</code> untuk perubahan struktur tanpa mengubah perilaku, dan <code>test</code> untuk pengujian.</p>
+
+      <h2 id="kesalahan-umum">Kesalahan yang sering terjadi</h2>
+      <ul>
+        <li>Pesan terlalu umum seperti "update", "fix bug", atau "wip".</li>
+        <li>Satu commit berisi banyak perubahan yang tidak berhubungan.</li>
+        <li>Menyebut nama file di subjek padahal sudah terlihat di diff.</li>
+        <li>Menjelaskan kode baris per baris alih-alih alasan perubahannya.</li>
+      </ul>
+      <blockquote>Commit yang kecil dan fokus jauh lebih mudah ditinjau, dibatalkan, dan dipahami daripada satu commit raksasa.</blockquote>
+
+      <h2 id="penutup">Penutup</h2>
+      <p>Kamu tidak perlu menerapkan semuanya sekaligus. Mulailah dari subjek yang jelas dan berbentuk perintah, lalu biasakan menulis satu atau dua kalimat alasan untuk perubahan yang tidak sepele. Rekan setim, dan dirimu sendiri di masa depan, akan berterima kasih.</p>
+    </article>
+
+    <nav class="toc" aria-label="Daftar isi">
+      <details open>
+        <summary>Daftar isi</summary>
+        <h2>Daftar isi</h2>
+        <ol id="toc-list"></ol>
+      </details>
+    </nav>
+  </div>
+
+  <button class="to-top" id="to-top" type="button" aria-label="Kembali ke atas">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+  </button>
+
+  <script>
+    const article = document.getElementById('article');
+    const progress = document.getElementById('progress');
+    const toTop = document.getElementById('to-top');
+    const tocList = document.getElementById('toc-list');
+    const WORDS_PER_MINUTE = 200;
+
+    // Estimasi waktu baca
+    const words = article.innerText.trim().split(/\s+/).length;
+    document.getElementById('reading-time').textContent = `${Math.max(1, Math.round(words / WORDS_PER_MINUTE))} menit baca`;
+
+    // Daftar isi otomatis dari h2 dan h3
+    const slugify = (text) => text.toLowerCase().normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
+    const headings = [...article.querySelectorAll('h2, h3')];
+    const links = headings.map((h) => {
+      if (!h.id) h.id = slugify(h.textContent);
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = `#${h.id}`;
+      a.textContent = h.textContent;
+      if (h.tagName === 'H3') a.className = 'sub';
+      li.append(a);
+      tocList.append(li);
+      return a;
+    });
+
+    // Di layar kecil daftar isi dimulai tertutup agar tidak menutupi artikel
+    if (matchMedia('(max-width: 900px)').matches) document.querySelector('.toc details').open = false;
+
+    // Bagian aktif = heading terakhir yang sudah melewati 30% bagian atas layar
+    function updateActive() {
+      const threshold = window.innerHeight * 0.3;
+      let current = headings[0];
+      for (const h of headings) {
+        if (h.getBoundingClientRect().top > threshold) break;
+        current = h;
+      }
+      links.forEach((a) => {
+        const active = a.getAttribute('href') === `#${current.id}`;
+        a.classList.toggle('active', active);
+        if (active) a.setAttribute('aria-current', 'true');
+        else a.removeAttribute('aria-current');
+      });
+    }
+
+    // Progress bar, bagian aktif, dan tombol kembali ke atas
+    let ticking = false;
+    function onScroll() {
+      updateActive();
+      const start = article.offsetTop;
+      const end = article.offsetTop + article.offsetHeight - window.innerHeight;
+      const ratio = end > start ? (window.scrollY - start) / (end - start) : 1;
+      progress.style.transform = `scaleX(${Math.min(1, Math.max(0, ratio))})`;
+      toTop.classList.toggle('visible', window.scrollY > 600);
+      ticking = false;
+    }
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(onScroll);
+      }
+    }, { passive: true });
+    toTop.addEventListener('click', () => {
+      window.scrollTo({ top: 0 });
+      document.querySelector('h1').setAttribute('tabindex', '-1');
+      document.querySelector('h1').focus({ preventScroll: true });
+    });
+    onScroll();
+  </script>
+</body>
+</html>

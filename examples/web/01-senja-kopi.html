@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Senja Kopi — Kopi Lokal untuk Menutup Hari</title>
+  <meta name="description" content="Senja Kopi menyajikan kopi dari biji pilihan petani lokal Indonesia. Lihat menu, jam buka, dan lokasi kami.">
+  <style>
+    :root {
+      --bg: #fbf7f2;
+      --surface: #ffffff;
+      --text: #2b1d14;
+      --muted: #6f5b4b;
+      --brand: #b5532a;
+      --brand-dark: #8a3c1b;
+      --accent: #f2c48d;
+      --line: rgba(43, 29, 20, 0.12);
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(43, 29, 20, 0.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    svg { display: block; }
+    .container { width: min(100% - 2rem, 1120px); margin-inline: auto; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: .85rem 1.4rem; border-radius: 999px; border: 2px solid transparent;
+      font: inherit; font-weight: 600; text-decoration: none; cursor: pointer;
+      transition: transform .2s, background-color .2s;
+    }
+    .btn-primary { background: var(--brand); color: #fff; }
+    .btn-primary:hover { background: var(--brand-dark); transform: translateY(-2px); }
+    .btn-ghost { border-color: currentColor; color: var(--text); }
+
+    /* Header */
+    .header {
+      position: sticky; top: 0; z-index: 10;
+      background: rgba(251, 247, 242, .92); backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav { position: relative; display: flex; align-items: center; justify-content: space-between; height: 68px; }
+    .logo { font-weight: 800; font-size: 1.3rem; text-decoration: none; color: var(--text); letter-spacing: -.02em; }
+    .logo span { color: var(--brand); }
+    .nav-links { display: flex; gap: 1.75rem; list-style: none; margin: 0; padding: 0; }
+    .nav-links a { text-decoration: none; font-weight: 500; color: var(--muted); }
+    .nav-links a:hover { color: var(--brand); }
+    .menu-toggle { display: none; background: none; border: 0; padding: .5rem; cursor: pointer; color: var(--text); }
+
+    /* Hero */
+    .hero { padding: clamp(3rem, 8vw, 6rem) 0; }
+    .hero-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 3rem; align-items: center; }
+    .eyebrow {
+      display: inline-block; background: #f6e3cf; color: var(--brand-dark);
+      padding: .35rem .8rem; border-radius: 999px; font-size: .85rem; font-weight: 600;
+    }
+    h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); line-height: 1.1; margin: 1rem 0; letter-spacing: -.03em; }
+    .hero p { color: var(--muted); font-size: 1.1rem; max-width: 34rem; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2rem; }
+    .hero-art {
+      aspect-ratio: 1; display: grid; place-items: center; box-shadow: var(--shadow);
+      background: radial-gradient(circle at 30% 30%, #f7d9b5, #e9a874 60%, #b5532a);
+      border-radius: 40% 60% 55% 45% / 50% 40% 60% 50%;
+    }
+    .hero-art svg { width: 62%; }
+
+    /* Sections */
+    section { padding: clamp(3rem, 7vw, 5rem) 0; }
+    .section-title { text-align: center; max-width: 40rem; margin: 0 auto 2.5rem; }
+    .section-title h2 { font-size: clamp(1.8rem, 3.5vw, 2.4rem); margin: 0 0 .5rem; letter-spacing: -.02em; }
+    .section-title p { color: var(--muted); margin: 0; }
+    .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+    .card { background: var(--surface); border-radius: var(--radius); padding: 1.75rem; box-shadow: var(--shadow); }
+    .card h3 { margin: 1rem 0 .4rem; }
+    .card p { margin: 0; color: var(--muted); }
+    .icon { width: 48px; height: 48px; border-radius: 12px; background: #f6e3cf; color: var(--brand); display: grid; place-items: center; }
+
+    /* Menu */
+    .tabs { display: flex; justify-content: center; flex-wrap: wrap; gap: .5rem; margin-bottom: 2rem; }
+    .tab {
+      padding: .6rem 1.2rem; border-radius: 999px; border: 1px solid var(--line);
+      background: var(--surface); color: var(--muted); font: inherit; font-weight: 600; cursor: pointer;
+    }
+    .tab[aria-selected="true"] { background: var(--text); border-color: var(--text); color: #fff; }
+    .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 2.5rem; }
+    .menu-item { display: flex; align-items: baseline; gap: .75rem; padding: 1rem 0; border-bottom: 1px dashed var(--line); }
+    .menu-item h3 { margin: 0; font-size: 1.05rem; }
+    .menu-item p { margin: .2rem 0 0; color: var(--muted); font-size: .92rem; }
+    .price { margin-left: auto; font-weight: 700; color: var(--brand); white-space: nowrap; }
+    .badge {
+      margin-left: .4rem; padding: .1rem .5rem; border-radius: 999px;
+      background: var(--accent); font-size: .7rem; font-weight: 700; vertical-align: middle;
+    }
+
+    /* Testimonials */
+    .testimonials { background: var(--text); color: #fff; }
+    .testimonials .section-title p { color: #d9c7b8; }
+    .quotes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+    blockquote {
+      margin: 0; padding: 1.5rem; border-radius: var(--radius);
+      background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .12);
+    }
+    blockquote p { margin: 0 0 1rem; }
+    blockquote footer { color: var(--accent); font-weight: 600; font-size: .95rem; }
+
+    /* Visit */
+    .visit { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
+    .visit h2 { margin-top: 0; font-size: clamp(1.8rem, 3.5vw, 2.4rem); }
+    .hours { list-style: none; padding: 0; margin: 1.25rem 0 0; }
+    .hours li { display: flex; justify-content: space-between; padding: .6rem 0; border-bottom: 1px solid var(--line); }
+    .status {
+      display: inline-flex; align-items: center; gap: .5rem; padding: .4rem .9rem; border-radius: 999px;
+      background: #fdecea; color: #a12b1f; font-weight: 700;
+    }
+    .status.open { background: #e7f6ec; color: #1d7a3e; }
+    .status::before { content: ""; width: .6rem; height: .6rem; border-radius: 50%; background: currentColor; }
+    .map {
+      min-height: 280px; display: grid; place-items: center; padding: 2rem; text-align: center;
+      border-radius: var(--radius); color: var(--muted);
+      background: repeating-linear-gradient(45deg, #efe4d8 0 12px, #f6ede3 12px 24px);
+    }
+    .site-footer { padding: 2rem 0; text-align: center; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--line); }
+
+    @media (max-width: 860px) {
+      .hero-grid, .visit, .features, .quotes, .menu-grid { grid-template-columns: 1fr; }
+      .hero-art { width: min(100%, 320px); margin-inline: auto; }
+    }
+    @media (max-width: 720px) {
+      .menu-toggle { display: block; }
+      .nav-links {
+        display: none; position: absolute; top: 68px; left: -1rem; right: -1rem;
+        flex-direction: column; gap: 0; background: var(--bg); border-bottom: 1px solid var(--line);
+      }
+      .nav-links.open { display: flex; }
+      .nav-links a { display: block; padding: 1rem 1.5rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      * { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <nav class="container nav" aria-label="Navigasi utama">
+      <a href="#" class="logo">Senja<span>Kopi</span></a>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Buka menu">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#tentang">Tentang</a></li>
+        <li><a href="#menu">Menu</a></li>
+        <li><a href="#ulasan">Ulasan</a></li>
+        <li><a href="#kunjungi">Kunjungi</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <span class="eyebrow">Kopi lokal · Diseduh setiap hari</span>
+          <h1>Secangkir kopi untuk menutup harimu.</h1>
+          <p>Biji kopi pilihan dari petani Gayo, Toraja, dan Flores, kami sangrai sendiri dalam jumlah kecil supaya setiap cangkir selalu segar.</p>
+          <div class="hero-actions">
+            <a href="#menu" class="btn btn-primary">Lihat Menu</a>
+            <a href="#kunjungi" class="btn btn-ghost">Cara ke Sini</a>
+          </div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <svg viewBox="0 0 200 200" fill="none">
+            <path d="M80 30c-8 12 8 18 0 30M100 24c-8 12 8 18 0 30M120 30c-8 12 8 18 0 30" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8"/>
+            <path d="M150 92h10a20 20 0 0 1 0 40h-14" stroke="#fff" stroke-width="10" stroke-linecap="round"/>
+            <path d="M40 80h110v40a55 55 0 0 1-110 0z" fill="#fff"/>
+            <ellipse cx="95" cy="82" rx="52" ry="8" fill="#6b3a1e"/>
+            <path d="M30 184h130" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section id="tentang">
+      <div class="container">
+        <div class="section-title">
+          <h2>Kenapa Senja Kopi?</h2>
+          <p>Kami percaya kopi yang enak dimulai dari hubungan yang adil dengan petani.</p>
+        </div>
+        <div class="features">
+          <article class="card">
+            <div class="icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22c4-4 8-7.5 8-12a8 8 0 0 0-16 0c0 4.5 4 8 8 12z"/><circle cx="12" cy="10" r="3"/></svg></div>
+            <h3>Single origin</h3>
+            <p>Setiap biji bisa ditelusuri sampai ke kebun asalnya. Rasanya jujur, khas daerahnya.</p>
+          </article>
+          <article class="card">
+            <div class="icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14 0-4 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></div>
+            <h3>Sangrai sendiri</h3>
+            <p>Kami sangrai seminggu sekali dalam batch kecil, jadi kopi yang kamu minum selalu segar.</p>
+          </article>
+          <article class="card">
+            <div class="icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg></div>
+            <h3>Nyaman untuk kerja</h3>
+            <p>Wi-Fi kencang, colokan di setiap meja, dan musik yang tidak terlalu keras.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="menu">
+      <div class="container">
+        <div class="section-title">
+          <h2>Menu Kami</h2>
+          <p>Harga sudah termasuk pajak. Bisa pesan untuk dibawa pulang.</p>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Kategori menu">
+          <button class="tab" type="button" role="tab" id="tab-kopi" data-category="kopi" aria-controls="menu-panel">Kopi</button>
+          <button class="tab" type="button" role="tab" id="tab-nonkopi" data-category="nonkopi" aria-controls="menu-panel">Non-kopi</button>
+          <button class="tab" type="button" role="tab" id="tab-makanan" data-category="makanan" aria-controls="menu-panel">Makanan</button>
+        </div>
+        <div class="menu-grid" id="menu-panel" role="tabpanel" aria-labelledby="tab-kopi"></div>
+      </div>
+    </section>
+
+    <section id="ulasan" class="testimonials">
+      <div class="container">
+        <div class="section-title">
+          <h2>Kata Mereka</h2>
+          <p>Ulasan dari pelanggan setia kami.</p>
+        </div>
+        <!-- Ganti dengan ulasan asli dari pelanggan. -->
+        <div class="quotes">
+          <blockquote>
+            <p>"Kopi susunya seimbang, manisnya pas. Tempat favorit buat ngerjain skripsi."</p>
+            <footer>Dinda, mahasiswa</footer>
+          </blockquote>
+          <blockquote>
+            <p>"V60 Gayo-nya juara. Baristanya mau jelasin karakter tiap biji dengan sabar."</p>
+            <footer>Hendra, karyawan swasta</footer>
+          </blockquote>
+          <blockquote>
+            <p>"Suasananya tenang dan colokannya banyak. Saya bisa kerja di sini seharian."</p>
+            <footer>Maya, penulis lepas</footer>
+          </blockquote>
+        </div>
+      </div>
+    </section>
+
+    <section id="kunjungi">
+      <div class="container visit">
+        <div>
+          <h2>Mampir, yuk!</h2>
+          <p id="open-status" class="status" role="status">Memeriksa jam buka…</p>
+          <p>Jl. Contoh Raya No. 12, Bandung<br>Parkir motor dan mobil tersedia.</p>
+          <ul class="hours">
+            <li><span>Senin – Jumat</span><span>07.00 – 22.00</span></li>
+            <li><span>Sabtu – Minggu</span><span>08.00 – 23.00</span></li>
+          </ul>
+        </div>
+        <!-- Ganti dengan <iframe> dari Google Maps: Bagikan → Sematkan peta. -->
+        <div class="map">Tempat untuk peta lokasi</div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">© <span id="year"></span> Senja Kopi. Dibuat dengan cinta dan kafein.</div>
+  </footer>
+
+  <script>
+    // Navigasi mobile
+    const toggle = document.querySelector('.menu-toggle');
+    const navLinks = document.getElementById('nav-links');
+
+    function setMenu(open) {
+      navLinks.classList.toggle('open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.setAttribute('aria-label', open ? 'Tutup menu' : 'Buka menu');
+    }
+    toggle.addEventListener('click', () => setMenu(!navLinks.classList.contains('open')));
+    navLinks.addEventListener('click', (e) => {
+      if (e.target.closest('a')) setMenu(false);
+    });
+
+    // Data menu
+    const MENU = {
+      kopi: [
+        { name: 'Kopi Susu Senja', desc: 'Espresso, susu segar, gula aren', price: 22000, badge: 'Favorit' },
+        { name: 'Es Kopi Aren', desc: 'Double shot dengan sirup aren asli', price: 24000 },
+        { name: 'Cappuccino', desc: 'Espresso dan busa susu lembut', price: 28000 },
+        { name: 'V60 Gayo', desc: 'Seduh manual, rasa buah dan cokelat', price: 30000 },
+        { name: 'Kopi Tubruk Toraja', desc: 'Pekat, tradisional, tanpa ampas berlebih', price: 20000 },
+        { name: 'Espresso', desc: 'Satu shot, blend rumah', price: 18000 }
+      ],
+      nonkopi: [
+        { name: 'Matcha Latte', desc: 'Matcha dan susu segar', price: 28000 },
+        { name: 'Cokelat Panas', desc: 'Cokelat hitam 60%', price: 25000 },
+        { name: 'Teh Tarik', desc: 'Teh hitam dan susu kental manis', price: 20000 },
+        { name: 'Es Lemon Tea', desc: 'Teh melati dan lemon segar', price: 18000 }
+      ],
+      makanan: [
+        { name: 'Croissant Mentega', desc: 'Dipanggang setiap pagi', price: 22000 },
+        { name: 'Pisang Goreng Keju', desc: 'Pisang kepok, keju, susu', price: 20000, badge: 'Baru' },
+        { name: 'Roti Bakar Srikaya', desc: 'Srikaya buatan sendiri', price: 18000 },
+        { name: 'Nasi Goreng Kampung', desc: 'Dengan telur ceplok dan kerupuk', price: 32000 }
+      ]
+    };
+
+    const rupiah = new Intl.NumberFormat('id-ID', {
+      style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0
+    });
+    const panel = document.getElementById('menu-panel');
+    const tabs = [...document.querySelectorAll('[role="tab"]')];
+
+    function renderMenu(category) {
+      panel.replaceChildren(...MENU[category].map((item) => {
+        const row = document.createElement('div');
+        row.className = 'menu-item';
+        const info = document.createElement('div');
+        const title = document.createElement('h3');
+        title.textContent = item.name;
+        if (item.badge) {
+          const badge = document.createElement('span');
+          badge.className = 'badge';
+          badge.textContent = item.badge;
+          title.append(badge);
+        }
+        const desc = document.createElement('p');
+        desc.textContent = item.desc;
+        info.append(title, desc);
+        const price = document.createElement('span');
+        price.className = 'price';
+        price.textContent = rupiah.format(item.price);
+        row.append(info, price);
+        return row;
+      }));
+    }
+
+    function selectTab(tab) {
+      tabs.forEach((t) => {
+        const selected = t === tab;
+        t.setAttribute('aria-selected', String(selected));
+        t.tabIndex = selected ? 0 : -1;
+      });
+      panel.setAttribute('aria-labelledby', tab.id);
+      renderMenu(tab.dataset.category);
+    }
+
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => selectTab(tab));
+      tab.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        const step = e.key === 'ArrowRight' ? 1 : tabs.length - 1;
+        const next = tabs[(i + step) % tabs.length];
+        next.focus();
+        selectTab(next);
+      });
+    });
+    selectTab(tabs[0]);
+
+    // Status buka/tutup berdasarkan jam perangkat pengunjung (0 = Minggu)
+    const HOURS = { 0: [8, 23], 1: [7, 22], 2: [7, 22], 3: [7, 22], 4: [7, 22], 5: [7, 22], 6: [8, 23] };
+    const statusEl = document.getElementById('open-status');
+    const pad = (h) => String(h).padStart(2, '0') + '.00';
+
+    function updateStatus() {
+      const now = new Date();
+      const [open, close] = HOURS[now.getDay()];
+      const hour = now.getHours() + now.getMinutes() / 60;
+      const isOpen = hour >= open && hour < close;
+      statusEl.classList.toggle('open', isOpen);
+      if (isOpen) {
+        statusEl.textContent = `Buka sekarang · tutup pukul ${pad(close)}`;
+      } else {
+        const opensToday = hour < open;
+        const nextOpen = opensToday ? open : HOURS[(now.getDay() + 1) % 7][0];
+        statusEl.textContent = `Sedang tutup · buka ${opensToday ? 'hari ini' : 'besok'} pukul ${pad(nextOpen)}`;
+      }
+    }
+    updateStatus();
+    setInterval(updateStatus, 60 * 1000);
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
