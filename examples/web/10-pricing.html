@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harga Paket — KasirKu</title>
+  <meta name="description" content="Pilih paket KasirKu yang sesuai dengan usahamu. Hemat 20% dengan pembayaran tahunan.">
+  <style>
+    :root {
+      --bg: #ffffff; --soft: #f5f7ff; --text: #101828; --muted: #667085; --border: #eaecf0;
+      --brand: #6941c6; --brand-dark: #53389e; --brand-soft: #f4ebff; --ok: #12b76a;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: var(--bg); line-height: 1.5; }
+    .container { width: min(100% - 2rem, 1120px); margin-inline: auto; }
+    :focus-visible { outline: 3px solid #d6bbfb; outline-offset: 2px; }
+
+    .hero { text-align: center; padding: clamp(3rem, 8vw, 5rem) 0 2.5rem; background: linear-gradient(180deg, var(--soft), var(--bg)); }
+    .hero small { color: var(--brand); font-weight: 700; }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3rem); margin: .5rem 0; letter-spacing: -.02em; }
+    .hero p { color: var(--muted); font-size: 1.15rem; margin: 0 auto; max-width: 36rem; }
+
+    .billing { display: inline-flex; align-items: center; gap: .75rem; margin-top: 2rem; font-weight: 600; }
+    .switch { position: relative; width: 52px; height: 30px; border: 0; border-radius: 999px; background: #d0d5dd; cursor: pointer; padding: 0; transition: background-color .2s; }
+    .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .2); transition: transform .2s; }
+    .switch[aria-checked="true"] { background: var(--brand); }
+    .switch[aria-checked="true"]::after { transform: translateX(22px); }
+    .save-badge { padding: .2rem .6rem; border-radius: 999px; background: #ecfdf3; color: #027a48; font-size: .8rem; }
+
+    .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; padding: 1rem 0 4rem; align-items: start; }
+    .plan { position: relative; border: 1px solid var(--border); border-radius: 20px; padding: 2rem; background: #fff; }
+    .plan.featured { border: 2px solid var(--brand); box-shadow: 0 20px 40px rgba(105, 65, 198, .15); }
+    .popular { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); padding: .25rem .9rem; border-radius: 999px; background: var(--brand); color: #fff; font-size: .8rem; font-weight: 700; white-space: nowrap; }
+    .plan h2 { margin: 0; font-size: 1.25rem; }
+    .plan .desc { color: var(--muted); margin: .4rem 0 1.5rem; min-height: 3em; }
+    .price { font-size: 2.4rem; font-weight: 800; letter-spacing: -.02em; }
+    .price small { font-size: 1rem; color: var(--muted); font-weight: 500; }
+    .billed { color: var(--muted); font-size: .9rem; min-height: 1.4em; margin: .25rem 0 1.5rem; }
+    .cta { display: block; text-align: center; padding: .85rem; border-radius: 10px; font-weight: 700; text-decoration: none; border: 1px solid var(--border); color: var(--text); }
+    .featured .cta { background: var(--brand); border-color: var(--brand); color: #fff; }
+    .featured .cta:hover { background: var(--brand-dark); }
+    .features { list-style: none; padding: 0; margin: 1.75rem 0 0; display: grid; gap: .7rem; }
+    .features li { display: flex; gap: .6rem; }
+    .features li::before { content: "✓"; color: var(--ok); font-weight: 800; }
+
+    section h2.title { text-align: center; font-size: clamp(1.6rem, 3.5vw, 2.2rem); margin: 0 0 2rem; }
+    .compare { padding: 0 0 4rem; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 16px; }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; }
+    th, td { padding: 1rem; border-bottom: 1px solid var(--border); text-align: center; }
+    th:first-child, td:first-child { text-align: left; }
+    thead th { background: var(--soft); }
+    tbody tr:last-child td { border-bottom: 0; }
+    .yes { color: var(--ok); font-weight: 800; }
+    .no { color: #98a2b3; }
+
+    .faq { padding: 0 0 5rem; }
+    .faq-list { max-width: 760px; margin: 0 auto; }
+    details { border-bottom: 1px solid var(--border); }
+    summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 1rem; padding: 1.25rem 0; font-weight: 700; }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "+"; font-size: 1.4rem; line-height: 1; color: var(--brand); transition: transform .2s; }
+    details[open] summary::after { transform: rotate(45deg); }
+    details p { margin: 0 0 1.25rem; color: var(--muted); }
+
+    @media (max-width: 900px) {
+      .plans { grid-template-columns: 1fr; max-width: 460px; margin-inline: auto; gap: 2rem; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="container">
+      <small>Harga</small>
+      <h1>Paket sederhana untuk setiap usaha</h1>
+      <p>Coba gratis 14 hari tanpa kartu kredit. Ganti atau batalkan paket kapan saja.</p>
+      <div class="billing">
+        <span id="label-monthly">Bulanan</span>
+        <button class="switch" id="billing-switch" type="button" role="switch" aria-checked="false" aria-labelledby="label-yearly"></button>
+        <span id="label-yearly">Tahunan</span>
+        <span class="save-badge">Hemat 20%</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="container plans" id="plans" aria-label="Paket harga"></section>
+
+    <section class="container compare">
+      <h2 class="title">Bandingkan fitur</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th scope="col">Fitur</th><th scope="col">Starter</th><th scope="col">Pro</th><th scope="col">Bisnis</th></tr>
+          </thead>
+          <tbody id="compare-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="container faq">
+      <h2 class="title">Pertanyaan yang sering diajukan</h2>
+      <div class="faq-list">
+        <details>
+          <summary>Apakah ada biaya tersembunyi?</summary>
+          <p>Tidak ada. Harga yang tertera sudah termasuk pembaruan aplikasi dan dukungan pelanggan. Biaya transaksi QRIS mengikuti ketentuan penyedia pembayaran.</p>
+        </details>
+        <details>
+          <summary>Bisakah saya pindah paket di tengah periode?</summary>
+          <p>Bisa. Saat naik paket, kamu hanya membayar selisih untuk sisa periode. Saat turun paket, perubahan berlaku di periode berikutnya.</p>
+        </details>
+        <details>
+          <summary>Apa yang terjadi setelah masa coba gratis selesai?</summary>
+          <p>Akunmu otomatis pindah ke mode baca saja. Data tetap aman dan bisa diaktifkan kembali kapan saja dengan memilih paket.</p>
+        </details>
+        <details>
+          <summary>Apakah KasirKu bisa dipakai tanpa internet?</summary>
+          <p>Paket Pro dan Bisnis mendukung mode offline. Transaksi disimpan di perangkat dan disinkronkan saat koneksi kembali.</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const YEARLY_DISCOUNT = 0.2;
+    const PLANS = [
+      { name: 'Starter', desc: 'Untuk warung dan usaha yang baru mulai.', monthly: 49000, features: ['1 outlet', '1 akun kasir', 'Laporan penjualan harian', 'Pembayaran tunai & QRIS'] },
+      { name: 'Pro', desc: 'Untuk kafe dan toko yang sedang berkembang.', monthly: 99000, featured: true, features: ['Hingga 3 outlet', '5 akun kasir', 'Manajemen stok otomatis', 'Mode offline', 'Program loyalitas pelanggan'] },
+      { name: 'Bisnis', desc: 'Untuk jaringan usaha dengan banyak cabang.', monthly: 199000, features: ['Outlet tanpa batas', 'Akun kasir tanpa batas', 'Laporan konsolidasi cabang', 'Akses API', 'Dukungan prioritas 24/7'] }
+    ];
+    const COMPARE = [
+      ['Jumlah outlet', '1', '3', 'Tanpa batas'],
+      ['Akun kasir', '1', '5', 'Tanpa batas'],
+      ['Pembayaran QRIS', true, true, true],
+      ['Manajemen stok', false, true, true],
+      ['Mode offline', false, true, true],
+      ['Laporan multi-cabang', false, false, true],
+      ['Akses API', false, false, true]
+    ];
+
+    const rupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    const plansEl = document.getElementById('plans');
+    const switchEl = document.getElementById('billing-switch');
+    let yearly = false;
+
+    function priceFor(plan) {
+      const perMonth = yearly ? Math.round(plan.monthly * (1 - YEARLY_DISCOUNT) / 1000) * 1000 : plan.monthly;
+      return { perMonth, perYear: perMonth * 12 };
+    }
+
+    function renderPlans() {
+      plansEl.replaceChildren(...PLANS.map((plan) => {
+        const { perMonth, perYear } = priceFor(plan);
+        const card = document.createElement('article');
+        card.className = 'plan' + (plan.featured ? ' featured' : '');
+        card.innerHTML = `
+          ${plan.featured ? '<span class="popular">Paling populer</span>' : ''}
+          <h2></h2>
+          <p class="desc"></p>
+          <div class="price"><span class="amount"></span> <small>/bulan</small></div>
+          <p class="billed"></p>
+          <a class="cta" href="#">Coba gratis 14 hari</a>
+          <ul class="features"></ul>`;
+        card.querySelector('h2').textContent = plan.name;
+        card.querySelector('.desc').textContent = plan.desc;
+        card.querySelector('.amount').textContent = rupiah.format(perMonth);
+        card.querySelector('.billed').textContent = yearly
+          ? `Ditagih ${rupiah.format(perYear)} per tahun`
+          : 'Ditagih setiap bulan';
+        card.querySelector('.cta').setAttribute('aria-label', `Coba gratis paket ${plan.name}`);
+        card.querySelector('.features').append(...plan.features.map((f) => Object.assign(document.createElement('li'), { textContent: f })));
+        return card;
+      }));
+    }
+
+    function renderCompare() {
+      document.getElementById('compare-body').replaceChildren(...COMPARE.map(([feature, ...values]) => {
+        const tr = document.createElement('tr');
+        const th = Object.assign(document.createElement('th'), { scope: 'row', textContent: feature });
+        th.style.fontWeight = '500';
+        tr.append(th);
+        values.forEach((v) => {
+          const td = document.createElement('td');
+          if (typeof v === 'boolean') {
+            const mark = Object.assign(document.createElement('span'), { className: v ? 'yes' : 'no', textContent: v ? '✓' : '—' });
+            mark.setAttribute('aria-label', v ? 'Termasuk' : 'Tidak termasuk');
+            td.append(mark);
+          } else {
+            td.textContent = v;
+          }
+          tr.append(td);
+        });
+        return tr;
+      }));
+    }
+
+    switchEl.addEventListener('click', () => {
+      yearly = !yearly;
+      switchEl.setAttribute('aria-checked', String(yearly));
+      renderPlans();
+    });
+
+    renderPlans();
+    renderCompare();
+  </script>
+</body>
+</html>

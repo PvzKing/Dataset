@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator</title>
+  <style>
+    :root {
+      --bg: #0f172a; --body: #1e293b; --key: #334155; --key-hover: #475569;
+      --text: #f8fafc; --muted: #94a3b8; --op: #f59e0b; --op-hover: #fbbf24; --fn: #64748b;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 1rem;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at top, #1e3a8a 0%, var(--bg) 60%); color: var(--text);
+    }
+    .calculator {
+      width: min(100%, 360px); padding: 1.25rem; border-radius: 28px;
+      background: var(--body); box-shadow: 0 30px 60px rgba(0, 0, 0, .45);
+    }
+    .display {
+      min-height: 130px; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end;
+      padding: .5rem .75rem 1rem; overflow: hidden;
+    }
+    .expression { color: var(--muted); font-size: 1.1rem; min-height: 1.6em; word-break: break-all; text-align: right; }
+    .result { font-size: clamp(2rem, 11vw, 3rem); font-weight: 300; line-height: 1.1; word-break: break-all; text-align: right; }
+    .result.error { font-size: 1.4rem; color: #fca5a5; }
+    .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; }
+    .key {
+      aspect-ratio: 1; border: 0; border-radius: 50%; cursor: pointer;
+      background: var(--key); color: var(--text); font: inherit; font-size: 1.5rem;
+      transition: background-color .15s, transform .08s;
+    }
+    .key:hover { background: var(--key-hover); }
+    .key:active, .key.pressed { transform: scale(.94); }
+    .key.fn { background: var(--fn); font-size: 1.2rem; }
+    .key.op { background: var(--op); color: #111827; font-weight: 600; }
+    .key.op:hover { background: var(--op-hover); }
+    .key:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+    .hint { margin-top: 1rem; text-align: center; color: var(--muted); font-size: .8rem; }
+  </style>
+</head>
+<body>
+  <main class="calculator" aria-label="Kalkulator">
+    <div class="display">
+      <div class="expression" id="expression" aria-label="Ekspresi"></div>
+      <output class="result" id="result" aria-live="polite">0</output>
+    </div>
+    <div class="keys">
+      <button class="key fn" type="button" data-action="clear" aria-label="Hapus semua">AC</button>
+      <button class="key fn" type="button" data-action="backspace" aria-label="Hapus satu">⌫</button>
+      <button class="key fn" type="button" data-action="percent" aria-label="Persen">%</button>
+      <button class="key op" type="button" data-op="÷" aria-label="Bagi">÷</button>
+      <button class="key" type="button" data-digit="7">7</button>
+      <button class="key" type="button" data-digit="8">8</button>
+      <button class="key" type="button" data-digit="9">9</button>
+      <button class="key op" type="button" data-op="×" aria-label="Kali">×</button>
+      <button class="key" type="button" data-digit="4">4</button>
+      <button class="key" type="button" data-digit="5">5</button>
+      <button class="key" type="button" data-digit="6">6</button>
+      <button class="key op" type="button" data-op="−" aria-label="Kurang">−</button>
+      <button class="key" type="button" data-digit="1">1</button>
+      <button class="key" type="button" data-digit="2">2</button>
+      <button class="key" type="button" data-digit="3">3</button>
+      <button class="key op" type="button" data-op="+" aria-label="Tambah">+</button>
+      <button class="key fn" type="button" data-action="negate" aria-label="Ubah tanda">±</button>
+      <button class="key" type="button" data-digit="0">0</button>
+      <button class="key" type="button" data-action="decimal" aria-label="Koma desimal">,</button>
+      <button class="key op" type="button" data-action="equals" aria-label="Sama dengan">=</button>
+    </div>
+    <p class="hint">Bisa pakai keyboard: angka, + − * /, Enter, Backspace, Esc</p>
+  </main>
+
+  <script>
+    const OPERATORS = ['+', '−', '×', '÷'];
+    const MAX_DIGITS = 15;
+    const expressionEl = document.getElementById('expression');
+    const resultEl = document.getElementById('result');
+
+    // Ekspresi disimpan sebagai token: angka (string, desimal pakai titik) dan operator.
+    let tokens = [];
+    let justEvaluated = false;
+    let errorMessage = '';
+
+    const isOperator = (t) => OPERATORS.includes(t);
+    const last = () => tokens[tokens.length - 1];
+    const setLast = (value) => { tokens[tokens.length - 1] = value; };
+
+    function evaluate(list) {
+      const t = [...list];
+      if (isOperator(t[t.length - 1])) t.pop();
+      if (t.length === 0) return 0;
+      // Kali dan bagi dikerjakan dulu, hasilnya dijumlahkan di akhir.
+      const terms = [parseFloat(t[0])];
+      for (let i = 1; i < t.length; i += 2) {
+        const op = t[i];
+        const num = parseFloat(t[i + 1]);
+        if (op === '×') terms.push(terms.pop() * num);
+        else if (op === '÷') {
+          if (num === 0) throw new Error('Tidak bisa dibagi nol');
+          terms.push(terms.pop() / num);
+        } else terms.push(op === '−' ? -num : num);
+      }
+      const total = terms.reduce((a, b) => a + b, 0);
+      if (!Number.isFinite(total)) throw new Error('Hasil terlalu besar');
+      return parseFloat(total.toPrecision(12)); // buang noise floating point, misal 0,1 + 0,2
+    }
+
+    function formatNumber(tok) {
+      if (/e/i.test(tok)) return tok.replace('.', ',');
+      const negative = tok.startsWith('-');
+      const [intPart, fracPart] = tok.replace('-', '').split('.');
+      const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      return (negative ? '−' : '') + grouped + (fracPart !== undefined ? ',' + fracPart : '');
+    }
+
+    function render() {
+      expressionEl.textContent = tokens.map((t) => (isOperator(t) ? ` ${t} ` : formatNumber(t))).join('');
+      resultEl.classList.toggle('error', Boolean(errorMessage));
+      if (errorMessage) {
+        resultEl.textContent = errorMessage;
+        return;
+      }
+      try {
+        resultEl.textContent = formatNumber(String(evaluate(tokens)));
+      } catch (e) {
+        resultEl.textContent = '…';
+      }
+    }
+
+    function startFresh() {
+      tokens = [];
+      justEvaluated = false;
+      errorMessage = '';
+    }
+
+    function inputDigit(d) {
+      if (justEvaluated || errorMessage) startFresh();
+      const tok = last();
+      if (tok === undefined || isOperator(tok)) tokens.push(d);
+      else if (tok.replace(/[-.]/g, '').length >= MAX_DIGITS) return;
+      else if (tok === '0') setLast(d);
+      else if (tok === '-0') setLast('-' + d);
+      else setLast(tok + d);
+    }
+
+    function inputDecimal() {
+      if (justEvaluated || errorMessage) startFresh();
+      const tok = last();
+      if (tok === undefined || isOperator(tok)) tokens.push('0.');
+      else if (!tok.includes('.') && !/e/i.test(tok)) setLast(tok + '.');
+    }
+
+    function inputOperator(op) {
+      if (errorMessage) return;
+      justEvaluated = false;
+      const tok = last();
+      if (tok === undefined) tokens.push('0', op);
+      else if (isOperator(tok)) setLast(op);
+      else tokens.push(op);
+    }
+
+    function applyToLastNumber(fn) {
+      if (errorMessage) return;
+      const tok = last();
+      if (tok === undefined || isOperator(tok)) return;
+      justEvaluated = false;
+      setLast(fn(tok));
+    }
+
+    function backspace() {
+      if (errorMessage || justEvaluated) return startFresh();
+      const tok = last();
+      if (tok === undefined) return;
+      if (isOperator(tok) || tok.length === 1 || /^-\d$/.test(tok)) tokens.pop();
+      else setLast(tok.slice(0, -1));
+    }
+
+    function equals() {
+      if (errorMessage || tokens.length === 0) return;
+      try {
+        tokens = [String(evaluate(tokens))];
+        justEvaluated = true;
+      } catch (e) {
+        errorMessage = e.message;
+      }
+    }
+
+    function handle(action, value) {
+      switch (action) {
+        case 'digit': inputDigit(value); break;
+        case 'decimal': inputDecimal(); break;
+        case 'op': inputOperator(value); break;
+        case 'clear': startFresh(); break;
+        case 'backspace': backspace(); break;
+        case 'negate': applyToLastNumber((t) => (t.startsWith('-') ? t.slice(1) : '-' + t)); break;
+        case 'percent': applyToLastNumber((t) => String(parseFloat((parseFloat(t) / 100).toPrecision(12)))); break;
+        case 'equals': equals(); break;
+      }
+      render();
+    }
+
+    document.querySelector('.keys').addEventListener('click', (e) => {
+      const key = e.target.closest('.key');
+      if (!key) return;
+      if (key.dataset.digit) handle('digit', key.dataset.digit);
+      else if (key.dataset.op) handle('op', key.dataset.op);
+      else handle(key.dataset.action);
+    });
+
+    const KEYMAP = {
+      '+': ['op', '+'], '-': ['op', '−'], '*': ['op', '×'], 'x': ['op', '×'], '/': ['op', '÷'],
+      '.': ['decimal'], ',': ['decimal'], '%': ['percent'],
+      'Enter': ['equals'], '=': ['equals'], 'Backspace': ['backspace'], 'Escape': ['clear'], 'Delete': ['clear']
+    };
+
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      let mapping = /^\d$/.test(e.key) ? ['digit', e.key] : KEYMAP[e.key];
+      if (!mapping) return;
+      e.preventDefault();
+      handle(...mapping);
+      const selector = mapping[0] === 'digit' ? `[data-digit="${e.key}"]`
+        : mapping[0] === 'op' ? `[data-op="${mapping[1]}"]`
+        : `[data-action="${mapping[0]}"]`;
+      const button = document.querySelector(selector);
+      if (button) {
+        button.classList.add('pressed');
+        setTimeout(() => button.classList.remove('pressed'), 100);
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>

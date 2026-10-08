@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulasi KPR</title>
+  <style>
+    :root {
+      --bg: #f0f4f8; --surface: #ffffff; --text: #102a43; --muted: #627d98; --border: #d9e2ec;
+      --brand: #0b7285; --principal: #0b7285; --interest: #f08c00; --danger: #c92a2a;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+    .container { width: min(100% - 2rem, 1080px); margin: 0 auto; padding: clamp(1.5rem, 5vw, 3rem) 0; }
+    h1 { margin: 0 0 .25rem; font-size: clamp(1.7rem, 4vw, 2.4rem); }
+    .lead { margin: 0 0 2rem; color: var(--muted); }
+    :focus-visible { outline: 3px solid #66d9e8; outline-offset: 2px; }
+    .layout { display: grid; grid-template-columns: 360px 1fr; gap: 1.5rem; align-items: start; }
+    .layout > * { min-width: 0; } /* supaya tabel lebar tidak memaksa kolom grid melebar */
+    .card { background: var(--surface); border-radius: 16px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(16, 42, 67, .08); }
+    .card h2 { margin: 0 0 1rem; font-size: 1.1rem; }
+
+    .field { margin-bottom: 1.1rem; }
+    .field label { display: block; font-weight: 600; margin-bottom: .35rem; }
+    .input-wrap { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #fff; }
+    .input-wrap:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(11, 114, 133, .15); }
+    .input-wrap span { padding: 0 .8rem; color: var(--muted); background: var(--bg); align-self: stretch; display: grid; place-items: center; }
+    .input-wrap input { flex: 1; min-width: 0; border: 0; padding: .7rem .8rem; font: inherit; outline: none; }
+    .hint { font-size: .85rem; color: var(--muted); margin: .3rem 0 0; }
+    .error { color: var(--danger); font-weight: 600; margin: 0; min-height: 1.5em; }
+
+    .summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .metric { padding: 1rem; border-radius: 12px; background: var(--bg); }
+    .metric p { margin: 0; color: var(--muted); font-size: .9rem; }
+    .metric strong { display: block; font-size: 1.3rem; margin-top: .2rem; }
+    .metric.highlight { grid-column: 1 / -1; background: var(--brand); color: #fff; }
+    .metric.highlight p { color: rgba(255, 255, 255, .85); }
+    .metric.highlight strong { font-size: 2rem; }
+
+    .split { display: flex; height: 14px; border-radius: 999px; overflow: hidden; margin: .5rem 0; }
+    .split div { transition: width .3s; }
+    .legend { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: .9rem; color: var(--muted); }
+    .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: .4rem; background: var(--c); }
+
+    .table-wrap { overflow-x: auto; margin-top: 1.5rem; }
+    table { width: 100%; border-collapse: collapse; min-width: 520px; font-variant-numeric: tabular-nums; }
+    th, td { padding: .6rem .75rem; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th:first-child, td:first-child { text-align: left; }
+    th { font-size: .85rem; color: var(--muted); }
+    .disclaimer { font-size: .85rem; color: var(--muted); margin: 1.5rem 0 0; }
+    @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+    @media (max-width: 420px) { .summary { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Simulasi KPR</h1>
+    <p class="lead">Hitung perkiraan cicilan bulanan rumah impianmu dengan bunga tetap (metode anuitas).</p>
+
+    <div class="layout">
+      <form class="card" id="form" novalidate>
+        <h2>Data pinjaman</h2>
+        <div class="field">
+          <label for="price">Harga rumah</label>
+          <div class="input-wrap"><span>Rp</span><input id="price" type="number" inputmode="numeric" min="1000000" step="1000000" value="750000000"></div>
+          <p class="hint" id="price-text"></p>
+        </div>
+        <div class="field">
+          <label for="dp">Uang muka</label>
+          <div class="input-wrap"><input id="dp" type="number" inputmode="decimal" min="0" max="90" step="1" value="20"><span>%</span></div>
+          <p class="hint" id="dp-text"></p>
+        </div>
+        <div class="field">
+          <label for="tenor">Jangka waktu</label>
+          <div class="input-wrap"><input id="tenor" type="number" inputmode="numeric" min="1" max="30" step="1" value="15"><span>tahun</span></div>
+        </div>
+        <div class="field">
+          <label for="rate">Suku bunga</label>
+          <div class="input-wrap"><input id="rate" type="number" inputmode="decimal" min="0" max="30" step="0.05" value="7.5"><span>% / tahun</span></div>
+        </div>
+        <p class="error" id="error" role="alert"></p>
+      </form>
+
+      <section class="card" aria-live="polite">
+        <h2>Hasil simulasi</h2>
+        <div class="summary">
+          <div class="metric highlight"><p>Cicilan per bulan</p><strong id="monthly">–</strong></div>
+          <div class="metric"><p>Pokok pinjaman</p><strong id="loan">–</strong></div>
+          <div class="metric"><p>Total bunga</p><strong id="interest">–</strong></div>
+          <div class="metric"><p>Total pembayaran</p><strong id="total">–</strong></div>
+          <div class="metric"><p>Jumlah angsuran</p><strong id="count">–</strong></div>
+        </div>
+        <div class="split" aria-hidden="true">
+          <div id="split-principal" style="background: var(--principal)"></div>
+          <div id="split-interest" style="background: var(--interest)"></div>
+        </div>
+        <div class="legend">
+          <span style="--c: var(--principal)" id="legend-principal">Pokok</span>
+          <span style="--c: var(--interest)" id="legend-interest">Bunga</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <caption class="hint" style="text-align:left; caption-side: top; margin-bottom: .5rem">Rekap angsuran per tahun</caption>
+            <thead><tr><th scope="col">Tahun</th><th scope="col">Pokok dibayar</th><th scope="col">Bunga dibayar</th><th scope="col">Sisa pinjaman</th></tr></thead>
+            <tbody id="schedule"></tbody>
+          </table>
+        </div>
+        <p class="disclaimer">Simulasi ini memakai bunga tetap selama seluruh tenor. Pada praktiknya banyak KPR memakai bunga tetap hanya di beberapa tahun pertama, lalu bunga mengambang. Biaya provisi, asuransi, notaris, dan pajak belum termasuk. Angka final mengikuti penawaran bank.</p>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const rupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    const inputs = ['price', 'dp', 'tenor', 'rate'].map($);
+
+    // Rumus anuitas: M = P × r / (1 − (1 + r)^−n)
+    function monthlyPayment(principal, monthlyRate, months) {
+      if (monthlyRate === 0) return principal / months;
+      return principal * monthlyRate / (1 - Math.pow(1 + monthlyRate, -months));
+    }
+
+    function buildSchedule(principal, monthlyRate, months, payment) {
+      const years = [];
+      let balance = principal;
+      for (let m = 1; m <= months; m++) {
+        const interest = balance * monthlyRate;
+        // Bulan terakhir melunasi sisa supaya pembulatan floating point tidak menyisakan saldo.
+        const principalPart = m === months ? balance : payment - interest;
+        balance -= principalPart;
+        const y = Math.ceil(m / 12) - 1;
+        years[y] = years[y] || { principal: 0, interest: 0, balance: 0 };
+        years[y].principal += principalPart;
+        years[y].interest += interest;
+        years[y].balance = Math.max(0, balance);
+      }
+      return years;
+    }
+
+    // Mengembalikan [id input yang salah, pesan] atau null jika semua valid.
+    function validate(price, dpPct, tenor, rate) {
+      if (!(price >= 1e6)) return ['price', 'Harga rumah minimal Rp1.000.000.'];
+      if (!(dpPct >= 0 && dpPct < 100)) return ['dp', 'Uang muka harus antara 0% dan di bawah 100%.'];
+      if (!(Number.isInteger(tenor) && tenor >= 1 && tenor <= 30)) return ['tenor', 'Jangka waktu harus bilangan bulat 1–30 tahun.'];
+      if (!(rate >= 0 && rate <= 30)) return ['rate', 'Suku bunga harus antara 0% dan 30% per tahun.'];
+      return null;
+    }
+
+    function calculate() {
+      const price = parseFloat($('price').value);
+      const dpPct = parseFloat($('dp').value);
+      const tenor = Number($('tenor').value);
+      const rate = parseFloat($('rate').value);
+      const problem = validate(price, dpPct, tenor, rate);
+      inputs.forEach((i) => i.setAttribute('aria-invalid', String(Boolean(problem) && i.id === problem[0])));
+      $('error').textContent = problem ? problem[1] : '';
+      if (problem) return;
+
+      const dp = price * dpPct / 100;
+      const principal = price - dp;
+      const months = tenor * 12;
+      const monthlyRate = rate / 100 / 12;
+      const payment = monthlyPayment(principal, monthlyRate, months);
+      const totalPaid = payment * months;
+      const totalInterest = totalPaid - principal;
+
+      $('price-text').textContent = rupiah.format(price);
+      $('dp-text').textContent = `Uang muka ${rupiah.format(dp)}`;
+      $('monthly').textContent = rupiah.format(payment);
+      $('loan').textContent = rupiah.format(principal);
+      $('interest').textContent = rupiah.format(totalInterest);
+      $('total').textContent = rupiah.format(totalPaid);
+      $('count').textContent = `${months} bulan`;
+
+      const principalShare = totalPaid > 0 ? (principal / totalPaid) * 100 : 100;
+      $('split-principal').style.width = `${principalShare}%`;
+      $('split-interest').style.width = `${100 - principalShare}%`;
+      const pct = (v) => v.toLocaleString('id-ID', { maximumFractionDigits: 1 });
+      $('legend-principal').textContent = `Pokok ${pct(principalShare)}%`;
+      $('legend-interest').textContent = `Bunga ${pct(100 - principalShare)}%`;
+
+      $('schedule').replaceChildren(...buildSchedule(principal, monthlyRate, months, payment).map((y, i) => {
+        const tr = document.createElement('tr');
+        [`Tahun ${i + 1}`, rupiah.format(y.principal), rupiah.format(y.interest), rupiah.format(y.balance)].forEach((text) => {
+          tr.append(Object.assign(document.createElement('td'), { textContent: text }));
+        });
+        return tr;
+      }));
+    }
+
+    $('form').addEventListener('input', calculate);
+    $('form').addEventListener('submit', (e) => e.preventDefault());
+    calculate();
+  </script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pendaftaran Akun</title>
+  <style>
+    :root { --bg: #eef2ff; --card: #fff; --text: #1e1b4b; --muted: #6b7280; --border: #d1d5db; --brand: #4338ca; --brand-soft: #e0e7ff; --danger: #dc2626; --ok: #16a34a; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; padding: clamp(1rem, 5vw, 3rem) 1rem; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+    .card { max-width: 620px; margin: 0 auto; background: var(--card); border-radius: 20px; padding: clamp(1.25rem, 4vw, 2.5rem); box-shadow: 0 20px 40px rgba(67, 56, 202, .08); }
+    h1 { margin: 0 0 1.5rem; font-size: 1.6rem; }
+    :focus-visible { outline: 3px solid #a5b4fc; outline-offset: 2px; }
+
+    .steps { display: flex; list-style: none; margin: 0 0 2rem; padding: 0; counter-reset: step; }
+    .steps li { flex: 1; position: relative; text-align: center; font-size: .85rem; color: var(--muted); counter-increment: step; }
+    .steps li::before {
+      content: counter(step); display: grid; place-items: center; width: 34px; height: 34px; margin: 0 auto .4rem;
+      border-radius: 50%; border: 2px solid var(--border); background: #fff; font-weight: 700; position: relative; z-index: 1;
+    }
+    .steps li::after { content: ""; position: absolute; top: 17px; left: -50%; width: 100%; height: 2px; background: var(--border); }
+    .steps li:first-child::after { display: none; }
+    .steps li.done::before { content: "✓"; background: var(--ok); border-color: var(--ok); color: #fff; }
+    .steps li.done::after, .steps li[aria-current="step"]::after { background: var(--brand); }
+    .steps li[aria-current="step"] { color: var(--brand); font-weight: 700; }
+    .steps li[aria-current="step"]::before { border-color: var(--brand); background: var(--brand); color: #fff; }
+
+    fieldset { border: 0; padding: 0; margin: 0; }
+    legend { font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem; padding: 0; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
+    .full { grid-column: 1 / -1; }
+    .field { margin-bottom: 1rem; }
+    label { display: block; font-weight: 600; margin-bottom: .35rem; }
+    .optional { color: var(--muted); font-weight: 400; }
+    input, select, textarea { width: 100%; padding: .7rem .85rem; border: 1px solid var(--border); border-radius: 10px; font: inherit; background: #fff; color: var(--text); }
+    textarea { resize: vertical; min-height: 80px; }
+    [aria-invalid="true"] { border-color: var(--danger); }
+    .error { color: var(--danger); font-size: .85rem; margin: .3rem 0 0; }
+    .error:empty { display: none; }
+    .hint { color: var(--muted); font-size: .85rem; margin: .3rem 0 0; }
+    .strength { height: 6px; border-radius: 999px; background: var(--border); margin-top: .5rem; overflow: hidden; }
+    .strength div { height: 100%; width: 0; transition: width .2s, background-color .2s; }
+    .check { display: flex; gap: .6rem; align-items: flex-start; font-weight: 400; }
+    .check input { width: auto; margin-top: .2rem; }
+
+    .summary { display: grid; gap: 1rem; }
+    .summary section { border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; }
+    .summary header { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; }
+    .summary h3 { margin: 0; font-size: 1rem; }
+    .summary dl { display: grid; grid-template-columns: 140px 1fr; gap: .35rem 1rem; margin: 0; }
+    .summary dt { color: var(--muted); }
+    .summary dd { margin: 0; overflow-wrap: anywhere; }
+    .link-btn { border: 0; background: none; color: var(--brand); font: inherit; font-weight: 600; cursor: pointer; }
+
+    .actions { display: flex; justify-content: space-between; gap: 1rem; margin-top: 1.5rem; }
+    .btn { padding: .8rem 1.5rem; border-radius: 10px; border: 0; font: inherit; font-weight: 700; cursor: pointer; background: var(--brand); color: #fff; }
+    .btn.secondary { background: var(--brand-soft); color: var(--brand); }
+    [hidden] { display: none !important; }
+    .success { text-align: center; padding: 2rem 0; }
+    .success .icon { width: 64px; height: 64px; margin: 0 auto 1rem; border-radius: 50%; background: #dcfce7; color: var(--ok); display: grid; place-items: center; font-size: 2rem; }
+    @media (max-width: 520px) {
+      .grid { grid-template-columns: 1fr; }
+      .steps li { font-size: .75rem; }
+      .summary dl { grid-template-columns: 1fr; }
+      .summary dd { margin-bottom: .5rem; }
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Daftar Akun Baru</h1>
+    <ol class="steps" id="steps">
+      <li>Data diri</li>
+      <li>Alamat</li>
+      <li>Akun</li>
+      <li>Ringkasan</li>
+    </ol>
+
+    <form id="form" novalidate>
+      <fieldset data-step="0">
+        <legend>Data diri</legend>
+        <div class="grid">
+          <div class="field full">
+            <label for="fullName">Nama lengkap</label>
+            <input id="fullName" name="fullName" autocomplete="name">
+          </div>
+          <div class="field">
+            <label for="phone">Nomor HP</label>
+            <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="08xxxxxxxxxx">
+          </div>
+          <div class="field">
+            <label for="birthDate">Tanggal lahir</label>
+            <input id="birthDate" name="birthDate" type="date" autocomplete="bday">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset data-step="1" hidden>
+        <legend>Alamat</legend>
+        <div class="grid">
+          <div class="field full">
+            <label for="street">Alamat lengkap</label>
+            <textarea id="street" name="street" autocomplete="street-address" placeholder="Nama jalan, nomor rumah, RT/RW"></textarea>
+          </div>
+          <div class="field">
+            <label for="city">Kota/Kabupaten</label>
+            <input id="city" name="city" autocomplete="address-level2">
+          </div>
+          <div class="field">
+            <label for="postalCode">Kode pos</label>
+            <input id="postalCode" name="postalCode" inputmode="numeric" autocomplete="postal-code" maxlength="5">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset data-step="2" hidden>
+        <legend>Akun</legend>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="password">Kata sandi</label>
+          <input id="password" name="password" type="password" autocomplete="new-password" aria-describedby="password-hint">
+          <div class="strength" aria-hidden="true"><div id="strength-bar"></div></div>
+          <p class="hint" id="password-hint">Minimal 8 karakter, berisi huruf besar, huruf kecil, dan angka.</p>
+        </div>
+        <div class="field">
+          <label for="confirm">Ulangi kata sandi</label>
+          <input id="confirm" name="confirm" type="password" autocomplete="new-password">
+        </div>
+        <div class="field">
+          <label class="check"><input type="checkbox" id="terms" name="terms"> Saya menyetujui syarat dan ketentuan serta kebijakan privasi.</label>
+        </div>
+      </fieldset>
+
+      <fieldset data-step="3" hidden>
+        <legend>Periksa kembali data kamu</legend>
+        <div class="summary" id="summary"></div>
+      </fieldset>
+
+      <div class="actions">
+        <button class="btn secondary" type="button" id="back">Kembali</button>
+        <button class="btn" type="submit" id="next">Lanjut</button>
+      </div>
+    </form>
+
+    <div class="success" id="success" hidden tabindex="-1">
+      <div class="icon" aria-hidden="true">✓</div>
+      <h2>Pendaftaran berhasil!</h2>
+      <p id="success-text"></p>
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById('form');
+    const stepEls = [...form.querySelectorAll('fieldset[data-step]')];
+    const indicator = [...document.querySelectorAll('#steps li')];
+    const backBtn = document.getElementById('back');
+    const nextBtn = document.getElementById('next');
+    let step = 0;
+
+    const value = (name) => form.elements[name].value.trim();
+
+    function ageFrom(dateString) {
+      const birth = new Date(`${dateString}T00:00:00`);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const beforeBirthday = today.getMonth() < birth.getMonth() ||
+        (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate());
+      return beforeBirthday ? age - 1 : age;
+    }
+
+    // Setiap aturan mengembalikan pesan error, atau string kosong jika valid.
+    const RULES = {
+      fullName: () => (value('fullName').length >= 3 ? '' : 'Nama minimal 3 karakter.'),
+      phone: () => (/^(\+62|62|0)8\d{7,11}$/.test(value('phone').replace(/[\s-]/g, '')) ? '' : 'Nomor HP tidak valid. Contoh: 081234567890.'),
+      birthDate: () => {
+        if (!value('birthDate')) return 'Tanggal lahir wajib diisi.';
+        const age = ageFrom(value('birthDate'));
+        if (age < 17) return 'Usia minimal 17 tahun.';
+        if (age > 120) return 'Periksa kembali tahun lahir.';
+        return '';
+      },
+      street: () => (value('street').length >= 10 ? '' : 'Alamat terlalu pendek.'),
+      city: () => (value('city') ? '' : 'Kota wajib diisi.'),
+      postalCode: () => (/^\d{5}$/.test(value('postalCode')) ? '' : 'Kode pos harus 5 digit angka.'),
+      email: () => (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value('email')) ? '' : 'Format email tidak valid.'),
+      password: () => {
+        const p = form.elements.password.value;
+        return p.length >= 8 && /[a-z]/.test(p) && /[A-Z]/.test(p) && /\d/.test(p) ? '' : 'Kata sandi belum memenuhi syarat.';
+      },
+      confirm: () => (form.elements.confirm.value && form.elements.confirm.value === form.elements.password.value ? '' : 'Kata sandi tidak sama.'),
+      terms: () => (form.elements.terms.checked ? '' : 'Kamu perlu menyetujui syarat dan ketentuan.')
+    };
+
+    function showError(input, message) {
+      const field = input.closest('.field');
+      let error = field.querySelector('.error');
+      if (!error) {
+        error = document.createElement('p');
+        error.className = 'error';
+        error.id = `${input.id}-error`;
+        field.append(error);
+      }
+      error.textContent = message;
+      input.setAttribute('aria-invalid', String(Boolean(message)));
+      const describedBy = new Set((input.getAttribute('aria-describedby') || '').split(' ').filter(Boolean));
+      if (message) describedBy.add(error.id);
+      else describedBy.delete(error.id);
+      input.setAttribute('aria-describedby', [...describedBy].join(' '));
+    }
+
+    function validateStep(index) {
+      const inputs = [...stepEls[index].querySelectorAll('input, textarea, select')].filter((i) => RULES[i.name]);
+      let firstInvalid = null;
+      for (const input of inputs) {
+        const message = RULES[input.name]();
+        showError(input, message);
+        if (message && !firstInvalid) firstInvalid = input;
+      }
+      if (firstInvalid) firstInvalid.focus();
+      return !firstInvalid;
+    }
+
+    function renderSummary() {
+      const dateText = new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' }).format(new Date(`${value('birthDate')}T00:00:00`));
+      const sections = [
+        { title: 'Data diri', step: 0, rows: [['Nama', value('fullName')], ['Nomor HP', value('phone')], ['Tanggal lahir', dateText]] },
+        { title: 'Alamat', step: 1, rows: [['Alamat', value('street')], ['Kota', value('city')], ['Kode pos', value('postalCode')]] },
+        { title: 'Akun', step: 2, rows: [['Email', value('email')], ['Kata sandi', '•'.repeat(8)]] }
+      ];
+      document.getElementById('summary').replaceChildren(...sections.map((s) => {
+        const section = document.createElement('section');
+        const header = document.createElement('header');
+        const h3 = Object.assign(document.createElement('h3'), { textContent: s.title });
+        const edit = Object.assign(document.createElement('button'), { type: 'button', className: 'link-btn', textContent: 'Ubah' });
+        edit.setAttribute('aria-label', `Ubah ${s.title.toLowerCase()}`);
+        edit.addEventListener('click', () => goTo(s.step));
+        header.append(h3, edit);
+        const dl = document.createElement('dl');
+        s.rows.forEach(([k, v]) => dl.append(
+          Object.assign(document.createElement('dt'), { textContent: k }),
+          Object.assign(document.createElement('dd'), { textContent: v })
+        ));
+        section.append(header, dl);
+        return section;
+      }));
+    }
+
+    function goTo(index) {
+      step = index;
+      stepEls.forEach((el, i) => { el.hidden = i !== step; });
+      indicator.forEach((li, i) => {
+        li.classList.toggle('done', i < step);
+        if (i === step) li.setAttribute('aria-current', 'step');
+        else li.removeAttribute('aria-current');
+      });
+      backBtn.hidden = step === 0;
+      nextBtn.textContent = step === stepEls.length - 1 ? 'Kirim pendaftaran' : 'Lanjut';
+      if (step === stepEls.length - 1) renderSummary();
+      stepEls[step].querySelector('legend').scrollIntoView({ block: 'nearest' });
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (step < stepEls.length - 1) {
+        if (validateStep(step)) goTo(step + 1);
+        return;
+      }
+      // Langkah terakhir: kirim ke server di sini, misalnya dengan fetch('/api/daftar', ...).
+      form.hidden = true;
+      document.getElementById('steps').hidden = true;
+      document.getElementById('success-text').textContent = `Tautan verifikasi telah dikirim ke ${value('email')}.`;
+      const success = document.getElementById('success');
+      success.hidden = false;
+      success.focus();
+    });
+
+    backBtn.addEventListener('click', () => goTo(step - 1));
+
+    // Validasi ulang saat pengguna memperbaiki isian yang salah
+    form.addEventListener('input', (e) => {
+      if (e.target.getAttribute('aria-invalid') === 'true' && RULES[e.target.name]) showError(e.target, RULES[e.target.name]());
+      if (e.target.name === 'password') updateStrength(e.target.value);
+    });
+
+    function updateStrength(p) {
+      const score = [p.length >= 8, p.length >= 12, /[a-z]/.test(p) && /[A-Z]/.test(p), /\d/.test(p), /[^\w\s]/.test(p)].filter(Boolean).length;
+      const colors = ['#dc2626', '#dc2626', '#f59e0b', '#f59e0b', '#16a34a', '#16a34a'];
+      const bar = document.getElementById('strength-bar');
+      bar.style.width = `${(score / 5) * 100}%`;
+      bar.style.backgroundColor = colors[score];
+    }
+
+    goTo(0);
+  </script>
+</body>
+</html>

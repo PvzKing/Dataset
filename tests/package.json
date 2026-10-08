@@ -1,0 +1,11 @@
+{
+  "name": "dataset-web-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node test_web.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.0"
+  }
+}

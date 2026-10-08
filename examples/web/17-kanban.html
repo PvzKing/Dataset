@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Papan Kanban</title>
+  <style>
+    :root { --bg: #f1f5f9; --column: #e2e8f0; --card: #ffffff; --text: #0f172a; --muted: #64748b; --brand: #2563eb; --danger: #dc2626; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+    header { padding: 1.25rem clamp(1rem, 3vw, 2rem); }
+    header h1 { margin: 0; font-size: 1.5rem; }
+    header p { margin: .25rem 0 0; color: var(--muted); }
+    :focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+
+    .board { display: grid; grid-template-columns: repeat(3, minmax(260px, 1fr)); gap: 1rem; padding: 0 clamp(1rem, 3vw, 2rem) 2rem; overflow-x: auto; align-items: start; }
+    .column { display: flex; flex-direction: column; min-height: 200px; padding: .75rem; border-radius: 14px; background: var(--column); border: 2px dashed transparent; transition: border-color .15s, background-color .15s; }
+    .column.over { border-color: var(--brand); background: #dbeafe; }
+    .column-head { display: flex; justify-content: space-between; align-items: center; padding: .25rem .25rem .75rem; }
+    .column-head h2 { margin: 0; font-size: 1rem; display: flex; align-items: center; gap: .5rem; }
+    .column-head h2::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--dot); }
+    .count { min-width: 26px; padding: .1rem .5rem; border-radius: 999px; background: #fff; color: var(--muted); font-size: .8rem; font-weight: 700; text-align: center; }
+    .cards { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; flex: 1; align-content: start; min-height: 40px; }
+
+    .card { display: flex; align-items: flex-start; gap: .5rem; padding: .75rem; border-radius: 10px; background: var(--card); box-shadow: 0 1px 2px rgba(15, 23, 42, .08); cursor: grab; }
+    .card.dragging { opacity: .4; }
+    .card p { margin: 0; flex: 1; overflow-wrap: anywhere; line-height: 1.45; }
+    .card-actions { display: flex; gap: .15rem; flex-shrink: 0; }
+    .card-actions button { width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; font-size: .9rem; }
+    .card-actions button:hover { background: var(--bg); color: var(--text); }
+    .card-actions button.delete:hover { color: var(--danger); }
+    .card-actions button:disabled { visibility: hidden; }
+
+    .add-form { display: flex; gap: .4rem; margin-top: .75rem; }
+    .add-form input { flex: 1; min-width: 0; padding: .55rem .7rem; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; }
+    .add-form button { padding: .55rem .8rem; border: 0; border-radius: 8px; background: var(--brand); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    @media (max-width: 860px) { .board { grid-template-columns: minmax(0, 1fr); overflow-x: visible; } }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Papan Kanban</h1>
+    <p>Seret kartu antarkolom, atau pakai tombol panah. Semua perubahan tersimpan otomatis.</p>
+  </header>
+
+  <main class="board" id="board"></main>
+  <p class="sr-only" id="announcer" aria-live="polite"></p>
+
+  <script>
+    const STORAGE_KEY = 'kanban-board-v1';
+    const COLUMNS = [
+      { id: 'todo', title: 'To Do', color: '#94a3b8' },
+      { id: 'doing', title: 'Dikerjakan', color: '#f59e0b' },
+      { id: 'done', title: 'Selesai', color: '#22c55e' }
+    ];
+    const SAMPLE = [
+      { id: 'c1', text: 'Riset kebutuhan pengguna', column: 'done' },
+      { id: 'c2', text: 'Desain halaman beranda', column: 'doing' },
+      { id: 'c3', text: 'Siapkan database produk', column: 'todo' },
+      { id: 'c4', text: 'Tulis pengujian untuk keranjang', column: 'todo' }
+    ];
+
+    const board = document.getElementById('board');
+    const announcer = document.getElementById('announcer');
+    let cards = load();
+
+    function load() {
+      try {
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (Array.isArray(data)) return data.filter((c) => c && typeof c.text === 'string' && COLUMNS.some((col) => col.id === c.column));
+      } catch (e) { /* data rusak: pakai contoh */ }
+      return SAMPLE;
+    }
+    function save() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cards)); } catch (e) { /* abaikan */ }
+    }
+    const newId = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const columnTitle = (id) => COLUMNS.find((c) => c.id === id).title;
+
+    function render() {
+      board.replaceChildren(...COLUMNS.map((col, colIndex) => {
+        const items = cards.filter((c) => c.column === col.id);
+        const section = document.createElement('section');
+        section.className = 'column';
+        section.dataset.column = col.id;
+        section.style.setProperty('--dot', col.color);
+        section.setAttribute('aria-labelledby', `title-${col.id}`);
+        section.innerHTML = `
+          <div class="column-head"><h2 id="title-${col.id}"></h2><span class="count"></span></div>
+          <ul class="cards"></ul>
+          <form class="add-form">
+            <label class="sr-only" for="add-${col.id}"></label>
+            <input id="add-${col.id}" maxlength="140" placeholder="Tambah kartu…" autocomplete="off">
+            <button type="submit">Tambah</button>
+          </form>`;
+        section.querySelector('h2').textContent = col.title;
+        section.querySelector('.count').textContent = items.length;
+        section.querySelector('label').textContent = `Kartu baru di kolom ${col.title}`;
+        section.querySelector('.cards').append(...items.map((card) => {
+          const li = document.createElement('li');
+          li.className = 'card';
+          li.draggable = true;
+          li.dataset.id = card.id;
+          const text = Object.assign(document.createElement('p'), { textContent: card.text });
+          const actions = document.createElement('div');
+          actions.className = 'card-actions';
+          const prev = COLUMNS[colIndex - 1];
+          const next = COLUMNS[colIndex + 1];
+          actions.append(
+            button('◀', 'move', prev ? `Pindahkan "${card.text}" ke ${prev.title}` : '', !prev, { target: prev && prev.id }),
+            button('▶', 'move', next ? `Pindahkan "${card.text}" ke ${next.title}` : '', !next, { target: next && next.id }),
+            button('✕', 'delete', `Hapus "${card.text}"`, false, {})
+          );
+          li.append(text, actions);
+          return li;
+        }));
+        return section;
+      }));
+    }
+
+    function button(label, action, ariaLabel, disabled, data) {
+      const b = Object.assign(document.createElement('button'), { type: 'button', textContent: label, className: action, disabled });
+      b.dataset.action = action;
+      if (data.target) b.dataset.target = data.target;
+      if (ariaLabel) b.setAttribute('aria-label', ariaLabel);
+      return b;
+    }
+
+    function moveCard(id, column, beforeId = null) {
+      const card = cards.find((c) => c.id === id);
+      if (!card || id === beforeId) return;
+      cards = cards.filter((c) => c.id !== id);
+      const moved = { ...card, column };
+      const index = beforeId ? cards.findIndex((c) => c.id === beforeId) : -1;
+      if (index === -1) cards.push(moved);
+      else cards.splice(index, 0, moved);
+      save();
+      render();
+      announcer.textContent = `"${card.text}" dipindahkan ke ${columnTitle(column)}.`;
+    }
+
+    // Tombol pada kartu: pindah kolom dan hapus
+    board.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-action]');
+      if (!b) return;
+      const id = b.closest('.card').dataset.id;
+      if (b.dataset.action === 'move') {
+        moveCard(id, b.dataset.target);
+        const moved = board.querySelector(`.card[data-id="${id}"] button[data-action="move"]:not(:disabled)`);
+        if (moved) moved.focus();
+      } else {
+        const card = cards.find((c) => c.id === id);
+        cards = cards.filter((c) => c.id !== id);
+        save();
+        render();
+        announcer.textContent = `"${card.text}" dihapus.`;
+      }
+    });
+
+    // Tambah kartu
+    board.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = e.target.querySelector('input');
+      const text = input.value.trim();
+      if (!text) return;
+      const column = e.target.closest('.column').dataset.column;
+      cards.push({ id: newId(), text, column });
+      save();
+      render();
+      document.getElementById(`add-${column}`).focus();
+    });
+
+    // Drag and drop (HTML5). Di perangkat sentuh, gunakan tombol panah.
+    board.addEventListener('dragstart', (e) => {
+      const card = e.target.closest('.card');
+      if (!card) return;
+      e.dataTransfer.setData('text/plain', card.dataset.id);
+      e.dataTransfer.effectAllowed = 'move';
+      card.classList.add('dragging');
+    });
+    board.addEventListener('dragend', (e) => {
+      e.target.closest('.card')?.classList.remove('dragging');
+      board.querySelectorAll('.column.over').forEach((c) => c.classList.remove('over'));
+    });
+    board.addEventListener('dragover', (e) => {
+      const column = e.target.closest('.column');
+      if (!column) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      column.classList.add('over');
+    });
+    board.addEventListener('dragleave', (e) => {
+      const column = e.target.closest('.column');
+      if (column && !column.contains(e.relatedTarget)) column.classList.remove('over');
+    });
+    board.addEventListener('drop', (e) => {
+      const column = e.target.closest('.column');
+      if (!column) return;
+      e.preventDefault();
+      const id = e.dataTransfer.getData('text/plain');
+      // Sisipkan sebelum kartu pertama yang titik tengahnya berada di bawah kursor
+      const before = [...column.querySelectorAll('.card:not(.dragging)')]
+        .find((c) => e.clientY < c.getBoundingClientRect().top + c.offsetHeight / 2);
+      moveCard(id, column.dataset.column, before ? before.dataset.id : null);
+    });
+
+    render();
+  </script>
+</body>
+</html>

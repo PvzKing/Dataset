@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kuis Pengetahuan Indonesia</title>
+  <style>
+    :root {
+      --bg: #fef3c7; --card: #ffffff; --text: #1f2937; --muted: #6b7280; --border: #e5e7eb;
+      --brand: #dc2626; --brand-dark: #b91c1c; --correct: #16a34a; --wrong: #dc2626;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 1rem;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(160deg, #fee2e2, var(--bg)); color: var(--text);
+    }
+    .card { width: min(100%, 640px); background: var(--card); border-radius: 20px; padding: clamp(1.25rem, 4vw, 2.25rem); box-shadow: 0 25px 50px rgba(0, 0, 0, .08); }
+    h1 { margin: 0 0 .5rem; font-size: clamp(1.5rem, 4vw, 2rem); }
+    p { line-height: 1.6; }
+    .muted { color: var(--muted); }
+    :focus-visible { outline: 3px solid #fca5a5; outline-offset: 2px; }
+    .btn {
+      padding: .85rem 1.5rem; border: 0; border-radius: 12px; cursor: pointer;
+      background: var(--brand); color: #fff; font: inherit; font-weight: 700;
+    }
+    .btn:hover { background: var(--brand-dark); }
+    .btn-secondary { background: #f3f4f6; color: var(--text); }
+    .btn-secondary:hover { background: #e5e7eb; }
+
+    .meta { display: flex; justify-content: space-between; align-items: center; gap: 1rem; color: var(--muted); font-weight: 600; }
+    .timer { display: inline-flex; align-items: center; gap: .4rem; font-variant-numeric: tabular-nums; }
+    .timer.warning { color: var(--wrong); }
+    .progress { height: 6px; background: var(--border); border-radius: 999px; margin: .75rem 0 1.5rem; overflow: hidden; }
+    .progress div { height: 100%; background: var(--brand); transition: width .3s; }
+    .question { font-size: 1.25rem; font-weight: 700; margin: 0 0 1.25rem; }
+    .options { display: grid; gap: .75rem; }
+    .option {
+      text-align: left; padding: .9rem 1rem; border-radius: 12px; cursor: pointer;
+      border: 2px solid var(--border); background: #fff; color: var(--text); font: inherit;
+    }
+    .option:hover:not(:disabled) { border-color: var(--brand); }
+    .option:disabled { cursor: default; }
+    .option.correct { border-color: var(--correct); background: #f0fdf4; }
+    .option.wrong { border-color: var(--wrong); background: #fef2f2; }
+    .feedback { min-height: 1.6em; margin: 1rem 0; font-weight: 600; }
+    .actions { display: flex; justify-content: flex-end; }
+
+    .score { font-size: 3rem; font-weight: 800; margin: .5rem 0; color: var(--brand); }
+    .review { list-style: none; padding: 0; margin: 1.5rem 0; display: grid; gap: .75rem; }
+    .review li { padding: 1rem; border-radius: 12px; border-left: 5px solid var(--correct); background: #f9fafb; }
+    .review li.miss { border-left-color: var(--wrong); }
+    .review strong { display: block; margin-bottom: .25rem; }
+    .review p { margin: .25rem 0 0; font-size: .95rem; }
+    [hidden] { display: none !important; }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <section id="start-screen">
+      <h1>Kuis Pengetahuan Indonesia</h1>
+      <p class="muted">10 soal pilihan ganda tentang sejarah, geografi, dan budaya Indonesia. Setiap soal punya waktu 20 detik. Pembahasan lengkap muncul di akhir.</p>
+      <button class="btn" id="start-btn" type="button">Mulai Kuis</button>
+    </section>
+
+    <section id="quiz-screen" hidden>
+      <div class="meta">
+        <span id="counter"></span>
+        <span class="timer" id="timer" aria-live="off"></span>
+      </div>
+      <div class="progress" aria-hidden="true"><div id="progress-bar"></div></div>
+      <h2 class="question" id="question"></h2>
+      <div class="options" id="options"></div>
+      <p class="feedback" id="feedback" role="status"></p>
+      <div class="actions">
+        <button class="btn" id="next-btn" type="button" hidden>Soal berikutnya</button>
+      </div>
+    </section>
+
+    <section id="result-screen" hidden>
+      <h1>Hasil Kuis</h1>
+      <p class="score" id="score"></p>
+      <p class="muted" id="verdict"></p>
+      <ol class="review" id="review"></ol>
+      <button class="btn" id="restart-btn" type="button">Main Lagi</button>
+    </section>
+  </main>
+
+  <script>
+    const QUESTIONS = [
+      { q: 'Teks Proklamasi Kemerdekaan Indonesia dibacakan pada tanggal…', options: ['17 Agustus 1945', '18 Agustus 1945', '1 Juni 1945', '28 Oktober 1928'], answer: 0, explain: 'Proklamasi dibacakan Soekarno didampingi Mohammad Hatta pada 17 Agustus 1945 di Jalan Pegangsaan Timur 56, Jakarta.' },
+      { q: 'Bunyi sila ketiga Pancasila adalah…', options: ['Kemanusiaan yang adil dan beradab', 'Persatuan Indonesia', 'Keadilan sosial bagi seluruh rakyat Indonesia', 'Ketuhanan Yang Maha Esa'], answer: 1, explain: 'Sila ketiga adalah "Persatuan Indonesia", dilambangkan dengan pohon beringin.' },
+      { q: 'Danau vulkanik terbesar di Indonesia adalah…', options: ['Danau Singkarak', 'Danau Poso', 'Danau Toba', 'Danau Maninjau'], answer: 2, explain: 'Danau Toba di Sumatra Utara terbentuk dari letusan supervulkan dan merupakan danau terbesar di Indonesia.' },
+      { q: 'Lagu kebangsaan "Indonesia Raya" diciptakan oleh…', options: ['Ismail Marzuki', 'C. Simanjuntak', 'Kusbini', 'W.R. Supratman'], answer: 3, explain: 'Wage Rudolf Supratman menciptakan "Indonesia Raya" dan memperdengarkannya pertama kali pada Kongres Pemuda II tahun 1928.' },
+      { q: 'Semboyan "Bhinneka Tunggal Ika" berasal dari kitab…', options: ['Negarakertagama', 'Sutasoma', 'Arjunawiwaha', 'Pararaton'], answer: 1, explain: 'Semboyan ini berasal dari Kakawin Sutasoma karya Mpu Tantular pada masa Majapahit.' },
+      { q: 'Habitat asli komodo berada di provinsi…', options: ['Nusa Tenggara Timur', 'Nusa Tenggara Barat', 'Bali', 'Sulawesi Selatan'], answer: 0, explain: 'Komodo hidup di Pulau Komodo, Rinca, dan sekitarnya yang termasuk Provinsi Nusa Tenggara Timur.' },
+      { q: 'Candi Borobudur terletak di provinsi…', options: ['DI Yogyakarta', 'Jawa Timur', 'Jawa Tengah', 'Jawa Barat'], answer: 2, explain: 'Borobudur berada di Kabupaten Magelang, Jawa Tengah, meskipun sering dikunjungi lewat Yogyakarta.' },
+      { q: 'Selat yang memisahkan Pulau Jawa dan Pulau Sumatra adalah…', options: ['Selat Bali', 'Selat Makassar', 'Selat Malaka', 'Selat Sunda'], answer: 3, explain: 'Selat Sunda memisahkan Jawa dan Sumatra. Gunung Anak Krakatau berada di selat ini.' },
+      { q: 'Gunung tertinggi di Indonesia adalah…', options: ['Puncak Jaya', 'Gunung Kerinci', 'Gunung Semeru', 'Gunung Rinjani'], answer: 0, explain: 'Puncak Jaya (Carstensz Pyramid) di Papua memiliki tinggi sekitar 4.884 meter di atas permukaan laut.' },
+      { q: 'Peristiwa Sumpah Pemuda terjadi pada tanggal…', options: ['20 Mei 1908', '28 Oktober 1928', '10 November 1945', '2 Mei 1889'], answer: 1, explain: 'Sumpah Pemuda diikrarkan pada Kongres Pemuda II, 28 Oktober 1928.' }
+    ];
+    const SECONDS_PER_QUESTION = 20;
+    const LETTERS = ['A', 'B', 'C', 'D'];
+
+    const $ = (id) => document.getElementById(id);
+    const screens = { start: $('start-screen'), quiz: $('quiz-screen'), result: $('result-screen') };
+    let order = [];
+    let current = 0;
+    let answers = [];
+    let timerId = null;
+    let deadline = 0;
+
+    function show(name) {
+      Object.entries(screens).forEach(([key, el]) => { el.hidden = key !== name; });
+    }
+
+    function shuffle(array) {
+      const a = [...array];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function startQuiz() {
+      order = shuffle(QUESTIONS.map((_, i) => i));
+      answers = [];
+      current = 0;
+      show('quiz');
+      renderQuestion();
+    }
+
+    function renderQuestion() {
+      const item = QUESTIONS[order[current]];
+      $('counter').textContent = `Soal ${current + 1} dari ${order.length}`;
+      $('progress-bar').style.width = `${(current / order.length) * 100}%`;
+      $('question').textContent = item.q;
+      $('feedback').textContent = '';
+      $('next-btn').hidden = true;
+      $('options').replaceChildren(...item.options.map((text, i) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'option';
+        button.textContent = `${LETTERS[i]}. ${text}`;
+        button.addEventListener('click', () => choose(i));
+        return button;
+      }));
+      $('question').setAttribute('tabindex', '-1');
+      $('question').focus();
+      startTimer();
+    }
+
+    function startTimer() {
+      clearInterval(timerId);
+      deadline = Date.now() + SECONDS_PER_QUESTION * 1000;
+      tick();
+      timerId = setInterval(tick, 250);
+    }
+
+    function tick() {
+      const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      $('timer').textContent = `⏱ ${left} detik`;
+      $('timer').classList.toggle('warning', left <= 5);
+      if (left === 0) choose(null);
+    }
+
+    function choose(index) {
+      if (answers.length > current) return; // soal ini sudah dijawab
+      clearInterval(timerId);
+      const item = QUESTIONS[order[current]];
+      answers.push(index);
+      const buttons = $('options').querySelectorAll('.option');
+      buttons.forEach((b, i) => {
+        b.disabled = true;
+        if (i === item.answer) b.classList.add('correct');
+        else if (i === index) b.classList.add('wrong');
+      });
+      const correctText = `${LETTERS[item.answer]}. ${item.options[item.answer]}`;
+      $('feedback').textContent = index === null
+        ? `Waktu habis! Jawaban yang benar: ${correctText}`
+        : index === item.answer ? 'Benar!' : `Kurang tepat. Jawaban yang benar: ${correctText}`;
+      const nextBtn = $('next-btn');
+      nextBtn.textContent = current === order.length - 1 ? 'Lihat hasil' : 'Soal berikutnya';
+      nextBtn.hidden = false;
+      nextBtn.focus();
+    }
+
+    function next() {
+      current++;
+      if (current < order.length) renderQuestion();
+      else showResult();
+    }
+
+    function showResult() {
+      const correct = answers.filter((a, i) => a === QUESTIONS[order[i]].answer).length;
+      $('score').textContent = `${correct} / ${order.length}`;
+      $('verdict').textContent = correct === order.length ? 'Sempurna! Pengetahuanmu luar biasa.'
+        : correct >= 7 ? 'Bagus sekali! Tinggal sedikit lagi menuju sempurna.'
+        : correct >= 4 ? 'Lumayan! Baca pembahasan di bawah untuk belajar lagi.'
+        : 'Jangan menyerah! Pelajari pembahasannya lalu coba lagi.';
+      $('review').replaceChildren(...order.map((qi, i) => {
+        const item = QUESTIONS[qi];
+        const chosen = answers[i];
+        const li = document.createElement('li');
+        if (chosen !== item.answer) li.classList.add('miss');
+        const title = document.createElement('strong');
+        title.textContent = item.q;
+        const yours = document.createElement('p');
+        yours.textContent = chosen === null ? 'Jawabanmu: (tidak dijawab)' : `Jawabanmu: ${item.options[chosen]}`;
+        const explain = document.createElement('p');
+        explain.textContent = `Pembahasan: ${item.explain}`;
+        li.append(title, yours, explain);
+        return li;
+      }));
+      show('result');
+      $('score').setAttribute('tabindex', '-1');
+      $('score').focus();
+    }
+
+    $('start-btn').addEventListener('click', startQuiz);
+    $('next-btn').addEventListener('click', next);
+    $('restart-btn').addEventListener('click', startQuiz);
+  </script>
+</body>
+</html>

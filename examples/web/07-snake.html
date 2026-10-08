@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snake</title>
+  <style>
+    :root { --bg: #052e16; --panel: #14532d; --text: #ecfdf5; --muted: #86efac; --accent: #facc15; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 1rem;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg); color: var(--text);
+    }
+    .game { width: min(100%, 480px); }
+    .hud { display: flex; justify-content: space-between; margin-bottom: .75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .hud span { color: var(--muted); font-weight: 500; }
+    .board-wrap { position: relative; }
+    canvas { display: block; width: 100%; aspect-ratio: 1; border-radius: 12px; touch-action: none; }
+    .overlay {
+      position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 1.5rem;
+      border-radius: 12px; background: rgba(5, 46, 22, .78);
+    }
+    .overlay h1 { margin: 0 0 .5rem; font-size: 2rem; }
+    .overlay p { margin: 0 0 1.25rem; color: var(--muted); }
+    .btn {
+      padding: .8rem 1.6rem; border: 0; border-radius: 999px; cursor: pointer;
+      background: var(--accent); color: #1c1917; font: inherit; font-weight: 800;
+    }
+    .btn:focus-visible, .pad button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+    .pad { display: none; grid-template-columns: repeat(3, 64px); gap: .5rem; justify-content: center; margin-top: 1rem; }
+    .pad button {
+      height: 56px; border: 0; border-radius: 14px; background: var(--panel); color: var(--text);
+      font-size: 1.4rem; cursor: pointer; touch-action: manipulation;
+    }
+    .pad .up { grid-column: 2; }
+    .pad .left { grid-column: 1; grid-row: 2; }
+    .pad .down { grid-column: 2; grid-row: 2; }
+    .pad .right { grid-column: 3; grid-row: 2; }
+    .help { text-align: center; color: var(--muted); font-size: .85rem; margin-top: .75rem; }
+    @media (pointer: coarse) { .pad { display: grid; } }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <div class="hud">
+      <div>Skor <span id="score">0</span></div>
+      <div>Tertinggi <span id="best">0</span></div>
+    </div>
+    <div class="board-wrap">
+      <canvas id="board" aria-label="Papan permainan Snake"></canvas>
+      <div class="overlay" id="overlay">
+        <div>
+          <h1 id="overlay-title">Snake</h1>
+          <p id="overlay-text">Makan buah, jangan tabrak dinding atau badan sendiri.</p>
+          <button class="btn" id="play-btn" type="button">Mulai</button>
+        </div>
+      </div>
+    </div>
+    <div class="pad" aria-label="Kontrol arah">
+      <button class="up" type="button" data-dir="up" aria-label="Atas">▲</button>
+      <button class="left" type="button" data-dir="left" aria-label="Kiri">◀</button>
+      <button class="down" type="button" data-dir="down" aria-label="Bawah">▼</button>
+      <button class="right" type="button" data-dir="right" aria-label="Kanan">▶</button>
+    </div>
+    <p class="help">Panah / WASD untuk bergerak · Spasi untuk jeda · Di HP: geser layar atau pakai tombol</p>
+  </main>
+
+  <script>
+    const GRID = 20;
+    const START_SPEED = 140;  // ms per langkah
+    const MIN_SPEED = 65;
+    const BEST_KEY = 'snake-best';
+    const DIRS = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
+
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const bestEl = document.getElementById('best');
+    const overlay = document.getElementById('overlay');
+    const overlayTitle = document.getElementById('overlay-title');
+    const overlayText = document.getElementById('overlay-text');
+    const playBtn = document.getElementById('play-btn');
+
+    let snake, dir, queue, food, score, speed, state, lastStep, cell;
+    let best = 0;
+    try { best = Number(localStorage.getItem(BEST_KEY)) || 0; } catch (e) { /* abaikan */ }
+    bestEl.textContent = best;
+
+    function reset() {
+      snake = [{ x: 8, y: 10 }, { x: 7, y: 10 }, { x: 6, y: 10 }];
+      dir = DIRS.right;
+      queue = [];
+      score = 0;
+      speed = START_SPEED;
+      scoreEl.textContent = 0;
+      food = spawnFood();
+    }
+
+    function spawnFood() {
+      const free = [];
+      for (let y = 0; y < GRID; y++) {
+        for (let x = 0; x < GRID; x++) {
+          if (!snake.some((s) => s.x === x && s.y === y)) free.push({ x, y });
+        }
+      }
+      return free.length ? free[Math.floor(Math.random() * free.length)] : null;
+    }
+
+    function turn(name) {
+      const next = DIRS[name];
+      const lastDir = queue.length ? queue[queue.length - 1] : dir;
+      // Abaikan belokan 180° dan tombol yang sama; simpan maksimal 2 belokan supaya tetap responsif.
+      if (next.x === -lastDir.x && next.y === -lastDir.y) return;
+      if (next === lastDir || queue.length >= 2) return;
+      queue.push(next);
+    }
+
+    function step() {
+      if (queue.length) dir = queue.shift();
+      const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+      const eats = food && head.x === food.x && head.y === food.y;
+      const body = eats ? snake : snake.slice(0, -1); // ekor akan bergeser kalau tidak makan
+      const hitsWall = head.x < 0 || head.y < 0 || head.x >= GRID || head.y >= GRID;
+      if (hitsWall || body.some((s) => s.x === head.x && s.y === head.y)) return gameOver();
+
+      snake.unshift(head);
+      if (eats) {
+        score++;
+        scoreEl.textContent = score;
+        speed = Math.max(MIN_SPEED, speed - 3);
+        food = spawnFood();
+        if (!food) return gameOver(true);
+      } else {
+        snake.pop();
+      }
+    }
+
+    function loop(time) {
+      if (state !== 'running') return;
+      if (time - lastStep >= speed) {
+        lastStep = time;
+        step();
+        draw();
+      }
+      requestAnimationFrame(loop);
+    }
+
+    function start() {
+      if (state === 'over' || state === undefined) reset();
+      state = 'running';
+      overlay.hidden = true;
+      lastStep = performance.now();
+      requestAnimationFrame(loop);
+    }
+
+    function pause() {
+      if (state !== 'running') return;
+      state = 'paused';
+      showOverlay('Jeda', 'Tekan spasi atau tombol di bawah untuk lanjut.', 'Lanjut');
+    }
+
+    function gameOver(won = false) {
+      state = 'over';
+      if (score > best) {
+        best = score;
+        bestEl.textContent = best;
+        try { localStorage.setItem(BEST_KEY, String(best)); } catch (e) { /* abaikan */ }
+      }
+      draw();
+      showOverlay(won ? 'Kamu menang!' : 'Game over', `Skor kamu ${score}. Rekor: ${best}.`, 'Main lagi');
+    }
+
+    function showOverlay(title, text, label) {
+      overlayTitle.textContent = title;
+      overlayText.textContent = text;
+      playBtn.textContent = label;
+      overlay.hidden = false;
+      playBtn.focus();
+    }
+
+    function roundRect(x, y, w, h, r) {
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
+      else ctx.rect(x, y, w, h);
+      ctx.fill();
+    }
+
+    function draw() {
+      const size = cell * GRID;
+      for (let y = 0; y < GRID; y++) {
+        for (let x = 0; x < GRID; x++) {
+          ctx.fillStyle = (x + y) % 2 ? '#166534' : '#15803d';
+          ctx.fillRect(x * cell, y * cell, cell, cell);
+        }
+      }
+      if (food) {
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc((food.x + 0.5) * cell, (food.y + 0.5) * cell, cell * 0.38, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      snake.forEach((s, i) => {
+        ctx.fillStyle = i === 0 ? '#fde047' : '#facc15';
+        roundRect(s.x * cell + 1, s.y * cell + 1, cell - 2, cell - 2, cell * 0.3);
+      });
+      ctx.strokeStyle = 'rgba(0, 0, 0, .25)';
+      ctx.strokeRect(0, 0, size, size);
+    }
+
+    function resize() {
+      const size = canvas.clientWidth;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(size * dpr);
+      canvas.height = Math.round(size * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cell = size / GRID;
+      draw();
+    }
+
+    // ----- Input -----
+    const KEYS = {
+      ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+      w: 'up', s: 'down', a: 'left', d: 'right', W: 'up', S: 'down', A: 'left', D: 'right'
+    };
+    document.addEventListener('keydown', (e) => {
+      if (KEYS[e.key]) {
+        e.preventDefault();
+        if (state === 'running') turn(KEYS[e.key]);
+      } else if (e.key === ' ') {
+        if (e.target instanceof HTMLButtonElement && !overlay.hidden) return; // tombol menangani spasi sendiri
+        e.preventDefault();
+        if (state === 'running') pause();
+        else start();
+      }
+    });
+
+    let touchStart = null;
+    canvas.addEventListener('touchstart', (e) => { touchStart = e.touches[0]; }, { passive: true });
+    canvas.addEventListener('touchend', (e) => {
+      if (!touchStart) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - touchStart.clientX;
+      const dy = t.clientY - touchStart.clientY;
+      touchStart = null;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+      turn(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+    });
+    document.querySelector('.pad').addEventListener('click', (e) => {
+      const button = e.target.closest('[data-dir]');
+      if (button && state === 'running') turn(button.dataset.dir);
+    });
+    playBtn.addEventListener('click', start);
+    window.addEventListener('resize', resize);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+
+    reset();
+    resize();
+  </script>
+</body>
+</html>

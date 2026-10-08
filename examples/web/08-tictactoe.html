@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic-Tac-Toe vs Komputer</title>
+  <style>
+    :root { --bg: #111827; --surface: #1f2937; --cell: #374151; --text: #f9fafb; --muted: #9ca3af; --x: #38bdf8; --o: #f472b6; --win: #22c55e; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 1rem;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg); color: var(--text);
+    }
+    .app { width: min(100%, 400px); text-align: center; }
+    h1 { margin: 0 0 .25rem; }
+    .subtitle { margin: 0 0 1.25rem; color: var(--muted); }
+    .scores { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin-bottom: 1rem; }
+    .scores div { background: var(--surface); border-radius: 12px; padding: .6rem; }
+    .scores span { display: block; font-size: 1.5rem; font-weight: 800; }
+    .scores .x span { color: var(--x); }
+    .scores .o span { color: var(--o); }
+    .status { min-height: 1.6em; font-weight: 700; margin: 0 0 1rem; }
+    .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; }
+    .cell {
+      aspect-ratio: 1; border: 0; border-radius: 14px; cursor: pointer;
+      background: var(--cell); font: inherit; font-size: clamp(2.5rem, 14vw, 3.5rem); font-weight: 800;
+      transition: background-color .15s, transform .1s;
+    }
+    .cell:hover:not(:disabled) { background: #4b5563; }
+    .cell:disabled { cursor: default; }
+    .cell.x { color: var(--x); }
+    .cell.o { color: var(--o); }
+    .cell.win { background: var(--win); color: #052e16; }
+    .cell:focus-visible, .btn:focus-visible, select:focus-visible { outline: 3px solid #fde68a; outline-offset: 2px; }
+    .controls { display: flex; gap: .75rem; justify-content: center; align-items: center; flex-wrap: wrap; margin-top: 1.25rem; }
+    select, .btn { padding: .65rem 1rem; border-radius: 10px; border: 0; font: inherit; }
+    select { background: var(--surface); color: var(--text); }
+    .btn { background: var(--x); color: #082f49; font-weight: 700; cursor: pointer; }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>Tic-Tac-Toe</h1>
+    <p class="subtitle">Kamu <strong style="color: var(--x)">X</strong>, komputer <strong style="color: var(--o)">O</strong>.</p>
+    <div class="scores" aria-live="polite">
+      <div class="x">Kamu<span id="score-x">0</span></div>
+      <div>Seri<span id="score-draw">0</span></div>
+      <div class="o">Komputer<span id="score-o">0</span></div>
+    </div>
+    <p class="status" id="status" role="status"></p>
+    <div class="board" id="board" role="group" aria-label="Papan permainan"></div>
+    <div class="controls">
+      <select id="level" aria-label="Tingkat kesulitan">
+        <option value="hard">Mustahil (minimax)</option>
+        <option value="easy">Santai (acak)</option>
+      </select>
+      <button class="btn" id="restart" type="button">Ronde baru</button>
+    </div>
+  </main>
+
+  <script>
+    const LINES = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+    const HUMAN = 'X';
+    const AI = 'O';
+    const boardEl = document.getElementById('board');
+    const statusEl = document.getElementById('status');
+    const levelEl = document.getElementById('level');
+    const scores = { X: 0, O: 0, draw: 0 };
+
+    let board = Array(9).fill(null);
+    let over = false;
+    let humanStarts = true;
+
+    const cells = Array.from({ length: 9 }, (_, i) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'cell';
+      button.addEventListener('click', () => humanMove(i));
+      boardEl.append(button);
+      return button;
+    });
+
+    function winnerOf(b) {
+      for (const line of LINES) {
+        const [a, c, d] = line;
+        if (b[a] && b[a] === b[c] && b[a] === b[d]) return { player: b[a], line };
+      }
+      return b.every(Boolean) ? { player: 'draw', line: [] } : null;
+    }
+
+    // Minimax: komputer memaksimalkan skor, manusia meminimalkan.
+    // Kedalaman ikut dihitung supaya komputer memilih kemenangan tercepat dan kekalahan terlama.
+    function minimax(b, isAiTurn, depth) {
+      const result = winnerOf(b);
+      if (result) {
+        if (result.player === AI) return 10 - depth;
+        if (result.player === HUMAN) return depth - 10;
+        return 0;
+      }
+      let best = isAiTurn ? -Infinity : Infinity;
+      for (let i = 0; i < 9; i++) {
+        if (b[i]) continue;
+        b[i] = isAiTurn ? AI : HUMAN;
+        const score = minimax(b, !isAiTurn, depth + 1);
+        b[i] = null;
+        best = isAiTurn ? Math.max(best, score) : Math.min(best, score);
+      }
+      return best;
+    }
+
+    function bestMove() {
+      const empty = board.map((v, i) => (v ? null : i)).filter((i) => i !== null);
+      if (levelEl.value === 'easy') return empty[Math.floor(Math.random() * empty.length)];
+      let bestScore = -Infinity;
+      let moves = [];
+      for (const i of empty) {
+        board[i] = AI;
+        const score = minimax(board, false, 1);
+        board[i] = null;
+        if (score > bestScore) { bestScore = score; moves = [i]; }
+        else if (score === bestScore) moves.push(i);
+      }
+      return moves[Math.floor(Math.random() * moves.length)]; // variasi di antara langkah sama bagus
+    }
+
+    function render() {
+      board.forEach((v, i) => {
+        const cell = cells[i];
+        cell.textContent = v || '';
+        cell.className = 'cell' + (v ? ' ' + v.toLowerCase() : '');
+        cell.disabled = Boolean(v) || over;
+        const row = Math.floor(i / 3) + 1;
+        const col = (i % 3) + 1;
+        cell.setAttribute('aria-label', `Baris ${row} kolom ${col}: ${v || 'kosong'}`);
+      });
+    }
+
+    function finish(result) {
+      over = true;
+      result.line.forEach((i) => cells[i].classList.add('win'));
+      if (result.player === 'draw') {
+        scores.draw++;
+        statusEl.textContent = 'Seri! Coba lagi.';
+      } else {
+        scores[result.player]++;
+        statusEl.textContent = result.player === HUMAN ? 'Kamu menang!' : 'Komputer menang.';
+      }
+      document.getElementById('score-x').textContent = scores.X;
+      document.getElementById('score-o').textContent = scores.O;
+      document.getElementById('score-draw').textContent = scores.draw;
+      cells.forEach((c) => { c.disabled = true; });
+    }
+
+    function play(index, player) {
+      board[index] = player;
+      render();
+      const result = winnerOf(board);
+      if (result) {
+        finish(result);
+        return true;
+      }
+      return false;
+    }
+
+    function aiTurn() {
+      statusEl.textContent = 'Komputer berpikir…';
+      cells.forEach((c) => { c.disabled = true; });
+      setTimeout(() => {
+        if (over) return;
+        if (!play(bestMove(), AI)) statusEl.textContent = 'Giliranmu.';
+      }, 350);
+    }
+
+    function humanMove(i) {
+      if (over || board[i]) return;
+      if (!play(i, HUMAN)) aiTurn();
+    }
+
+    function newRound() {
+      board = Array(9).fill(null);
+      over = false;
+      render();
+      if (humanStarts) statusEl.textContent = 'Giliranmu. Kamu jalan duluan.';
+      else aiTurn();
+      humanStarts = !humanStarts; // bergantian siapa yang mulai
+    }
+
+    document.getElementById('restart').addEventListener('click', newRound);
+    newRound();
+  </script>
+</body>
+</html>

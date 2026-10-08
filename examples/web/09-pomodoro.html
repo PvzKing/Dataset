@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pomodoro Timer</title>
+  <style>
+    :root { --bg: #7f1d1d; --ring: #fecaca; --track: rgba(255, 255, 255, .15); --text: #fff; --muted: rgba(255, 255, 255, .75); }
+    body.short { --bg: #134e4a; --ring: #99f6e4; }
+    body.long { --bg: #1e3a8a; --ring: #bfdbfe; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 1rem;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg); color: var(--text); transition: background-color .4s;
+    }
+    .app { width: min(100%, 420px); text-align: center; }
+    .modes { display: inline-flex; flex-wrap: wrap; justify-content: center; max-width: 100%; gap: .25rem; padding: .25rem; border-radius: 999px; background: rgba(0, 0, 0, .2); margin-bottom: 2rem; }
+    .modes button {
+      padding: .5rem .85rem; border: 0; border-radius: 999px; cursor: pointer; white-space: nowrap;
+      background: transparent; color: var(--muted); font: inherit; font-size: .92rem; font-weight: 600;
+    }
+    .modes button[aria-pressed="true"] { background: rgba(255, 255, 255, .2); color: var(--text); }
+    .ring { position: relative; width: min(100%, 300px); margin: 0 auto; }
+    .ring svg { width: 100%; height: auto; transform: rotate(-90deg); display: block; }
+    .ring circle { fill: none; stroke-width: 10; }
+    .ring .track { stroke: var(--track); }
+    .ring .progress { stroke: var(--ring); stroke-linecap: round; transition: stroke-dashoffset .25s linear; }
+    .time {
+      position: absolute; inset: 0; display: grid; place-content: center;
+      font-size: clamp(3rem, 16vw, 4.5rem); font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+    }
+    .label { display: block; font-size: 1rem; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+    .controls { display: flex; justify-content: center; gap: 1rem; margin: 2rem 0 1rem; }
+    .btn {
+      min-width: 140px; padding: .9rem 1.5rem; border: 0; border-radius: 14px; cursor: pointer;
+      background: #fff; color: var(--bg); font: inherit; font-size: 1.1rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
+    }
+    .btn-icon { min-width: 0; width: 56px; padding: 0; display: grid; place-items: center; background: rgba(255, 255, 255, .2); color: #fff; }
+    :focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+    .sessions { color: var(--muted); }
+    .dots { display: flex; justify-content: center; gap: .5rem; margin-top: .5rem; }
+    .dots span { width: 12px; height: 12px; border-radius: 50%; background: var(--track); }
+    .dots span.done { background: var(--ring); }
+    details { margin-top: 2rem; text-align: left; background: rgba(0, 0, 0, .2); border-radius: 14px; padding: 1rem 1.25rem; }
+    summary { cursor: pointer; font-weight: 700; }
+    .settings { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin-top: 1rem; }
+    .settings label { font-size: .85rem; color: var(--muted); }
+    .settings input { width: 100%; margin-top: .3rem; padding: .5rem; border: 0; border-radius: 8px; font: inherit; }
+    @media (max-width: 360px) { .modes button { padding: .45rem .6rem; font-size: .85rem; } }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="modes" role="group" aria-label="Mode timer">
+      <button type="button" data-mode="focus" aria-pressed="true">Fokus</button>
+      <button type="button" data-mode="short" aria-pressed="false">Istirahat</button>
+      <button type="button" data-mode="long" aria-pressed="false">Istirahat panjang</button>
+    </div>
+
+    <div class="ring">
+      <svg viewBox="0 0 220 220" aria-hidden="true">
+        <circle class="track" cx="110" cy="110" r="100"/>
+        <circle class="progress" id="progress" cx="110" cy="110" r="100"/>
+      </svg>
+      <div class="time" role="timer" aria-live="off">
+        <span id="time">25:00</span>
+        <span class="label" id="mode-label">Waktunya fokus</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="start-btn" type="button">Mulai</button>
+      <button class="btn btn-icon" id="reset-btn" type="button" aria-label="Ulangi sesi">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+      </button>
+      <button class="btn btn-icon" id="skip-btn" type="button" aria-label="Lewati ke sesi berikutnya">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4l10 8-10 8z"/><path d="M19 5v14"/></svg>
+      </button>
+    </div>
+
+    <p class="sessions" id="sessions" aria-live="polite"></p>
+    <div class="dots" id="dots" aria-hidden="true"></div>
+
+    <details>
+      <summary>Pengaturan durasi (menit)</summary>
+      <div class="settings">
+        <label>Fokus<input type="number" id="set-focus" min="1" max="120" value="25"></label>
+        <label>Istirahat<input type="number" id="set-short" min="1" max="60" value="5"></label>
+        <label>Panjang<input type="number" id="set-long" min="1" max="60" value="15"></label>
+      </div>
+    </details>
+  </main>
+
+  <script>
+    const LONG_BREAK_EVERY = 4;
+    const LABELS = { focus: 'Waktunya fokus', short: 'Istirahat sebentar', long: 'Istirahat panjang' };
+    const $ = (id) => document.getElementById(id);
+    const progressEl = $('progress');
+    const CIRCUMFERENCE = 2 * Math.PI * 100;
+    progressEl.style.strokeDasharray = CIRCUMFERENCE;
+
+    const durations = { focus: 25, short: 5, long: 15 };
+    let mode = 'focus';
+    let completedFocus = 0;
+    let remainingMs = durations.focus * 60 * 1000;
+    let endTime = null; // diisi saat timer berjalan
+    let intervalId = null;
+
+    const totalMs = () => durations[mode] * 60 * 1000;
+    const isRunning = () => endTime !== null;
+
+    function format(ms) {
+      const totalSeconds = Math.ceil(ms / 1000);
+      const m = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+      const s = String(totalSeconds % 60).padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function render() {
+      const text = format(remainingMs);
+      $('time').textContent = text;
+      $('mode-label').textContent = LABELS[mode];
+      document.title = `${text} · ${LABELS[mode]}`;
+      progressEl.style.strokeDashoffset = CIRCUMFERENCE * (1 - remainingMs / totalMs());
+      $('start-btn').textContent = isRunning() ? 'Jeda' : remainingMs < totalMs() ? 'Lanjut' : 'Mulai';
+      document.body.className = mode === 'focus' ? '' : mode;
+      document.querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+      const inCycle = completedFocus % LONG_BREAK_EVERY;
+      $('sessions').textContent = `Sesi fokus selesai hari ini: ${completedFocus}`;
+      $('dots').replaceChildren(...Array.from({ length: LONG_BREAK_EVERY }, (_, i) => {
+        const dot = document.createElement('span');
+        if (i < inCycle || (inCycle === 0 && completedFocus > 0 && mode === 'long')) dot.className = 'done';
+        return dot;
+      }));
+    }
+
+    // Hitung dari selisih waktu nyata, bukan menghitung tick, supaya tetap akurat
+    // walaupun browser memperlambat setInterval di tab yang tidak aktif.
+    function tick() {
+      remainingMs = Math.max(0, endTime - Date.now());
+      if (remainingMs === 0) return complete();
+      render();
+    }
+
+    function start() {
+      endTime = Date.now() + remainingMs;
+      intervalId = setInterval(tick, 250);
+      render();
+    }
+
+    function pause() {
+      clearInterval(intervalId);
+      remainingMs = Math.max(0, endTime - Date.now());
+      endTime = null;
+      render();
+    }
+
+    function setMode(next) {
+      clearInterval(intervalId);
+      endTime = null;
+      mode = next;
+      remainingMs = totalMs();
+      render();
+    }
+
+    function nextMode() {
+      if (mode !== 'focus') return 'focus';
+      return completedFocus % LONG_BREAK_EVERY === 0 ? 'long' : 'short';
+    }
+
+    function complete() {
+      clearInterval(intervalId);
+      endTime = null;
+      if (mode === 'focus') completedFocus++;
+      beep();
+      setMode(nextMode());
+      start(); // sesi berikutnya langsung berjalan
+    }
+
+    let audioCtx = null;
+    function beep() {
+      try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        [0, 0.25, 0.5].forEach((offset) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.frequency.value = 880;
+          gain.gain.setValueAtTime(0.0001, audioCtx.currentTime + offset);
+          gain.gain.exponentialRampToValueAtTime(0.3, audioCtx.currentTime + offset + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + offset + 0.2);
+          osc.connect(gain).connect(audioCtx.destination);
+          osc.start(audioCtx.currentTime + offset);
+          osc.stop(audioCtx.currentTime + offset + 0.22);
+        });
+      } catch (e) {
+        // Web Audio tidak tersedia: lewati suara.
+      }
+    }
+
+    $('start-btn').addEventListener('click', () => {
+      // AudioContext perlu dibuat dari interaksi pengguna agar boleh berbunyi nanti.
+      if (!audioCtx && (window.AudioContext || window.webkitAudioContext)) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (isRunning()) pause();
+      else start();
+    });
+    $('reset-btn').addEventListener('click', () => setMode(mode));
+    $('skip-btn').addEventListener('click', () => {
+      if (mode === 'focus') completedFocus++;
+      setMode(nextMode());
+    });
+    document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+    [['focus', 'set-focus'], ['short', 'set-short'], ['long', 'set-long']].forEach(([key, id]) => {
+      $(id).addEventListener('change', (e) => {
+        const value = Math.min(Number(e.target.max), Math.max(1, Math.round(Number(e.target.value) || durations[key])));
+        e.target.value = value;
+        durations[key] = value;
+        if (key === mode && !isRunning()) setMode(mode);
+      });
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === ' ' && e.target === document.body) {
+        e.preventDefault();
+        $('start-btn').click();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>

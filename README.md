@@ -154,6 +154,22 @@ Script ini memeriksa struktur JSON, urutan role, ID dan prompt duplikat, kelengk
 - **Ukuran dataset kecil.** Fine-tuning dengan 62 sampel terutama membentuk gaya dan format jawaban, misalnya kebiasaan menghasilkan satu file HTML lengkap dengan penjelasan berbahasa Indonesia. Pengetahuan baru tidak banyak bertambah. Karena itu, config bawaan memakai data campuran dengan dataset umum (lihat bagian *Mencampur dengan dataset umum*).
 - **Hindari overfitting.** Pantau training loss. Dengan data sekecil ini, terlalu banyak epoch membuat model sekadar menghafal jawaban.
 
+## Melihat dan menguji website
+
+Ke-20 website juga tersedia sebagai file terpisah di `examples/web/`, isinya identik dengan yang ada di `data/train.jsonl`. Buka saja file `.html`-nya di browser untuk melihat hasilnya.
+
+Untuk menjalankan ulang tes otomatis (Chromium, desktop 1280px dan HP 375px):
+
+```bash
+cd tests
+npm install
+npx playwright install chromium
+node test_web.mjs              # semua website
+node test_web.mjs 04-          # satu website saja
+```
+
+Tes gagal jika ada error JavaScript, request ke luar, scroll horizontal, atau skenario interaksi di `tests/interactions.mjs` yang tidak terpenuhi. Screenshot disimpan di `tests/screenshots/`.
+
 ## Menambah sampel
 
 1. Tambahkan satu baris JSON ke `data/train.jsonl` dengan `id` unik.
@@ -169,4 +185,7 @@ data/dataset_info.json                registrasi dataset untuk LLaMA-Factory
 train/qwen2.5-coder-7b-lora.yaml      konfigurasi fine-tuning LoRA
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
 scripts/validate.py                   validasi dataset
+examples/web/*.html                   20 website dari sampel web, siap dibuka di browser
+tests/test_web.mjs                    tes otomatis website dengan Playwright
+tests/interactions.mjs                skenario interaksi per website
 ```
