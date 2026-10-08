@@ -1,6 +1,6 @@
-# Dataset Instruct Bahasa Indonesia untuk Qwen2.5-Coder
+# Dataset Instruct Bahasa Indonesia untuk Qwen3.5-4B
 
-Dataset instruksi berbahasa Indonesia untuk fine-tuning **Qwen2.5-Coder-7B-Instruct**. Fokus utamanya adalah **pembuatan website one-shot**: dari satu permintaan, model langsung menghasilkan satu file HTML lengkap yang berjalan di browser, lalu menjelaskan fiturnya.
+Dataset instruksi berbahasa Indonesia untuk fine-tuning **Qwen3.5-4B** dalam mode non-thinking. Dataset ini juga bisa dipakai untuk Qwen2.5-Coder-7B-Instruct. Fokus utamanya adalah **pembuatan website one-shot**: dari satu permintaan, model langsung menghasilkan satu file HTML lengkap yang berjalan di browser, lalu menjelaskan fiturnya.
 
 ## Isi
 
@@ -54,8 +54,9 @@ Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 }
 ```
 
-- `messages` memakai format percakapan standar (`role`/`content`) yang dipetakan ke chat template ChatML milik Qwen2.5.
-- Sebagian besar sampel **tidak memakai system message**. Saat training, chat template Qwen2.5 otomatis menyisipkan system prompt bawaannya. Kondisi ini sama dengan pemakaian model sehari-hari di Ollama, LM Studio, atau vLLM.
+- `messages` memakai format percakapan standar (`role`/`content`) yang dipetakan ke chat template bawaan model (ChatML untuk keluarga Qwen).
+- Sebagian besar sampel **tidak memakai system message**. Saat training, chat template model yang menentukan system prompt bawaannya (Qwen2.5 menyisipkan "You are Qwen..."). Kondisi ini sama dengan pemakaian model sehari-hari di Ollama, LM Studio, atau vLLM.
+- **Qwen3.5 dilatih dalam mode non-thinking** (`enable_thinking=False`). Dataset ini tidak berisi jejak penalaran, jadi model diajari langsung menjawab. Notebook menempelkan jawaban tepat setelah prompt inferensi, termasuk blok `<think>` kosong jika template menambahkannya, supaya format training sama dengan saat dipakai.
 - Dua sampel web (`web-012`, `web-019`) memakai system prompt khusus, misalnya batas maksimal 3 poin penjelasan, supaya model tetap patuh pada instruksi system.
 
 ## Standar kualitas sampel website
@@ -105,69 +106,93 @@ Hal-hal yang dilakukan script:
 
 - **Aya Dataset** ditulis oleh kontributor manusia, bukan dihasilkan model, dan dirilis dengan lisensi terbuka. Lisensi terbuka seperti Apache 2.0 umumnya mewajibkan atribusi dan menyertakan teks lisensi saat data didistribusikan ulang.
 - **Magicoder-Evol-Instruct** dan **UltraChat** dibuat dengan bantuan model OpenAI. Syarat penggunaan OpenAI melarang penggunanya memakai output untuk mengembangkan model yang bersaing dengan OpenAI. Apakah ketentuan kontraktual itu juga mengikat pihak ketiga yang hanya mengunduh datasetnya masih diperdebatkan. Untuk eksperimen pribadi atau riset risikonya kecil, tetapi jika model hasil fine-tuning akan dipakai atau dijual secara komersial, pertimbangkan untuk mengganti kedua sumber ini dengan data yang ditulis manusia atau berlisensi jelas.
-- **Model dasar** Qwen2.5-Coder-7B-Instruct berlisensi Apache 2.0. Adapter atau model gabungan hasil fine-tuning boleh didistribusikan dan dipakai secara komersial, dengan syarat menyertakan salinan lisensi, mempertahankan pemberitahuan hak cipta, dan menandai bahwa model telah diubah (Pasal 4 Apache License 2.0). Ukuran lain dalam keluarga yang sama, misalnya 3B, memakai lisensi yang berbeda.
+- **Model dasar** Qwen3.5-4B dan Qwen2.5-Coder-7B-Instruct berlisensi Apache 2.0. Adapter atau model gabungan hasil fine-tuning boleh didistribusikan dan dipakai secara komersial, dengan syarat menyertakan salinan lisensi, mempertahankan pemberitahuan hak cipta, dan menandai bahwa model telah diubah (Pasal 4 Apache License 2.0). Tidak semua model Qwen berlisensi Apache 2.0: misalnya Qwen2.5-Coder-3B memakai lisensi riset non-komersial. Periksa lisensi setiap model sebelum mengganti model dasar.
 - Periksa kartu dataset (dataset card) masing-masing sumber untuk lisensi terbaru sebelum mendistribusikan dataset campuran atau model hasil training.
 
+## Pilihan data: `own` atau `mix`
+
+- **`own`**: hanya `data/train.jsonl`, 62 sampel, 3 epoch, ±350 ribu token dilatih.
+- **`mix`**: dataset ini ditambah ±900 sampel umum dari `scripts/mix_general.py`, 2 epoch, ±1 juta token dilatih.
+
+Mulailah dengan **`own`**, lalu beralih ke `mix` jika hasilnya menunjukkan gejala lupa kemampuan umum.
+
+- **Alasan memulai dengan `own`:**
+  - Qwen3.5-4B sudah dilatih dengan data umum dalam jumlah sangat besar. 62 sampel dengan LoRA rank 16 hanya mengubah sedikit bobot, jadi risiko model melupakan kemampuan umumnya kecil.
+  - Hampir 75% token di dataset ini adalah sampel website one-shot. Itu memang kemampuan utama yang ingin diajarkan.
+  - Training di T4 butuh ±30–90 menit, tidak berjam-jam, jadi cepat untuk iterasi.
+- **Kapan beralih ke `mix`.** Jika setelah training dengan `own` muncul salah satu gejala berikut:
+  - Setiap pertanyaan dijawab dengan HTML.
+  - Pertanyaan umum dijawab dengan buruk.
+  - Bahasa jawaban menjadi aneh.
+- **Risiko `mix`.** Sebagian data umumnya (Magicoder dan UltraChat) dibuat dengan model OpenAI. Lihat catatan hukum di atas jika model akan dipakai secara komersial. Jalankan `mix_general.py --code 0 --chat 0` untuk memakai Aya saja, yang ditulis manusia.
+
+## Training di Google Colab
+
+Buka [`notebooks/train_colab.ipynb`](notebooks/train_colab.ipynb) di Colab (*File → Open notebook → GitHub*), pilih runtime GPU, atur sel *Konfigurasi*, lalu jalankan semua sel. Notebook ini memakai [Unsloth](https://github.com/unslothai/unsloth):
+
+- **Model:** `MODEL = "qwen3.5-4b"` (bawaan) melatih LoRA 16-bit, karena Unsloth tidak menyarankan QLoRA 4-bit untuk Qwen3.5. `MODEL = "qwen2.5-coder-7b"` melatih QLoRA 4-bit sebagai pembanding. Hasil setiap model dan pilihan data disimpan di folder Drive terpisah.
+- **Presisi di T4:** T4 tidak mendukung bf16, dan Qwen3.5 menghasilkan NaN pada fp16. Unsloth otomatis melatih dalam float32, yang benar tetapi lebih lambat. GPU L4 (Colab berbayar) mendukung bf16 dan jauh lebih cepat.
+- **Sampel terlalu panjang dibuang, bukan dipotong.** Jika `MAX_SEQ_LEN` diturunkan (misalnya ke 6144 saat kehabisan memori), sampel yang terlalu panjang dibuang supaya model tidak belajar dari HTML yang terpotong. Notebook menampilkan sampel mana saja yang dibuang.
+- **Loss hanya pada jawaban assistant**, memakai `train_on_responses_only`. Notebook mencetak contoh token yang dilatih untuk memastikan masking-nya benar.
+- **Tahan sesi putus:** data campuran dan checkpoint disimpan ke Google Drive setiap 10 step. Jika sesi putus, jalankan ulang semua sel dan training dilanjutkan dari checkpoint terakhir.
+- **Hasil:**
+  - adapter LoRA di Drive;
+  - dua website yang dibuat model dari prompt uji yang sama untuk setiap model, supaya mudah dibandingkan;
+  - opsional, file GGUF q4_k_m untuk Ollama atau llama.cpp.
+
+Perkiraan waktu training Qwen3.5-4B, belum termasuk instalasi dan unduh model (±10–15 menit):
+
+| GPU | `own` (±350 ribu token) | `mix` (±1 juta token) |
+|---|---|---|
+| T4 gratis (float32) | ±30–90 menit | ±2–5 jam |
+| L4 (bf16) | ±10–20 menit | ±40–80 menit |
+
+Angka ini perkiraan dan belum diukur. ETA di progress bar saat training adalah angka yang sebenarnya. Colab gratis membatasi lama sesi dan ketersediaan GPU, jadi data `mix` di T4 kemungkinan butuh lebih dari satu sesi.
+
 ## Training dengan LLaMA-Factory
+
+Cara ini untuk GPU yang mendukung bf16 (L4, A10, A100, RTX 30xx/40xx). LLaMA-Factory tidak punya jalur float32 otomatis seperti Unsloth, jadi untuk T4 gunakan notebook di atas.
 
 1. Pasang [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory):
    ```bash
    git clone --depth 1 https://github.com/hiyouga/LLaMA-Factory.git
    cd LLaMA-Factory && pip install -e ".[torch,metrics]"
    ```
-2. Buat data campuran (lihat bagian sebelumnya):
+2. Opsional, buat data campuran:
    ```bash
    python scripts/mix_general.py
    ```
 3. Dari root repo ini, jalankan:
    ```bash
-   llamafactory-cli train train/qwen2.5-coder-7b-lora.yaml
+   llamafactory-cli train train/qwen3.5-4b-lora.yaml
    ```
-   Dataset sudah terdaftar di `data/dataset_info.json` sebagai `instruct_id_mix` (campuran) dan `instruct_id` (hanya dataset ini).
+   Dataset sudah terdaftar di `data/dataset_info.json` sebagai `instruct_id` (hanya dataset ini) dan `instruct_id_mix` (campuran).
 4. Coba hasilnya:
    ```bash
-   llamafactory-cli chat --model_name_or_path Qwen/Qwen2.5-Coder-7B-Instruct \
-     --adapter_name_or_path saves/qwen2.5-coder-7b-instruct-id/lora/sft \
-     --template qwen --finetuning_type lora
+   llamafactory-cli chat --model_name_or_path Qwen/Qwen3.5-4B \
+     --adapter_name_or_path saves/qwen3.5-4b-id/lora/sft \
+     --template qwen3_5_nothink --finetuning_type lora
    ```
 
-Ringkasan konfigurasi di `train/qwen2.5-coder-7b-lora.yaml`:
+Ringkasan konfigurasi di `train/qwen3.5-4b-lora.yaml`:
 
-- LoRA rank 16 di semua layer linear, learning rate `1e-4`, 2 epoch, scheduler cosine, dan batch efektif 8. Jika melatih dengan `instruct_id` saja (tanpa campuran), naikkan ke 3 epoch.
-- `template: qwen` dan `cutoff_len: 8192`, sehingga tidak ada sampel yang terpotong.
+- LoRA rank 16 di semua layer linear, dengan vision tower dibekukan.
+- Learning rate `1e-4`, 3 epoch untuk `instruct_id`, scheduler cosine, dan batch efektif 8.
+- `template: qwen3_5_nothink` dan `cutoff_len: 8192`, sehingga tidak ada sampel yang terpotong.
 - Loss hanya dihitung pada jawaban assistant. Ini perilaku bawaan LLaMA-Factory.
-- Perkiraan VRAM untuk LoRA bf16 adalah sekitar 24 GB. Untuk GPU yang lebih kecil, aktifkan `quantization_bit: 4` (QLoRA).
 
-Framework lain seperti TRL (`SFTTrainer`), Axolotl (`type: chat_template`), dan Unsloth juga bisa membaca format `messages` ini. Pastikan memakai chat template bawaan tokenizer Qwen2.5, dan loss hanya dihitung pada bagian assistant.
+Template `qwen3_5_nothink` di LLaMA-Factory tidak menyisipkan blok `<think>` kosong. Karena itu, pakai template yang sama saat inferensi (`llamafactory-cli chat` atau API LLaMA-Factory). Notebook Colab memakai chat template resmi model, sehingga cocok untuk transformers, vLLM, dan Ollama.
 
-## Training di Google Colab (GPU T4 gratis)
+Konfigurasi lama untuk Qwen2.5-Coder-7B-Instruct masih tersedia di `train/qwen2.5-coder-7b-lora.yaml` (`template: qwen`, butuh ±24 GB VRAM atau `quantization_bit: 4`).
 
-Buka [`notebooks/train_colab_t4.ipynb`](notebooks/train_colab_t4.ipynb) di Colab (*File → Open notebook → GitHub*), pilih runtime **T4 GPU**, atur sel *Konfigurasi*, lalu jalankan semua sel. Notebook ini memakai [Unsloth](https://github.com/unslothai/unsloth) untuk QLoRA 4-bit karena:
-
-- **Memori:** T4 hanya punya 16 GB VRAM. Sampel web sampai ±6.600 token butuh penghematan memori dari Unsloth agar muat pada `max_seq_length` 8192.
-- **Presisi:** T4 tidak mendukung bf16, jadi notebook otomatis memakai fp16.
-- **Sampel terlalu panjang dibuang, bukan dipotong.** Jika `MAX_SEQ_LEN` diturunkan (misalnya ke 6144 saat kehabisan memori), sampel yang terlalu panjang dibuang supaya model tidak belajar dari HTML yang terpotong. Notebook menampilkan sampel mana saja yang dibuang.
-- **Loss hanya pada jawaban assistant**, memakai `train_on_responses_only`. Notebook mencetak contoh token yang dilatih untuk memastikan masking-nya benar.
-- **Tahan sesi putus:** data campuran dan checkpoint disimpan ke Google Drive setiap 20 step. Jika sesi putus, jalankan ulang semua sel dan training dilanjutkan dari checkpoint terakhir.
-- **Hasil:** adapter LoRA (±160 MB) di Drive, contoh website yang dibuat model, dan opsional file GGUF q4_k_m untuk Ollama/llama.cpp.
-
-Perkiraan waktu training di T4, belum termasuk instalasi dan unduh model (±10–15 menit):
-
-| Data | Token dilatih | Waktu |
-|---|---|---|
-| `own` (62 sampel, 3 epoch) | ±350 ribu | ±15–50 menit |
-| `mix` (±960 sampel, 2 epoch) | ±1 juta | ±1–2,5 jam |
-
-Angka ini perkiraan dengan asumsi 120–400 token/detik dan belum diukur. ETA di progress bar saat training adalah angka yang sebenarnya. Colab gratis membatasi lama sesi dan ketersediaan GPU, jadi data `mix` mungkin butuh lebih dari satu sesi.
-
-Untuk LLaMA-Factory di GPU 16 GB tanpa bf16, gunakan `train/qwen2.5-coder-7b-qlora-t4.yaml` (QLoRA 4-bit, fp16, Unsloth, checkpoint tiap 20 step).
+Framework lain seperti TRL (`SFTTrainer`) dan Axolotl (`type: chat_template`) juga bisa membaca format `messages` ini. Pastikan memakai chat template bawaan tokenizer model, dan loss hanya dihitung pada bagian assistant.
 
 ## Validasi
 
 ```bash
 python scripts/validate.py
 # opsional, hitung token dengan tokenizer asli (butuh transformers):
-python scripts/validate.py --tokenizer Qwen/Qwen2.5-Coder-7B-Instruct --max-len 8192
+python scripts/validate.py --tokenizer Qwen/Qwen3.5-4B --max-len 8192
 ```
 
 Script ini memeriksa struktur JSON, urutan role, ID dan prompt duplikat, kelengkapan blok HTML pada sampel web, serta panjang token terhadap `cutoff_len`.
@@ -205,9 +230,9 @@ Tes gagal jika ada error JavaScript, request ke luar, scroll horizontal, atau sk
 data/train.jsonl                      dataset (format messages)
 data/train_mix.jsonl                  hasil scripts/mix_general.py (tidak di-commit)
 data/dataset_info.json                registrasi dataset untuk LLaMA-Factory
-train/qwen2.5-coder-7b-lora.yaml      konfigurasi fine-tuning LoRA
-train/qwen2.5-coder-7b-qlora-t4.yaml  konfigurasi QLoRA untuk GPU 16 GB tanpa bf16 (T4)
-notebooks/train_colab_t4.ipynb        notebook training di Google Colab T4 (Unsloth)
+train/qwen3.5-4b-lora.yaml            konfigurasi LoRA Qwen3.5-4B untuk LLaMA-Factory
+train/qwen2.5-coder-7b-lora.yaml      konfigurasi LoRA Qwen2.5-Coder-7B (pembanding)
+notebooks/train_colab.ipynb           notebook training di Google Colab (Unsloth, T4/L4)
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
 scripts/validate.py                   validasi dataset
 examples/web/*.html                   20 website dari sampel web, siap dibuka di browser

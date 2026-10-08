@@ -2,7 +2,7 @@
 
 Pemakaian:
     python scripts/validate.py
-    python scripts/validate.py --tokenizer Qwen/Qwen2.5-Coder-7B-Instruct --max-len 8192
+    python scripts/validate.py --tokenizer Qwen/Qwen3.5-4B --max-len 8192
 
 Opsi --tokenizer butuh paket `transformers` dan menghitung panjang token setelah chat template diterapkan.
 """

@@ -1,0 +1,44 @@
+# Fine-tuning LoRA Qwen3.5-4B (mode non-thinking) dengan LLaMA-Factory, untuk GPU yang mendukung bf16
+# (L4, A10, A100, RTX 30xx/40xx; ±16 GB VRAM cukup). Untuk T4 di Colab, pakai notebooks/train_colab.ipynb:
+# Qwen3.5 menghasilkan NaN pada fp16, dan hanya Unsloth yang otomatis beralih ke float32 di GPU tanpa bf16.
+# 1. Opsional, buat data campuran:  python scripts/mix_general.py
+# 2. Dari root repo ini:             llamafactory-cli train train/qwen3.5-4b-lora.yaml
+
+### model
+model_name_or_path: Qwen/Qwen3.5-4B
+trust_remote_code: true
+
+### method
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_rank: 16
+lora_alpha: 32
+lora_dropout: 0.05
+lora_target: all
+freeze_vision_tower: true   # dataset hanya teks
+
+### dataset
+dataset: instruct_id        # data sendiri; ganti ke instruct_id_mix untuk data campuran
+dataset_dir: data
+template: qwen3_5_nothink   # tanpa blok <think>, sesuai format dataset
+cutoff_len: 8192            # sampel terpanjang ±6,6 ribu token, jadi tidak ada yang terpotong
+overwrite_cache: true
+preprocessing_num_workers: 4
+
+### output
+output_dir: saves/qwen3.5-4b-id/lora/sft
+logging_steps: 5
+save_strategy: epoch
+plot_loss: true
+overwrite_output_dir: true
+report_to: none
+
+### train
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+learning_rate: 1.0e-4
+num_train_epochs: 3.0       # turunkan ke 2 jika memakai instruct_id_mix
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+bf16: true

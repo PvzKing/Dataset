@@ -1,4 +1,4 @@
-# Fine-tuning LoRA Qwen2.5-Coder-7B-Instruct dengan LLaMA-Factory.
+# Fine-tuning LoRA Qwen2.5-Coder-7B-Instruct dengan LLaMA-Factory (pembanding; model utama: train/qwen3.5-4b-lora.yaml).
 # 1. Buat data campuran:  python scripts/mix_general.py
 # 2. Dari root repo ini:   llamafactory-cli train train/qwen2.5-coder-7b-lora.yaml
 

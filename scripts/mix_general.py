@@ -23,7 +23,7 @@ MAX_TOKENS = 7000          # sisakan ruang di bawah cutoff_len 8192
 MIN_RESPONSE_CHARS = 15
 
 # Jawaban yang menyebut identitas model lain atau berisi boilerplate "sebagai model bahasa AI" dibuang
-# supaya tidak bertentangan dengan identitas dari system prompt bawaan Qwen2.5.
+# supaya tidak bertentangan dengan identitas model Qwen yang dilatih.
 BLOCKLIST = re.compile(
     r"\b(openai|chatgpt|gpt-?3\.5|gpt-?4|as an ai language model|as a language model|"
     r"sebagai model bahasa( ai)?|i am an ai developed by)\b",
