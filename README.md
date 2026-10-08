@@ -156,10 +156,10 @@ Perkiraan waktu training Qwen3.5-4B, belum termasuk instalasi dan unduh model (�
 
 | GPU | `own` (±350 ribu token) | `mix` (±1 juta token) |
 |---|---|---|
-| T4 gratis (float32) | ±30–90 menit | ±2–5 jam |
+| T4 gratis (QLoRA 4-bit, float32, konteks 6144) | ±23 menit (terukur) | ±1,5–3 jam |
 | L4 (bf16) | ±10–20 menit | ±40–80 menit |
 
-Angka ini perkiraan dan belum diukur. ETA di progress bar saat training adalah angka yang sebenarnya. Colab gratis membatasi lama sesi dan ketersediaan GPU, jadi data `mix` di T4 kemungkinan butuh lebih dari satu sesi.
+Angka T4 untuk `own` diukur langsung di Colab. Angka lainnya masih perkiraan, dan ETA di progress bar menunjukkan waktu yang sebenarnya. Di T4, script otomatis memakai QLoRA 4-bit dan `max_seq_len` 6144, karena 16-bit maupun 4-bit dengan konteks 8192 kehabisan memori di sana. Akibatnya, 2 sampel web terpanjang tidak ikut dilatih. Colab gratis membatasi lama sesi dan ketersediaan GPU, jadi data `mix` di T4 kemungkinan butuh lebih dari satu sesi.
 
 ## Training dengan LLaMA-Factory
 

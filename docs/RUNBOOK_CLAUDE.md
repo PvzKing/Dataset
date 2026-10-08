@@ -70,7 +70,7 @@ denganmu hanya lewat terminal ini, jadi tulis setiap laporan sebagai jawaban di 
 
 | Gejala | Tindakan |
 |---|---|
-| `stage: error` dengan `CUDA out of memory` | Langkah 1: jika belum 4-bit, ulangi perintah `train` dengan tambahan `--load-in-4bit` (QLoRA, hemat ±6 GB). Hasilnya disimpan di folder `...-4bit`. Beri tahu pengguna bahwa akurasi Qwen3.5 sedikit turun dengan 4-bit. Langkah 2: jika masih kehabisan memori, tambahkan `--max-seq-len 6144` dan laporkan sampel yang ikut dibuang. Di bawah 6144, tanya pengguna dulu, karena sebagian besar sampel web akan terbuang. |
+| `stage: error` dengan `CUDA out of memory` | Di T4, script otomatis memakai `--load-in-4bit --max-seq-len 6144`. Kombinasi ini sudah terbukti jalan dan membuang 2 sampel web terpanjang. Jika error terjadi dengan pengaturan lain, ulangi dengan `--load-in-4bit --max-seq-len 6144` dan beri tahu pengguna bahwa akurasi Qwen3.5 sedikit turun dengan 4-bit. Hasilnya disimpan di folder `...-4bit`. Untuk batas di bawah 6144, tanya pengguna dulu, karena sebagian besar sampel web akan terbuang. |
 | Loss `nan`, atau `grad_norm` `nan` terus-menerus | Hentikan proses. Jalankan `pip install --upgrade unsloth unsloth_zoo`, lalu ulangi. Jika tetap `nan`, laporkan ke pengguna, jangan diakali dengan mengganti presisi sendiri. |
 | `ModuleNotFoundError`, atau error versi transformers/trl | Jalankan `pip install --upgrade unsloth`. Qwen3.5 butuh transformers v5. |
 | Gagal mengunduh model atau data (HTTP 429/5xx, timeout) | Tunggu sebentar lalu ulangi. Jika berulang, minta pengguna mengisi secret `HF_TOKEN` di Colab, atau meng-upload `train.jsonl` ke `/content`. |

@@ -54,11 +54,13 @@ Cara 1 atau Cara 2 ─► pilih GPU ─► instalasi ─► jalankan training (M
 
 | GPU | Data `own` (disarankan) | Data `mix` |
 |---|---|---|
-| T4 (gratis) | ±30–90 menit | ±2–5 jam |
+| T4 (gratis) | **±23 menit (terukur)** | ±1,5–3 jam |
 | L4 (Colab berbayar) | ±10–20 menit | ±40–80 menit |
 
 T4 lebih lambat karena tidak mendukung bf16. Qwen3.5 menghasilkan error numerik (NaN) pada fp16, jadi Unsloth otomatis
-melatihnya dalam float32.
+melatihnya dalam float32. Supaya muat di 16 GB VRAM T4, script otomatis memakai **QLoRA 4-bit** dan **`max_seq_len` 6144**.
+Akibatnya, 2 sampel web terpanjang (`web-001` dan `web-018`) tidak ikut dilatih, dan akurasinya sedikit di bawah 16-bit.
+GPU L4 tidak butuh kompromi ini.
 
 ## 2. Yang perlu disiapkan
 
@@ -114,7 +116,8 @@ Cara ini hanya mendukung mode A.
 ## 5. Mode A: jalankan sendiri
 
 1. **Jalankan training.** Di Cara 1, jalankan sel **Mode A** (`!python /content/train_unsloth.py train`). Di Cara 2, cukup jalankan sel 2. Output yang akan muncul berurutan:
-   - `folder hasil: /content/drive/MyDrive/finetune-id/qwen3.5-4b-own`.
+   - Di T4: `GPU kecil tanpa bf16 terdeteksi ... (load_in_4bit=True, max_seq_len=6144)`. Ini pengaturan hemat memori otomatis.
+   - `folder hasil: /content/drive/MyDrive/finetune-id/qwen3.5-4b-own-4bit`. Di GPU yang mendukung bf16, nama foldernya tanpa `-4bit`.
    - `data valid: 62 sampel`. Jika belum ada `train.jsonl`, akan muncul `mengunduh ...` dulu.
    - Ringkasan data: jumlah sampel, jumlah step, dan perkiraan waktu.
    - `cek masking: ...`: bagian yang dilatih harus diawali jawaban, bukan pertanyaan.
@@ -188,7 +191,7 @@ Catatan:
 
 ## 7. Memantau progres
 
-Semua hasil ada di Google Drive, di folder `finetune-id/<model>-<dataset>/`, misalnya `finetune-id/qwen3.5-4b-own/`:
+Semua hasil ada di Google Drive, di folder `finetune-id/<model>-<dataset>/`, misalnya `finetune-id/qwen3.5-4b-own-4bit/` di T4:
 
 | File/folder | Isi |
 |---|---|
@@ -283,7 +286,7 @@ Untuk prompt sendiri, ubah `TEST_PROMPTS` di script, atau minta Claude melakukan
 
 | Pesan / gejala | Penyebab | Solusi |
 |---|---|---|
-| `CUDA out of memory` | VRAM T4 tidak cukup: Qwen3.5 dilatih dalam float32 di T4 | **Langkah 1:** pakai QLoRA 4-bit. Set `"load_in_4bit": True` di `CONFIG`, atau tambahkan `--load-in-4bit` di perintah. Cara ini menghemat ±6 GB VRAM, dengan akurasi sedikit turun. Hasilnya disimpan di folder `qwen3.5-4b-own-4bit`. **Langkah 2:** jika masih kurang, tambahkan juga `--max-seq-len 6144`. Beberapa sampel web terpanjang akan dibuang. **Alternatif tanpa kompromi:** GPU L4 (Colab berbayar). |
+| `CUDA out of memory` | VRAM T4 tidak cukup: Qwen3.5 dilatih dalam float32 di T4 | Di T4, script otomatis memakai QLoRA 4-bit dan `max_seq_len` 6144. Kombinasi ini sudah terbukti jalan. Jika Anda mengubah pengaturan itu dan error muncul, kembalikan `"load_in_4bit"` dan `"max_seq_len"` ke `None`, atau jalankan dengan `--load-in-4bit --max-seq-len 6144`. **Tanpa kompromi:** pakai GPU L4 (Colab berbayar), yang bisa memakai 16-bit dengan konteks 8192. |
 | `Cannot connect to GPU backend` | Kuota GPU gratis habis atau sedang penuh | Coba lagi beberapa jam kemudian, atau pakai Colab berbayar |
 | `loss` bernilai `nan` | Masalah presisi | Jalankan ulang sel instalasi untuk memasang Unsloth terbaru, lalu ulangi training. Untuk Qwen3.5 di T4, log harus berisi `Switching to float32`. |
 | `ModuleNotFoundError: unsloth` | Sel instalasi belum dijalankan setelah sesi baru | Jalankan sel instalasi |

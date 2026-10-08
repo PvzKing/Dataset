@@ -47,9 +47,9 @@ CONFIG = {
     "out": "/content/drive/MyDrive/finetune-id",  # folder hasil; di Google Drive supaya aman saat sesi putus
     "data": None,                   # path train.jsonl; None = cari otomatis lalu unduh dari GitHub jika tidak ada
     "mix_args": "",                 # argumen tambahan mix_general.py, misalnya "--code 0 --chat 0" (hanya Aya)
-    "load_in_4bit": None,           # None = bawaan model (Qwen3.5: 16-bit). True = QLoRA 4-bit, hemat ±6 GB VRAM;
-                                    # pakai di T4 jika "CUDA out of memory" (akurasi Qwen3.5 sedikit turun)
-    "max_seq_len": 8192,            # sampel lebih panjang DIBUANG (tidak dipotong); 6144 jika masih kehabisan memori
+    "load_in_4bit": None,           # None = otomatis: 4-bit di GPU kecil tanpa bf16 (T4), selain itu bawaan model.
+                                    # True = QLoRA 4-bit (hemat ±6 GB VRAM, akurasi Qwen3.5 sedikit turun)
+    "max_seq_len": None,            # None = otomatis: 6144 di T4, 8192 di GPU lain. Sampel lebih panjang DIBUANG
     "epochs": None,                 # None = 3 untuk own, 2 untuk mix
     "lr": 1e-4,
     "lora_r": 16,
@@ -428,6 +428,18 @@ def cmd_gguf(args, cfg, status, run_dir):
     status.update(stage="done", message="GGUF tersimpan", gguf=str(run_dir / "gguf"))
 
 
+def detect_small_gpu():
+    """True jika GPU tidak mendukung bf16 dan VRAM < 20 GB (misalnya T4): Qwen3.5 dilatih dalam float32 di sana,
+    dan di T4 16-bit maupun 4-bit dengan konteks 8192 terbukti kehabisan memori."""
+    try:
+        import torch
+        if not torch.cuda.is_available():
+            return False
+        return not torch.cuda.is_bf16_supported() and torch.cuda.get_device_properties(0).total_memory < 20e9
+    except ImportError:
+        return False
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("command", nargs="?", choices=["info", "prepare", "train", "test", "gguf"])
@@ -436,7 +448,8 @@ def parse_args():
     parser.add_argument("--out", help="folder hasil, misalnya di Google Drive")
     parser.add_argument("--data", help="path train.jsonl (bawaan: cari otomatis, lalu unduh dari GitHub)")
     parser.add_argument("--mix-args", help='argumen tambahan mix_general.py, tulis dengan =, misalnya --mix-args="--code 0 --chat 0"')
-    parser.add_argument("--load-in-4bit", action="store_true", default=None, help="QLoRA 4-bit, hemat VRAM")
+    parser.add_argument("--load-in-4bit", action=argparse.BooleanOptionalAction, default=None,
+                        help="QLoRA 4-bit (hemat VRAM); --no-load-in-4bit memaksa bawaan model")
     parser.add_argument("--max-seq-len", type=int, help="sampel yang lebih panjang dibuang")
     parser.add_argument("--epochs", type=float, help="bawaan: 3 untuk own, 2 untuk mix")
     parser.add_argument("--lr", type=float)
@@ -457,8 +470,15 @@ def parse_args():
         raise ValueError(f"command tidak dikenal: {args.command!r}")
     if args.epochs is None:
         args.epochs = 2 if args.dataset == "mix" else 3
-    if args.load_in_4bit is None:
-        args.load_in_4bit = MODELS[args.model]["load_in_4bit"]
+    if args.load_in_4bit is None or args.max_seq_len is None:
+        small = detect_small_gpu()
+        if args.load_in_4bit is None:
+            args.load_in_4bit = MODELS[args.model]["load_in_4bit"] or small
+        if args.max_seq_len is None:
+            args.max_seq_len = 6144 if small else 8192
+        if small:
+            print("GPU kecil tanpa bf16 terdeteksi (misalnya T4): memakai pengaturan hemat memori "
+                  f"(load_in_4bit={args.load_in_4bit}, max_seq_len={args.max_seq_len})", flush=True)
     return args
 
 
@@ -489,10 +509,11 @@ def main():
         tb = traceback.format_exc()
         hint = None
         if "out of memory" in tb.lower() and not args.load_in_4bit:
-            hint = ("VRAM tidak cukup: ulangi dengan QLoRA 4-bit (CONFIG load_in_4bit True atau --load-in-4bit); "
-                    "jika masih kurang, tambah max_seq_len 6144")
+            hint = "VRAM tidak cukup: ulangi dengan --load-in-4bit --max-seq-len 6144 (di T4 keduanya diperlukan)"
         elif "out of memory" in tb.lower():
-            hint = "VRAM tidak cukup: ulangi dengan max_seq_len 6144 (CONFIG atau --max-seq-len 6144)"
+            smaller = 6144 if args.max_seq_len > 6144 else 4096
+            hint = (f"VRAM tidak cukup: ulangi dengan --max-seq-len {smaller}"
+                    + (" (sebagian besar sampel web akan terbuang; GPU L4 lebih disarankan)" if smaller < 6144 else ""))
         elif re.search(r"\bnan\b", str(e), re.IGNORECASE):
             hint = "loss NaN: pasang ulang Unsloth terbaru; untuk Qwen3.5 di T4 Unsloth harus beralih ke float32"
         elif "drive belum ter-mount" in str(e).lower():
