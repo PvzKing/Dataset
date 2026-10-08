@@ -108,7 +108,10 @@ Persiapan selesai. Lanjut ke **mode A** atau **mode B**.
 
 ## 5. Mode B: Claude yang mengontrol
 
-Claude Code berjalan **di dalam VM Colab** dan memegang kendali penuh atas proses training:
+Claude Code berjalan **di terminal VM Colab**, dan seluruh kendali dilakukan lewat terminal itu. Anda memberi
+perintah dan membaca laporan Claude di terminal yang sama, di dalam tab Colab.
+
+Claude akan:
 - menjalankan training di latar belakang;
 - membaca log dan `status.json`;
 - memantau GPU;
@@ -119,39 +122,50 @@ Claude Code berjalan **di dalam VM Colab** dan memegang kendali penuh atas prose
 Aturan kerjanya ada di [`RUNBOOK_CLAUDE.md`](RUNBOOK_CLAUDE.md). Claude akan bertanya dulu sebelum mengambil keputusan
 penting, misalnya mengganti data atau menghapus checkpoint.
 
+### 5.1 Buka terminal dan jalankan Claude
+
 1. **Jalankan sel Mode B.** Sel ini memasang Claude Code dan membuka jendela terminal hitam di bawahnya.
 2. **Klik di dalam terminal**, ketik perintah berikut, lalu tekan Enter:
    ```
    cd /content/Dataset && export PATH="$HOME/.local/bin:$PATH" && claude
    ```
-3. **Login:**
+3. **Login.** Ini hanya perlu dilakukan sekali per sesi Colab.
    1. Ikuti pertanyaan awal (misalnya pilihan tema), lalu pilih login dengan **akun Claude** (langganan).
    2. Muncul link panjang. Salin, buka di tab baru, login, lalu klik **Authorize**.
    3. Salin kode yang muncul, kembali ke terminal, dan tempel dengan **Ctrl+Shift+V** atau klik kanan → Paste. Tekan Enter.
    4. Jika ditanya *Do you trust the files in this folder?*, pilih **Yes**.
-4. **Beri tugas.** Ketik atau tempel kalimat ini:
+
+### 5.2 Beri tugas dan izin
+
+1. **Beri tugas.** Ketik atau tempel kalimat ini di terminal, lalu tekan Enter:
    ```
    Latih model sesuai run_config.json mengikuti docs/RUNBOOK_CLAUDE.md, pantau sampai selesai, lalu laporkan hasilnya.
    ```
-5. **Izinkan perintah.** Claude akan meminta izin sebelum menjalankan perintah.
-   - Untuk perintah aman seperti `python scripts/train_unsloth.py`, `cat`, `tail`, `nvidia-smi`, dan `sleep`, pilih **Yes, and don't ask again**. Setelah itu Claude bisa memantau sendiri tanpa bertanya lagi.
-   - Untuk perintah yang terlihat tidak biasa, baca dulu sebelum menyetujui.
-6. **Tunggu.** Biarkan tab Colab terbuka. Anda bisa mengetik pertanyaan kapan saja, misalnya `gimana progresnya?`, `kenapa loss-nya naik?`, atau `stop training`.
-7. **Selesai.** Claude akan melaporkan:
+2. **Izinkan perintah.** Setiap kali Claude ingin menjalankan perintah, terminal menampilkan pilihan.
+   - Untuk perintah aman seperti `python scripts/train_unsloth.py`, `cat`, `tail`, `nvidia-smi`, dan `sleep`, pilih **Yes, and don't ask again** dengan tombol panah, lalu Enter. Setelah itu Claude bisa memantau sendiri tanpa bertanya lagi.
+   - Untuk perintah yang terlihat tidak biasa, baca dulu sebelum menyetujui. Jika ragu, pilih **No** dan tanyakan alasannya ke Claude.
+3. **Tunggu.** Biarkan tab Colab tetap terbuka. Claude melapor di terminal saat training mulai, kira-kira setiap 25% progres, saat ada error, dan saat selesai.
+4. **Selesai.** Claude akan melaporkan:
    - loss akhir dan lama training;
    - lokasi adapter;
    - penilaian kedua website uji;
    - saran langkah berikutnya.
 
-### Mengontrol dari HP (opsional, hanya Colab berbayar)
+### 5.3 Berinteraksi dengan Claude di terminal
 
-1. Setelah langkah 3 selesai, ketik `/exit` untuk keluar dari Claude.
-2. Jalankan `claude remote-control`.
-3. Buka aplikasi Claude di HP, masuk ke tab **Code**, lalu pilih sesinya. Bisa juga lewat claude.ai/code di browser lain.
+| Ingin | Ketik / tekan |
+|---|---|
+| Menanyakan progres | `gimana progresnya?` |
+| Menanyakan sesuatu | `kenapa loss-nya naik?`, `berapa lama lagi?` |
+| Menghentikan training | `stop training` (Claude menghentikan prosesnya; checkpoint tetap aman) |
+| Menyela Claude yang sedang bekerja | **Esc** |
+| Keluar dari Claude | `/exit`, atau **Ctrl+C** dua kali |
+| Membuka lagi percakapan terakhir | `claude --continue` (di folder `/content/Dataset`) |
+| Menjalankan langkah berikutnya | `uji ulang adapter`, `ekspor GGUF`, `latih juga model qwen2.5-coder-7b untuk pembanding` |
 
-Pakai cara ini **hanya jika saldo compute unit Colab Anda positif**. FAQ Colab menyebut *remote control* dan bekerja di
-luar UI notebook sebagai aktivitas yang dibatasi di tier gratis, dan runtime bisa dihentikan tanpa peringatan. Lihat
-bagian 11.
+Catatan:
+- **Training tetap berjalan meski Claude berhenti.** Training berjalan di latar belakang, jadi tetap jalan walaupun Anda keluar dari Claude, terminal tertutup, atau output sel terhapus. Untuk melanjutkan pemantauan, jalankan ulang sel Mode B, lalu `claude --continue`.
+- **Proses tidak tampil di layar.** Terminal hanya menampilkan percakapan dengan Claude, bukan progress bar. Untuk melihat angka mentahnya, minta `tampilkan status.json` atau buka `status.json` di Google Drive.
 
 ## 6. Memantau progres
 
@@ -184,7 +198,7 @@ Checkpoint tersimpan di Drive, jadi progres tidak hilang. Paling banyak 10 step 
 2. Jalankan ulang sel **1–4**. Sel 2 tetap perlu dijalankan karena VM-nya baru.
 3. Jalankan mode yang sama:
    - **Mode A:** jalankan ulang sel training.
-   - **Mode B:** buka terminal lagi, jalankan `claude`, lalu ketik `lanjutkan training yang terputus`.
+   - **Mode B:** jalankan ulang sel Mode B, lalu di terminal jalankan `cd /content/Dataset && export PATH="$HOME/.local/bin:$PATH" && claude` dan login lagi (VM-nya baru). Setelah itu ketik `lanjutkan training yang terputus`.
 4. Di output akan muncul `mulai dari .../checkpoint-XX`. Itu tanda training dilanjutkan dari checkpoint terakhir.
 
 Tips supaya sesi tidak cepat putus:
@@ -263,8 +277,7 @@ Untuk prompt sendiri, ubah `TEST_PROMPTS` di `scripts/train_unsloth.py`, atau mi
 
 - **Kebijakan Google Colab.**
   - Menurut [FAQ Colab](https://research.google.com/colaboratory/faq.html), tier gratis membatasi *remote control* (SSH, remote desktop), bekerja terutama lewat web UI di luar notebook, dan worker komputasi terdistribusi. Runtime yang melakukannya bisa dihentikan tanpa peringatan.
-  - Mode B di terminal notebook tetap bekerja di dalam UI notebook, jadi itulah cara yang disarankan untuk tier gratis.
-  - `claude remote-control` sebaiknya dipakai hanya dengan saldo compute unit positif.
+  - Mode B berjalan lewat terminal di dalam tab notebook, jadi tetap bekerja di dalam UI notebook. Jangan menambahkan SSH, tunnel (ngrok dan sejenisnya), atau akses jarak jauh lain ke VM Colab.
   - Proxy, file hosting, dan penambangan kripto dilarang di semua tier.
 - **Claude Code** memakai akun Claude Anda dan tunduk pada ketentuan layanan Anthropic. Isi repo dan log yang dibaca Claude dikirim ke Anthropic untuk diproses. Jangan menaruh data rahasia di repo atau Drive yang dibaca Claude.
 - **Kerahasiaan klien dan data pribadi.** Jika Anda menambah sampel dari pekerjaan nyata, misalnya dokumen perkara atau korespondensi klien:

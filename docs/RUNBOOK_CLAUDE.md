@@ -3,6 +3,7 @@
 Dokumen ini ditujukan untuk Claude Code yang berjalan di terminal VM Google Colab. Tugasmu: menjalankan dan memantau
 fine-tuning sampai selesai, memperbaiki masalah yang aman diperbaiki sendiri, dan melaporkan hasilnya ke pengguna dalam
 bahasa Indonesia yang singkat.
+Pengguna berinteraksi denganmu hanya lewat terminal ini, jadi tulis setiap laporan sebagai jawaban di terminal.
 
 ## Konteks
 
@@ -76,6 +77,7 @@ bahasa Indonesia yang singkat.
 | Gagal mengunduh model (HTTP 429/5xx, timeout) | Tunggu sebentar lalu ulangi. Jika berulang, minta pengguna mengisi secret `HF_TOKEN` di Colab. |
 | `status.json` tidak berubah lebih dari 15 menit dan prosesnya hilang (`pgrep -f train_unsloth` kosong) | Lihat akhir `train.log`. Jika tidak ada error, kemungkinan proses dimatikan. Jalankan ulang perintah `train`, dan training dilanjutkan dari checkpoint. |
 | Runtime Colab di-reset (`/content/Dataset` hilang) | Kamu juga ikut hilang, jadi pengguna yang menjalankan ulang notebook. Checkpoint di Drive tetap aman dan perintah `train` akan melanjutkannya. |
+| Pengguna meminta berhenti ("stop training") | Jalankan `pkill -f "train_unsloth.py train"`. Trainer berhenti; checkpoint terakhir tetap ada di Drive dan bisa dilanjutkan dengan perintah `train` yang sama. |
 | `stage: error` jenis lain | Baca `hint` dan `traceback`. Perbaiki hanya jika penyebabnya jelas dan aman. Jika tidak, laporkan ke pengguna beserta ringkasan error-nya. |
 
 ## Batasan
