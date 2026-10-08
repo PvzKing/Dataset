@@ -283,7 +283,7 @@ Untuk prompt sendiri, ubah `TEST_PROMPTS` di script, atau minta Claude melakukan
 
 | Pesan / gejala | Penyebab | Solusi |
 |---|---|---|
-| `CUDA out of memory` | VRAM tidak cukup untuk sampel terpanjang | Di `CONFIG`, set `"max_seq_len": 6144`, lalu jalankan ulang sel script dan training. 2 sampel web terpanjang akan dibuang. |
+| `CUDA out of memory` | VRAM T4 tidak cukup: Qwen3.5 dilatih dalam float32 di T4 | **Langkah 1:** pakai QLoRA 4-bit. Set `"load_in_4bit": True` di `CONFIG`, atau tambahkan `--load-in-4bit` di perintah. Cara ini menghemat ±6 GB VRAM, dengan akurasi sedikit turun. Hasilnya disimpan di folder `qwen3.5-4b-own-4bit`. **Langkah 2:** jika masih kurang, tambahkan juga `--max-seq-len 6144`. Beberapa sampel web terpanjang akan dibuang. **Alternatif tanpa kompromi:** GPU L4 (Colab berbayar). |
 | `Cannot connect to GPU backend` | Kuota GPU gratis habis atau sedang penuh | Coba lagi beberapa jam kemudian, atau pakai Colab berbayar |
 | `loss` bernilai `nan` | Masalah presisi | Jalankan ulang sel instalasi untuk memasang Unsloth terbaru, lalu ulangi training. Untuk Qwen3.5 di T4, log harus berisi `Switching to float32`. |
 | `ModuleNotFoundError: unsloth` | Sel instalasi belum dijalankan setelah sesi baru | Jalankan sel instalasi |

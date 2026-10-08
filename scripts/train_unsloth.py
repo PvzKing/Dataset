@@ -15,7 +15,7 @@ Atau simpan sebagai file (sel diawali `%%writefile /content/train_unsloth.py`) l
     python train_unsloth.py train      # training + simpan adapter + website uji (bawaan, lihat CONFIG["command"])
     python train_unsloth.py test       # uji ulang adapter yang sudah tersimpan
     python train_unsloth.py gguf       # ekspor GGUF q4_k_m untuk Ollama / llama.cpp
-    Opsi CONFIG bisa diganti lewat argumen, misalnya: --dataset mix --max-seq-len 6144
+    Opsi CONFIG bisa diganti lewat argumen, misalnya: --dataset mix --load-in-4bit --max-seq-len 6144
 
 Semua hasil ditulis ke <out>/<model>-<dataset>/:
     status.json      tahap yang sedang berjalan, step, loss, ETA, atau pesan error (dibaca untuk memantau)
@@ -36,6 +36,9 @@ import traceback
 import urllib.request
 from pathlib import Path
 
+# Kurangi fragmentasi memori GPU; harus diset sebelum torch di-import.
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
 # ======================================================== CONFIG: ubah di sini ========================================
 CONFIG = {
     "command": "train",             # dipakai jika tidak ada argumen: "train", "prepare", "test", "gguf", atau "info"
@@ -44,7 +47,9 @@ CONFIG = {
     "out": "/content/drive/MyDrive/finetune-id",  # folder hasil; di Google Drive supaya aman saat sesi putus
     "data": None,                   # path train.jsonl; None = cari otomatis lalu unduh dari GitHub jika tidak ada
     "mix_args": "",                 # argumen tambahan mix_general.py, misalnya "--code 0 --chat 0" (hanya Aya)
-    "max_seq_len": 8192,            # sampel lebih panjang DIBUANG (tidak dipotong); 6144 jika "CUDA out of memory"
+    "load_in_4bit": None,           # None = bawaan model (Qwen3.5: 16-bit). True = QLoRA 4-bit, hemat ±6 GB VRAM;
+                                    # pakai di T4 jika "CUDA out of memory" (akurasi Qwen3.5 sedikit turun)
+    "max_seq_len": 8192,            # sampel lebih panjang DIBUANG (tidak dipotong); 6144 jika masih kehabisan memori
     "epochs": None,                 # None = 3 untuk own, 2 untuk mix
     "lr": 1e-4,
     "lora_r": 16,
@@ -258,8 +263,8 @@ def load_model(cfg, args, model_name=None):
         model_name=model_name or cfg["name"],
         max_seq_length=args.max_seq_len,
         dtype=None,
-        load_in_4bit=cfg["load_in_4bit"],
-        load_in_16bit=not cfg["load_in_4bit"],
+        load_in_4bit=args.load_in_4bit,
+        load_in_16bit=not args.load_in_4bit,
     )
     return model, unwrap_tokenizer(tokenizer)
 
@@ -431,6 +436,7 @@ def parse_args():
     parser.add_argument("--out", help="folder hasil, misalnya di Google Drive")
     parser.add_argument("--data", help="path train.jsonl (bawaan: cari otomatis, lalu unduh dari GitHub)")
     parser.add_argument("--mix-args", help='argumen tambahan mix_general.py, tulis dengan =, misalnya --mix-args="--code 0 --chat 0"')
+    parser.add_argument("--load-in-4bit", action="store_true", default=None, help="QLoRA 4-bit, hemat VRAM")
     parser.add_argument("--max-seq-len", type=int, help="sampel yang lebih panjang dibuang")
     parser.add_argument("--epochs", type=float, help="bawaan: 3 untuk own, 2 untuk mix")
     parser.add_argument("--lr", type=float)
@@ -451,15 +457,20 @@ def parse_args():
         raise ValueError(f"command tidak dikenal: {args.command!r}")
     if args.epochs is None:
         args.epochs = 2 if args.dataset == "mix" else 3
+    if args.load_in_4bit is None:
+        args.load_in_4bit = MODELS[args.model]["load_in_4bit"]
     return args
 
 
 def main():
     args = parse_args()
     cfg = MODELS[args.model]
-    run_dir = Path(args.out) / f"{args.model}-{args.dataset}"
+    # Hasil QLoRA 4-bit untuk model yang bawaannya 16-bit disimpan terpisah supaya checkpoint tidak tercampur.
+    suffix = "-4bit" if args.load_in_4bit and not cfg["load_in_4bit"] else ""
+    run_dir = Path(args.out) / f"{args.model}-{args.dataset}{suffix}"
     if args.command == "info":
-        print(json.dumps({"model": args.model, "dataset": args.dataset, "max_seq_len": args.max_seq_len,
+        print(json.dumps({"model": args.model, "dataset": args.dataset, "load_in_4bit": args.load_in_4bit,
+                          "max_seq_len": args.max_seq_len,
                           "epochs": args.epochs, "run_dir": str(run_dir), "status": str(run_dir / "status.json")},
                          indent=1))
         return
@@ -469,14 +480,18 @@ def main():
     print(f"folder hasil: {run_dir}", flush=True)
     status = Status(run_dir / "status.json")
     status.update(stage="starting", message=args.command, command=args.command, model=args.model,
-                  dataset=args.dataset, max_seq_len=args.max_seq_len, pid=os.getpid())
+                  dataset=args.dataset, load_in_4bit=args.load_in_4bit, max_seq_len=args.max_seq_len,
+                  pid=os.getpid())
     commands = {"prepare": cmd_prepare, "train": cmd_train, "test": cmd_test, "gguf": cmd_gguf}
     try:
         commands[args.command](args, cfg, status, run_dir)
     except BaseException as e:
         tb = traceback.format_exc()
         hint = None
-        if "out of memory" in tb.lower():
+        if "out of memory" in tb.lower() and not args.load_in_4bit:
+            hint = ("VRAM tidak cukup: ulangi dengan QLoRA 4-bit (CONFIG load_in_4bit True atau --load-in-4bit); "
+                    "jika masih kurang, tambah max_seq_len 6144")
+        elif "out of memory" in tb.lower():
             hint = "VRAM tidak cukup: ulangi dengan max_seq_len 6144 (CONFIG atau --max-seq-len 6144)"
         elif re.search(r"\bnan\b", str(e), re.IGNORECASE):
             hint = "loss NaN: pasang ulang Unsloth terbaru; untuk Qwen3.5 di T4 Unsloth harus beralih ke float32"
