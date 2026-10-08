@@ -105,6 +105,7 @@ Hal-hal yang dilakukan script:
 
 - **Aya Dataset** ditulis oleh kontributor manusia, bukan dihasilkan model, dan dirilis dengan lisensi terbuka. Lisensi terbuka seperti Apache 2.0 umumnya mewajibkan atribusi dan menyertakan teks lisensi saat data didistribusikan ulang.
 - **Magicoder-Evol-Instruct** dan **UltraChat** dibuat dengan bantuan model OpenAI. Syarat penggunaan OpenAI melarang penggunanya memakai output untuk mengembangkan model yang bersaing dengan OpenAI. Apakah ketentuan kontraktual itu juga mengikat pihak ketiga yang hanya mengunduh datasetnya masih diperdebatkan. Untuk eksperimen pribadi atau riset risikonya kecil, tetapi jika model hasil fine-tuning akan dipakai atau dijual secara komersial, pertimbangkan untuk mengganti kedua sumber ini dengan data yang ditulis manusia atau berlisensi jelas.
+- **Model dasar** Qwen2.5-Coder-7B-Instruct berlisensi Apache 2.0. Adapter atau model gabungan hasil fine-tuning boleh didistribusikan dan dipakai secara komersial, dengan syarat menyertakan salinan lisensi, mempertahankan pemberitahuan hak cipta, dan menandai bahwa model telah diubah (Pasal 4 Apache License 2.0). Ukuran lain dalam keluarga yang sama, misalnya 3B, memakai lisensi yang berbeda.
 - Periksa kartu dataset (dataset card) masing-masing sumber untuk lisensi terbaru sebelum mendistribusikan dataset campuran atau model hasil training.
 
 ## Training dengan LLaMA-Factory
@@ -138,6 +139,28 @@ Ringkasan konfigurasi di `train/qwen2.5-coder-7b-lora.yaml`:
 - Perkiraan VRAM untuk LoRA bf16 adalah sekitar 24 GB. Untuk GPU yang lebih kecil, aktifkan `quantization_bit: 4` (QLoRA).
 
 Framework lain seperti TRL (`SFTTrainer`), Axolotl (`type: chat_template`), dan Unsloth juga bisa membaca format `messages` ini. Pastikan memakai chat template bawaan tokenizer Qwen2.5, dan loss hanya dihitung pada bagian assistant.
+
+## Training di Google Colab (GPU T4 gratis)
+
+Buka [`notebooks/train_colab_t4.ipynb`](notebooks/train_colab_t4.ipynb) di Colab (*File → Open notebook → GitHub*), pilih runtime **T4 GPU**, atur sel *Konfigurasi*, lalu jalankan semua sel. Notebook ini memakai [Unsloth](https://github.com/unslothai/unsloth) untuk QLoRA 4-bit karena:
+
+- **Memori:** T4 hanya punya 16 GB VRAM. Sampel web sampai ±6.600 token butuh penghematan memori dari Unsloth agar muat pada `max_seq_length` 8192.
+- **Presisi:** T4 tidak mendukung bf16, jadi notebook otomatis memakai fp16.
+- **Sampel terlalu panjang dibuang, bukan dipotong.** Jika `MAX_SEQ_LEN` diturunkan (misalnya ke 6144 saat kehabisan memori), sampel yang terlalu panjang dibuang supaya model tidak belajar dari HTML yang terpotong. Notebook menampilkan sampel mana saja yang dibuang.
+- **Loss hanya pada jawaban assistant**, memakai `train_on_responses_only`. Notebook mencetak contoh token yang dilatih untuk memastikan masking-nya benar.
+- **Tahan sesi putus:** data campuran dan checkpoint disimpan ke Google Drive setiap 20 step. Jika sesi putus, jalankan ulang semua sel dan training dilanjutkan dari checkpoint terakhir.
+- **Hasil:** adapter LoRA (±160 MB) di Drive, contoh website yang dibuat model, dan opsional file GGUF q4_k_m untuk Ollama/llama.cpp.
+
+Perkiraan waktu training di T4, belum termasuk instalasi dan unduh model (±10–15 menit):
+
+| Data | Token dilatih | Waktu |
+|---|---|---|
+| `own` (62 sampel, 3 epoch) | ±350 ribu | ±15–50 menit |
+| `mix` (±960 sampel, 2 epoch) | ±1 juta | ±1–2,5 jam |
+
+Angka ini perkiraan dengan asumsi 120–400 token/detik dan belum diukur. ETA di progress bar saat training adalah angka yang sebenarnya. Colab gratis membatasi lama sesi dan ketersediaan GPU, jadi data `mix` mungkin butuh lebih dari satu sesi.
+
+Untuk LLaMA-Factory di GPU 16 GB tanpa bf16, gunakan `train/qwen2.5-coder-7b-qlora-t4.yaml` (QLoRA 4-bit, fp16, Unsloth, checkpoint tiap 20 step).
 
 ## Validasi
 
@@ -183,6 +206,8 @@ data/train.jsonl                      dataset (format messages)
 data/train_mix.jsonl                  hasil scripts/mix_general.py (tidak di-commit)
 data/dataset_info.json                registrasi dataset untuk LLaMA-Factory
 train/qwen2.5-coder-7b-lora.yaml      konfigurasi fine-tuning LoRA
+train/qwen2.5-coder-7b-qlora-t4.yaml  konfigurasi QLoRA untuk GPU 16 GB tanpa bf16 (T4)
+notebooks/train_colab_t4.ipynb        notebook training di Google Colab T4 (Unsloth)
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
 scripts/validate.py                   validasi dataset
 examples/web/*.html                   20 website dari sampel web, siap dibuka di browser
