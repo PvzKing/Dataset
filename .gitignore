@@ -3,3 +3,4 @@ data/train_mix.jsonl
 __pycache__/
 tests/screenshots/
 tests/node_modules/
+runs/

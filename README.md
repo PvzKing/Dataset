@@ -128,13 +128,25 @@ Mulailah dengan **`own`**, lalu beralih ke `mix` jika hasilnya menunjukkan gejal
 
 ## Training di Google Colab
 
-Buka [`notebooks/train_colab.ipynb`](notebooks/train_colab.ipynb) di Colab (*File → Open notebook → GitHub*), pilih runtime GPU, atur sel *Konfigurasi*, lalu jalankan semua sel. Notebook ini memakai [Unsloth](https://github.com/unslothai/unsloth):
+**Panduan langkah demi langkah: [`docs/PANDUAN_TRAINING.md`](docs/PANDUAN_TRAINING.md).**
 
-- **Model:** `MODEL = "qwen3.5-4b"` (bawaan) melatih LoRA 16-bit, karena Unsloth tidak menyarankan QLoRA 4-bit untuk Qwen3.5. `MODEL = "qwen2.5-coder-7b"` melatih QLoRA 4-bit sebagai pembanding. Hasil setiap model dan pilihan data disimpan di folder Drive terpisah.
+Seluruh proses training ada di satu file mandiri, [`scripts/train_unsloth.py`](scripts/train_unsloth.py), dengan pengaturan di blok `CONFIG`. File ini tidak butuh clone repo: jika `train.jsonl` tidak ditemukan, file itu diunduh dari repo publik ini. Ada dua cara memakainya, dan keduanya tidak perlu menghubungkan Colab ke GitHub:
+
+- **Cara 1, upload notebook** [`notebooks/train_colab.ipynb`](notebooks/train_colab.ipynb) ke Colab (*File → Upload notebook*). Notebook menyimpan script ke `/content/train_unsloth.py`, lalu menyediakan dua mode:
+  - **Mode A: jalankan sendiri.** Satu sel menjalankan training, menyimpan adapter, dan membuat dua website uji.
+  - **Mode B: Claude yang mengontrol lewat terminal.** Claude Code berjalan di terminal VM Colab. Claude menjalankan training di latar belakang, memantau `status.json` dan log, menangani error umum, lalu melaporkan hasilnya. Aturan kerjanya ([`docs/RUNBOOK_CLAUDE.md`](docs/RUNBOOK_CLAUDE.md)) disalin ke `/content/CLAUDE.md`.
+- **Cara 2, dua sel:** sel 1 berisi `!pip install --upgrade unsloth`, dan sel 2 berisi seluruh isi `train_unsloth.py`.
+
+Notebook dibangun dari script dan runbook dengan `python scripts/build_notebook.py`. Jalankan ulang perintah itu setiap kali salah satu file sumbernya diubah.
+
+Script ini memakai [Unsloth](https://github.com/unslothai/unsloth):
+
+- **Model:** `"model": "qwen3.5-4b"` (bawaan) melatih LoRA 16-bit, karena Unsloth tidak menyarankan QLoRA 4-bit untuk Qwen3.5. `"model": "qwen2.5-coder-7b"` melatih QLoRA 4-bit sebagai pembanding. Hasil setiap model dan pilihan data disimpan di folder Drive terpisah.
 - **Presisi di T4:** T4 tidak mendukung bf16, dan Qwen3.5 menghasilkan NaN pada fp16. Unsloth otomatis melatih dalam float32, yang benar tetapi lebih lambat. GPU L4 (Colab berbayar) mendukung bf16 dan jauh lebih cepat.
-- **Sampel terlalu panjang dibuang, bukan dipotong.** Jika `MAX_SEQ_LEN` diturunkan (misalnya ke 6144 saat kehabisan memori), sampel yang terlalu panjang dibuang supaya model tidak belajar dari HTML yang terpotong. Notebook menampilkan sampel mana saja yang dibuang.
-- **Loss hanya pada jawaban assistant**, memakai `train_on_responses_only`. Notebook mencetak contoh token yang dilatih untuk memastikan masking-nya benar.
-- **Tahan sesi putus:** data campuran dan checkpoint disimpan ke Google Drive setiap 10 step. Jika sesi putus, jalankan ulang semua sel dan training dilanjutkan dari checkpoint terakhir.
+- **Sampel terlalu panjang dibuang, bukan dipotong.** Jika `max_seq_len` diturunkan (misalnya ke 6144 saat kehabisan memori), sampel yang terlalu panjang dibuang supaya model tidak belajar dari HTML yang terpotong. Script menampilkan sampel mana saja yang dibuang.
+- **Loss hanya pada jawaban assistant**, memakai `train_on_responses_only`. Script mencetak contoh token yang dilatih untuk memastikan masking-nya benar.
+- **Tahan sesi putus:** data campuran dan checkpoint disimpan ke Google Drive setiap 10 step. Jika sesi putus, jalankan ulang instalasi dan training yang sama, dan training dilanjutkan dari checkpoint terakhir.
+- **Mudah dipantau:** `status.json` di folder hasil selalu berisi tahap, step, loss, dan ETA terbaru. Saat error, file ini juga berisi saran perbaikan.
 - **Hasil:**
   - adapter LoRA di Drive;
   - dua website yang dibuat model dari prompt uji yang sama untuk setiap model, supaya mudah dibandingkan;
@@ -232,7 +244,12 @@ data/train_mix.jsonl                  hasil scripts/mix_general.py (tidak di-com
 data/dataset_info.json                registrasi dataset untuk LLaMA-Factory
 train/qwen3.5-4b-lora.yaml            konfigurasi LoRA Qwen3.5-4B untuk LLaMA-Factory
 train/qwen2.5-coder-7b-lora.yaml      konfigurasi LoRA Qwen2.5-Coder-7B (pembanding)
-notebooks/train_colab.ipynb           notebook training di Google Colab (Unsloth, T4/L4)
+notebooks/train_colab.ipynb           notebook Colab mandiri untuk di-upload (mode A dan mode B)
+scripts/train_unsloth.py              script training mandiri (Unsloth): info/prepare/train/test/gguf, menulis status.json
+scripts/build_notebook.py             membangun notebooks/train_colab.ipynb dari script dan runbook
+docs/PANDUAN_TRAINING.md              panduan training lengkap untuk pengguna
+docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol training di Colab
+CLAUDE.md                             catatan singkat untuk Claude Code di repo ini
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
 scripts/validate.py                   validasi dataset
 examples/web/*.html                   20 website dari sampel web, siap dibuka di browser
