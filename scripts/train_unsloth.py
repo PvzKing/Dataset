@@ -1,19 +1,28 @@
-"""Fine-tuning LoRA dengan Unsloth: persiapan data, training, uji coba, dan ekspor GGUF.
+"""Fine-tuning LoRA Qwen3.5-4B dengan Unsloth dalam satu file: data, training, uji coba, dan ekspor GGUF.
 
-Dipakai oleh notebooks/train_colab.ipynb, dan bisa dijalankan langsung dari terminal (termasuk oleh Claude Code,
-lihat docs/RUNBOOK_CLAUDE.md). Semua hasil ditulis ke <out>/<model>-<dataset>/:
+Script ini mandiri: tidak butuh clone repo. Jika train.jsonl tidak ditemukan, file diunduh dari repo GitHub publik.
+Cara memakai di Google Colab (pilih GPU di Runtime → Change runtime type):
 
+    Sel 1:  !pip install --upgrade unsloth
+    Sel 2:  tempel seluruh isi file ini, ubah CONFIG jika perlu, lalu jalankan. Drive di-mount otomatis, lalu
+            training, penyimpanan adapter, dan pembuatan website uji berjalan berurutan. Untuk menjalankan tahap lain
+            (misalnya uji ulang atau ekspor GGUF), ganti CONFIG["command"] lalu jalankan sel itu lagi.
+
+Atau simpan sebagai file (sel diawali `%%writefile /content/train_unsloth.py`) lalu jalankan dari terminal/sel:
+
+    python train_unsloth.py info       # tampilkan konfigurasi dan lokasi hasil
+    python train_unsloth.py prepare    # cek data tanpa GPU
+    python train_unsloth.py train      # training + simpan adapter + website uji (bawaan, lihat CONFIG["command"])
+    python train_unsloth.py test       # uji ulang adapter yang sudah tersimpan
+    python train_unsloth.py gguf       # ekspor GGUF q4_k_m untuk Ollama / llama.cpp
+    Opsi CONFIG bisa diganti lewat argumen, misalnya: --dataset mix --max-seq-len 6144
+
+Semua hasil ditulis ke <out>/<model>-<dataset>/:
     status.json      tahap yang sedang berjalan, step, loss, ETA, atau pesan error (dibaca untuk memantau)
     checkpoints/     checkpoint training; training otomatis dilanjutkan dari yang terakhir
     lora-adapter/    adapter LoRA hasil training
     contoh-*.html    website yang dibuat model dari prompt uji (contoh-*.md berisi jawaban lengkapnya)
     gguf/            hasil ekspor GGUF (opsional)
-
-Pemakaian:
-    python scripts/train_unsloth.py prepare --model qwen3.5-4b --dataset own    # cek data, tanpa GPU
-    python scripts/train_unsloth.py train   --model qwen3.5-4b --dataset own --out /content/drive/MyDrive/finetune-id
-    python scripts/train_unsloth.py test    --model qwen3.5-4b --dataset own --out ...   # uji ulang adapter
-    python scripts/train_unsloth.py gguf    --model qwen3.5-4b --dataset own --out ...   # ekspor q4_k_m
 """
 import argparse
 import json
@@ -24,10 +33,35 @@ import subprocess
 import sys
 import time
 import traceback
+import urllib.request
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+# ======================================================== CONFIG: ubah di sini ========================================
+CONFIG = {
+    "command": "train",             # dipakai jika tidak ada argumen: "train", "prepare", "test", "gguf", atau "info"
+    "model": "qwen3.5-4b",          # "qwen3.5-4b" atau "qwen2.5-coder-7b" (pembanding)
+    "dataset": "own",               # "own" = data/train.jsonl (disarankan), "mix" = ditambah dataset umum
+    "out": "/content/drive/MyDrive/finetune-id",  # folder hasil; di Google Drive supaya aman saat sesi putus
+    "data": None,                   # path train.jsonl; None = cari otomatis lalu unduh dari GitHub jika tidak ada
+    "mix_args": "",                 # argumen tambahan mix_general.py, misalnya "--code 0 --chat 0" (hanya Aya)
+    "max_seq_len": 8192,            # sampel lebih panjang DIBUANG (tidak dipotong); 6144 jika "CUDA out of memory"
+    "epochs": None,                 # None = 3 untuk own, 2 untuk mix
+    "lr": 1e-4,
+    "lora_r": 16,
+    "lora_alpha": 32,
+    "batch_size": 1,
+    "grad_accum": 8,                # batch efektif = batch_size × grad_accum
+    "save_steps": 10,               # checkpoint setiap N step
+    "max_new_tokens": 6000,         # batas panjang jawaban saat uji
+    "no_test": False,               # True = lewati pembuatan website uji setelah training
+    "seed": 42,
+}
+# ======================================================================================================================
+
+REPO_RAW = "https://raw.githubusercontent.com/PvzKing/Dataset/main"
 EOS = "<|im_end|>"
+IN_NOTEBOOK = "ipykernel" in sys.modules  # True jika file ini ditempel langsung ke sel Colab/Jupyter
+HERE = Path(__file__).resolve().parent if "__file__" in globals() else Path.cwd()
 
 MODELS = {
     # Salinan Unsloth dari Qwen/Qwen3.5-4B. LoRA 16-bit, karena Unsloth tidak menyarankan QLoRA 4-bit untuk Qwen3.5.
@@ -75,6 +109,88 @@ class Status:
 
 # ---------------------------------------------------------------- data
 
+def ensure_drive(out):
+    """Pastikan Google Drive ter-mount jika folder hasil ada di Drive."""
+    if not str(out).startswith("/content/drive") or os.path.isdir("/content/drive/MyDrive"):
+        return
+    if IN_NOTEBOOK:
+        from google.colab import drive
+        drive.mount("/content/drive")
+    else:
+        raise RuntimeError("Google Drive belum ter-mount: jalankan `from google.colab import drive; "
+                           "drive.mount('/content/drive')` di sel notebook, lalu ulangi")
+
+
+def download(url, dest):
+    print(f"mengunduh {url}", flush=True)
+    dest = Path(dest)
+    tmp = dest.with_suffix(dest.suffix + ".part")
+    urllib.request.urlretrieve(url, tmp)
+    tmp.replace(dest)
+    return dest
+
+
+def find_own_data(args):
+    """Cari train.jsonl: --data, folder script/repo, folder kerja, folder hasil; jika tidak ada, unduh dari GitHub."""
+    candidates = [args.data] if args.data else []
+    candidates += [HERE / "train.jsonl", HERE.parent / "data/train.jsonl", Path.cwd() / "train.jsonl",
+                   Path.cwd() / "data/train.jsonl", Path(args.out) / "train.jsonl"]
+    for path in candidates:
+        if path and Path(path).is_file():
+            return Path(path)
+    if args.data:
+        raise FileNotFoundError(f"file data tidak ditemukan: {args.data}")
+    return download(f"{REPO_RAW}/data/train.jsonl", Path(args.out) / "train.jsonl")
+
+
+def data_file_for(args):
+    own = find_own_data(args)
+    if args.dataset == "own":
+        return own
+    # Data campuran disimpan di folder hasil supaya sesi berikutnya memakai file yang sama persis (penting untuk resume).
+    # Hapus train_mix.jsonl di folder itu untuk membuatnya ulang, misalnya setelah mengubah mix_args.
+    mix = Path(args.out) / "train_mix.jsonl"
+    if not mix.exists():
+        mixer = HERE / "mix_general.py"
+        if not mixer.exists():
+            mixer = download(f"{REPO_RAW}/scripts/mix_general.py", Path(args.out) / "mix_general.py")
+        print("membuat data campuran ...", flush=True)
+        subprocess.run([sys.executable, str(mixer), "--input", str(own), "--output", str(mix),
+                        "--seed", str(args.seed), *args.mix_args.split()], check=True)
+    return mix
+
+
+def load_rows(data_file):
+    """Baca JSONL dan periksa strukturnya: (system) lalu user/assistant bergantian, diakhiri assistant."""
+    rows, errors, ids = [], [], set()
+    for no, line in enumerate(open(data_file, encoding="utf-8"), 1):
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as e:
+            errors.append(f"baris {no}: JSON tidak valid ({e})")
+            continue
+        rid, messages = row.get("id", f"baris-{no}"), row.get("messages")
+        if rid in ids:
+            errors.append(f"{rid}: id duplikat")
+        ids.add(rid)
+        if not isinstance(messages, list) or not messages:
+            errors.append(f"{rid}: 'messages' kosong atau bukan list")
+            continue
+        turns = messages[1:] if messages[0].get("role") == "system" else messages
+        roles = [m.get("role") for m in turns]
+        if not turns or roles != ["user", "assistant"] * (len(turns) // 2) or len(turns) % 2:
+            errors.append(f"{rid}: urutan role harus user/assistant bergantian dan diakhiri assistant")
+        if any(not isinstance(m.get("content"), str) or not m["content"].strip() for m in messages):
+            errors.append(f"{rid}: ada content yang kosong")
+        rows.append(row)
+    if errors:
+        raise ValueError(f"{len(errors)} masalah di {data_file}:\n  " + "\n  ".join(errors[:20]))
+    print(f"data valid: {len(rows)} sampel dari {data_file}", flush=True)
+    return rows
+
+
 def unwrap_tokenizer(tokenizer):
     """Model multimodal bisa mengembalikan processor; training teks cukup memakai tokenizer di dalamnya."""
     if hasattr(tokenizer, "tokenizer"):
@@ -92,15 +208,13 @@ def to_text(tokenizer, template_kwargs, messages):
     """Jawaban terakhir ditempel tepat setelah prompt inferensi, jadi format training sama dengan saat dipakai
     (termasuk blok <think> kosong pada mode non-thinking Qwen3.5)."""
     *history, last = messages
-    assert last["role"] == "assistant", "sampel harus diakhiri jawaban assistant"
     return render(tokenizer, template_kwargs, history, add_generation_prompt=True) + last["content"] + EOS
 
 
-def build_texts(tokenizer, template_kwargs, data_file, max_seq_len):
+def build_texts(tokenizer, template_kwargs, rows, max_seq_len):
     """Kembalikan (texts, lengths, dropped). Sampel yang lebih panjang dari max_seq_len dibuang, tidak dipotong."""
     texts, lengths, dropped = [], [], []
-    for line in open(data_file, encoding="utf-8"):
-        row = json.loads(line)
+    for row in rows:
         text = to_text(tokenizer, template_kwargs, row["messages"])
         n = len(tokenizer(text, add_special_tokens=False)["input_ids"])
         if n > max_seq_len:
@@ -108,6 +222,8 @@ def build_texts(tokenizer, template_kwargs, data_file, max_seq_len):
             continue
         texts.append(text)
         lengths.append(n)
+    if not texts:
+        raise ValueError(f"semua sampel lebih panjang dari max_seq_len={max_seq_len}")
     return texts, lengths, dropped
 
 
@@ -127,26 +243,10 @@ def summarize(texts, lengths, dropped, args, bf16):
     }
     print(f"{len(texts)} sampel dipakai, {len(dropped)} dibuang karena > {args.max_seq_len} token {dropped[:5]}")
     print(f"token per epoch: {sum(lengths):,} | terpanjang: {max(lengths):,} | rata-rata: {sum(lengths) // len(lengths):,}")
-    print(f"{args.epochs} epoch = {total_steps} step, ±{trained_tokens:,} token dilatih")
+    print(f"{args.epochs:g} epoch = {total_steps} step, ±{trained_tokens:,} token dilatih")
     print(f"perkiraan waktu ({lo}–{hi} token/detik): {summary['estimate_min'][0]}–{summary['estimate_min'][1]} menit")
-    print("\ncontoh awal teks training:\n" + texts[0][:400] + "\n")
+    print("\ncontoh awal teks training:\n" + texts[0][:400] + "\n", flush=True)
     return summary
-
-
-def data_file_for(args):
-    if args.dataset == "own":
-        return ROOT / "data/train.jsonl"
-    # Data campuran disimpan di --out supaya sesi berikutnya memakai file yang sama persis (penting untuk resume).
-    mix = Path(args.out) / "train_mix.jsonl"
-    if not mix.exists():
-        print("membuat data campuran dengan scripts/mix_general.py ...", flush=True)
-        subprocess.run([sys.executable, str(ROOT / "scripts/mix_general.py"), "--seed", str(args.seed),
-                        "--output", str(mix)], check=True)
-    return mix
-
-
-def validate(data_file):
-    subprocess.run([sys.executable, str(ROOT / "scripts/validate.py"), str(data_file)], check=True)
 
 
 # ---------------------------------------------------------------- model
@@ -193,13 +293,12 @@ def generate_tests(model, tokenizer, cfg, run_dir, max_new_tokens):
 
 # ---------------------------------------------------------------- commands
 
-def cmd_prepare(args, cfg, status):
+def cmd_prepare(args, cfg, status, run_dir):
     from transformers import AutoTokenizer
 
-    data_file = data_file_for(args)
-    validate(data_file)
+    rows = load_rows(data_file_for(args))
     tokenizer = unwrap_tokenizer(AutoTokenizer.from_pretrained(cfg["tokenizer"]))
-    texts, lengths, dropped = build_texts(tokenizer, cfg["template_kwargs"], data_file, args.max_seq_len)
+    texts, lengths, dropped = build_texts(tokenizer, cfg["template_kwargs"], rows, args.max_seq_len)
     try:
         import torch
         bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
@@ -211,8 +310,7 @@ def cmd_prepare(args, cfg, status):
 
 def cmd_train(args, cfg, status, run_dir):
     status.update(stage="loading", message=f"memuat {cfg['name']}")
-    data_file = data_file_for(args)
-    validate(data_file)
+    rows = load_rows(data_file_for(args))
 
     from unsloth import FastLanguageModel, is_bfloat16_supported  # harus di-import sebelum trl/transformers
     from datasets import Dataset
@@ -238,7 +336,7 @@ def cmd_train(args, cfg, status, run_dir):
     )
 
     bf16 = is_bfloat16_supported()
-    texts, lengths, dropped = build_texts(tokenizer, cfg["template_kwargs"], data_file, args.max_seq_len)
+    texts, lengths, dropped = build_texts(tokenizer, cfg["template_kwargs"], rows, args.max_seq_len)
     summary = summarize(texts, lengths, dropped, args, bf16)
     status.update(stage="prepared", message="data siap", data=summary)
 
@@ -325,45 +423,65 @@ def cmd_gguf(args, cfg, status, run_dir):
     status.update(stage="done", message="GGUF tersimpan", gguf=str(run_dir / "gguf"))
 
 
-def main():
+def parse_args():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", choices=["prepare", "train", "test", "gguf"])
-    parser.add_argument("--model", choices=sorted(MODELS), default="qwen3.5-4b")
-    parser.add_argument("--dataset", choices=["own", "mix"], default="own")
-    parser.add_argument("--out", default=str(ROOT / "runs"), help="folder hasil, misalnya di Google Drive")
-    parser.add_argument("--max-seq-len", type=int, default=8192, help="sampel yang lebih panjang dibuang")
+    parser.add_argument("command", nargs="?", choices=["info", "prepare", "train", "test", "gguf"])
+    parser.add_argument("--model", choices=sorted(MODELS))
+    parser.add_argument("--dataset", choices=["own", "mix"])
+    parser.add_argument("--out", help="folder hasil, misalnya di Google Drive")
+    parser.add_argument("--data", help="path train.jsonl (bawaan: cari otomatis, lalu unduh dari GitHub)")
+    parser.add_argument("--mix-args", help='argumen tambahan mix_general.py, tulis dengan =, misalnya --mix-args="--code 0 --chat 0"')
+    parser.add_argument("--max-seq-len", type=int, help="sampel yang lebih panjang dibuang")
     parser.add_argument("--epochs", type=float, help="bawaan: 3 untuk own, 2 untuk mix")
-    parser.add_argument("--lr", type=float, default=1e-4)
-    parser.add_argument("--lora-r", type=int, default=16)
-    parser.add_argument("--lora-alpha", type=int, default=32)
-    parser.add_argument("--batch-size", type=int, default=1)
-    parser.add_argument("--grad-accum", type=int, default=8)
-    parser.add_argument("--save-steps", type=int, default=10)
-    parser.add_argument("--max-new-tokens", type=int, default=6000, help="batas panjang jawaban saat uji")
-    parser.add_argument("--no-test", action="store_true", help="lewati pembuatan website uji setelah training")
-    parser.add_argument("--seed", type=int, default=42)
-    args = parser.parse_args()
+    parser.add_argument("--lr", type=float)
+    parser.add_argument("--lora-r", type=int)
+    parser.add_argument("--lora-alpha", type=int)
+    parser.add_argument("--batch-size", type=int)
+    parser.add_argument("--grad-accum", type=int)
+    parser.add_argument("--save-steps", type=int)
+    parser.add_argument("--max-new-tokens", type=int, help="batas panjang jawaban saat uji")
+    parser.add_argument("--no-test", action="store_true", default=None, help="lewati website uji setelah training")
+    parser.add_argument("--seed", type=int)
+    # Saat ditempel ke sel notebook, argumen kernel Jupyter diabaikan dan CONFIG yang dipakai.
+    args = parser.parse_args([] if IN_NOTEBOOK else None)
+    for key, value in CONFIG.items():
+        if getattr(args, key, None) is None:
+            setattr(args, key, value)
+    if args.command not in ("info", "prepare", "train", "test", "gguf"):
+        raise ValueError(f"command tidak dikenal: {args.command!r}")
     if args.epochs is None:
         args.epochs = 2 if args.dataset == "mix" else 3
+    return args
 
+
+def main():
+    args = parse_args()
     cfg = MODELS[args.model]
     run_dir = Path(args.out) / f"{args.model}-{args.dataset}"
+    if args.command == "info":
+        print(json.dumps({"model": args.model, "dataset": args.dataset, "max_seq_len": args.max_seq_len,
+                          "epochs": args.epochs, "run_dir": str(run_dir), "status": str(run_dir / "status.json")},
+                         indent=1))
+        return
+
+    ensure_drive(args.out)
     run_dir.mkdir(parents=True, exist_ok=True)
+    print(f"folder hasil: {run_dir}", flush=True)
     status = Status(run_dir / "status.json")
     status.update(stage="starting", message=args.command, command=args.command, model=args.model,
                   dataset=args.dataset, max_seq_len=args.max_seq_len, pid=os.getpid())
+    commands = {"prepare": cmd_prepare, "train": cmd_train, "test": cmd_test, "gguf": cmd_gguf}
     try:
-        {"prepare": lambda: cmd_prepare(args, cfg, status),
-         "train": lambda: cmd_train(args, cfg, status, run_dir),
-         "test": lambda: cmd_test(args, cfg, status, run_dir),
-         "gguf": lambda: cmd_gguf(args, cfg, status, run_dir)}[args.command]()
+        commands[args.command](args, cfg, status, run_dir)
     except BaseException as e:
         tb = traceback.format_exc()
         hint = None
         if "out of memory" in tb.lower():
-            hint = "VRAM tidak cukup: ulangi perintah yang sama dengan --max-seq-len 6144"
+            hint = "VRAM tidak cukup: ulangi dengan max_seq_len 6144 (CONFIG atau --max-seq-len 6144)"
         elif re.search(r"\bnan\b", str(e), re.IGNORECASE):
-            hint = "loss NaN: pastikan memakai Unsloth terbaru; untuk Qwen3.5 di T4 Unsloth harus beralih ke float32"
+            hint = "loss NaN: pasang ulang Unsloth terbaru; untuk Qwen3.5 di T4 Unsloth harus beralih ke float32"
+        elif "drive belum ter-mount" in str(e).lower():
+            hint = "mount Google Drive dari sel notebook"
         status.update(stage="error", message=f"{type(e).__name__}: {e}"[:500], hint=hint, traceback=tb[-3000:])
         raise
 
