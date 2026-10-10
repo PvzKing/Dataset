@@ -4,9 +4,9 @@ const expect = (cond, msg, out) => { if (!cond) out.push(msg); };
 export default {
   '01-': async (page, vp) => {
     const out = [];
-    expect(await page.locator('#menu-panel .menu-item').count() === 6, 'kopi tab should show 6 items', out);
+    expect(await page.locator('#menu-panel .menu-item').count() === 5, 'kopi tab should show 5 items', out);
     await page.click('#tab-makanan');
-    expect(await page.locator('#menu-panel .menu-item').count() === 4, 'makanan tab should show 4 items', out);
+    expect(await page.locator('#menu-panel .menu-item').count() === 3, 'makanan tab should show 3 items', out);
     expect((await page.textContent('#menu-panel')).includes('Rp'), 'prices formatted as Rupiah', out);
     expect((await page.textContent('#open-status')).length > 10, 'open status rendered', out);
     if (vp === 'mobile') {

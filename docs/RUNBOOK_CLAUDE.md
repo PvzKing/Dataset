@@ -11,13 +11,14 @@ denganmu hanya lewat terminal ini, jadi tulis setiap laporan sebagai jawaban di 
   - Konfigurasi ada di blok `CONFIG` di awal file. Argumen seperti `--max-seq-len 6144` menimpa nilai `CONFIG` hanya untuk perintah itu.
   - Jangan mengubah file ini tanpa izin pengguna.
 - **Google Drive:** ada di `/content/drive/MyDrive`. Semua yang tidak disimpan di Drive hilang saat runtime Colab di-reset.
-- **Data `own`:** dicari otomatis. Jika tidak ada, diunduh dari repo GitHub publik `PvzKing/Dataset` ke folder hasil.
+- **Data `own`:** `train.jsonl` di `/content` dipakai lebih dulu. Jika tidak ada, versi terbaru diunduh ulang dari repo GitHub publik `PvzKing/Dataset` ke folder hasil setiap kali perintah dijalankan.
 - **Lokasi hasil:** `python /content/train_unsloth.py info` menampilkan konfigurasi dan folder hasil `RUN_DIR`. Isi `RUN_DIR`:
 
   | File | Isi |
   |---|---|
   | `status.json` | `stage`, `message`, `step`/`max_steps`, `loss`, `eta_min`, `result`, `tests`; saat error juga `hint` dan `traceback` |
-  | `checkpoints/` | checkpoint; perintah `train` otomatis melanjutkan dari checkpoint terakhir |
+  | `checkpoints/` | checkpoint; perintah `train` melanjutkan dari checkpoint terakhir jika data dan pengaturannya sama |
+  | `arsip/<waktu>/` | hasil lama yang dipindahkan otomatis karena data atau pengaturan berubah; training lalu dimulai dari awal. Ini normal, bukan error. |
   | `lora-adapter/` | adapter hasil training |
   | `contoh-*.md`, `contoh-*.html` | jawaban model untuk prompt uji dan HTML yang diekstrak darinya |
 
@@ -70,7 +71,7 @@ denganmu hanya lewat terminal ini, jadi tulis setiap laporan sebagai jawaban di 
 
 | Gejala | Tindakan |
 |---|---|
-| `stage: error` dengan `CUDA out of memory` | Ulangi perintah `train` dengan tambahan `--max-seq-len 6144`. Training dilanjutkan dari checkpoint jika ada. Beri tahu pengguna bahwa 2 sampel web terpanjang ikut dibuang. Jika masih kehabisan memori, pakai 4096 dan laporkan sampel apa saja yang terbuang. |
+| `stage: error` dengan `CUDA out of memory` | Di T4, script otomatis memakai `--load-in-4bit --max-seq-len 6144`. Kombinasi ini sudah terbukti jalan. Semua sampel dataset dijaga di bawah 6144 token, jadi jumlah yang dibuang seharusnya 0; laporkan jika tidak. Jika error terjadi dengan pengaturan lain, ulangi dengan `--load-in-4bit --max-seq-len 6144` dan beri tahu pengguna bahwa akurasi Qwen3.5 sedikit turun dengan 4-bit. Hasilnya disimpan di folder `...-4bit`. Untuk batas di bawah 6144, tanya pengguna dulu, karena sebagian besar sampel web akan terbuang. |
 | Loss `nan`, atau `grad_norm` `nan` terus-menerus | Hentikan proses. Jalankan `pip install --upgrade unsloth unsloth_zoo`, lalu ulangi. Jika tetap `nan`, laporkan ke pengguna, jangan diakali dengan mengganti presisi sendiri. |
 | `ModuleNotFoundError`, atau error versi transformers/trl | Jalankan `pip install --upgrade unsloth`. Qwen3.5 butuh transformers v5. |
 | Gagal mengunduh model atau data (HTTP 429/5xx, timeout) | Tunggu sebentar lalu ulangi. Jika berulang, minta pengguna mengisi secret `HF_TOKEN` di Colab, atau meng-upload `train.jsonl` ke `/content`. |
@@ -86,7 +87,7 @@ denganmu hanya lewat terminal ini, jadi tulis setiap laporan sebagai jawaban di 
   - menjalankan `info`, `prepare`, `train`, dan `test`;
   - memantau proses;
   - melanjutkan dari checkpoint;
-  - menurunkan `--max-seq-len` saat kehabisan memori;
+  - beralih ke `--load-in-4bit` atau menurunkan `--max-seq-len` sampai 6144 saat kehabisan memori;
   - memasang ulang atau meng-upgrade paket Python;
   - menghentikan training jika pengguna memintanya.
 - **Tanya dulu sebelum:**

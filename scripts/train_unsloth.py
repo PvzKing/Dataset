@@ -15,26 +15,32 @@ Atau simpan sebagai file (sel diawali `%%writefile /content/train_unsloth.py`) l
     python train_unsloth.py train      # training + simpan adapter + website uji (bawaan, lihat CONFIG["command"])
     python train_unsloth.py test       # uji ulang adapter yang sudah tersimpan
     python train_unsloth.py gguf       # ekspor GGUF q4_k_m untuk Ollama / llama.cpp
-    Opsi CONFIG bisa diganti lewat argumen, misalnya: --dataset mix --max-seq-len 6144
+    Opsi CONFIG bisa diganti lewat argumen, misalnya: --dataset mix --load-in-4bit --max-seq-len 6144
 
 Semua hasil ditulis ke <out>/<model>-<dataset>/:
     status.json      tahap yang sedang berjalan, step, loss, ETA, atau pesan error (dibaca untuk memantau)
-    checkpoints/     checkpoint training; training otomatis dilanjutkan dari yang terakhir
+    checkpoints/     checkpoint training; dilanjutkan dari yang terakhir jika data dan pengaturan masih sama
+    arsip/           hasil training lama yang dipindahkan karena data atau pengaturan berubah
     lora-adapter/    adapter LoRA hasil training
     contoh-*.html    website yang dibuat model dari prompt uji (contoh-*.md berisi jawaban lengkapnya)
     gguf/            hasil ekspor GGUF (opsional)
 """
 import argparse
+import hashlib
 import json
 import math
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
 import traceback
 import urllib.request
 from pathlib import Path
+
+# Kurangi fragmentasi memori GPU; harus diset sebelum torch di-import.
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 # ======================================================== CONFIG: ubah di sini ========================================
 CONFIG = {
@@ -44,7 +50,9 @@ CONFIG = {
     "out": "/content/drive/MyDrive/finetune-id",  # folder hasil; di Google Drive supaya aman saat sesi putus
     "data": None,                   # path train.jsonl; None = cari otomatis lalu unduh dari GitHub jika tidak ada
     "mix_args": "",                 # argumen tambahan mix_general.py, misalnya "--code 0 --chat 0" (hanya Aya)
-    "max_seq_len": 8192,            # sampel lebih panjang DIBUANG (tidak dipotong); 6144 jika "CUDA out of memory"
+    "load_in_4bit": None,           # None = otomatis: 4-bit di GPU kecil tanpa bf16 (T4), selain itu bawaan model.
+                                    # True = QLoRA 4-bit (hemat ±6 GB VRAM, akurasi Qwen3.5 sedikit turun)
+    "max_seq_len": None,            # None = otomatis: 6144 di T4, 8192 di GPU lain. Sampel lebih panjang DIBUANG
     "epochs": None,                 # None = 3 untuk own, 2 untuk mix
     "lr": 1e-4,
     "lora_r": 16,
@@ -131,32 +139,47 @@ def download(url, dest):
 
 
 def find_own_data(args):
-    """Cari train.jsonl: --data, folder script/repo, folder kerja, folder hasil; jika tidak ada, unduh dari GitHub."""
+    """Cari train.jsonl: --data, folder script/repo, folder kerja; jika tidak ada, unduh versi terbaru dari GitHub."""
     candidates = [args.data] if args.data else []
     candidates += [HERE / "train.jsonl", HERE.parent / "data/train.jsonl", Path.cwd() / "train.jsonl",
-                   Path.cwd() / "data/train.jsonl", Path(args.out) / "train.jsonl"]
+                   Path.cwd() / "data/train.jsonl"]
     for path in candidates:
         if path and Path(path).is_file():
             return Path(path)
     if args.data:
         raise FileNotFoundError(f"file data tidak ditemukan: {args.data}")
-    return download(f"{REPO_RAW}/data/train.jsonl", Path(args.out) / "train.jsonl")
+    # Selalu unduh ulang supaya perubahan dataset di GitHub ikut terpakai; salinan lama hanya dipakai jika offline.
+    cached = Path(args.out) / "train.jsonl"
+    try:
+        return download(f"{REPO_RAW}/data/train.jsonl", cached)
+    except OSError as e:
+        if not cached.is_file():
+            raise
+        print(f"unduhan gagal ({e}), memakai salinan lama {cached}", flush=True)
+        return cached
+
+
+def sha256_file(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
 def data_file_for(args):
     own = find_own_data(args)
     if args.dataset == "own":
         return own
-    # Data campuran disimpan di folder hasil supaya sesi berikutnya memakai file yang sama persis (penting untuk resume).
-    # Hapus train_mix.jsonl di folder itu untuk membuatnya ulang, misalnya setelah mengubah mix_args.
+    # Data campuran disimpan di folder hasil supaya sesi berikutnya memakai file yang sama persis (penting untuk resume),
+    # dan dibuat ulang otomatis jika data own, mix_args, atau seed berubah.
     mix = Path(args.out) / "train_mix.jsonl"
-    if not mix.exists():
+    source = Path(args.out) / "train_mix.source"
+    key = f"{sha256_file(own)} {args.mix_args} {args.seed}"
+    if not mix.exists() or not source.exists() or source.read_text().strip() != key:
         mixer = HERE / "mix_general.py"
         if not mixer.exists():
             mixer = download(f"{REPO_RAW}/scripts/mix_general.py", Path(args.out) / "mix_general.py")
         print("membuat data campuran ...", flush=True)
         subprocess.run([sys.executable, str(mixer), "--input", str(own), "--output", str(mix),
                         "--seed", str(args.seed), *args.mix_args.split()], check=True)
+        source.write_text(key)
     return mix
 
 
@@ -258,8 +281,8 @@ def load_model(cfg, args, model_name=None):
         model_name=model_name or cfg["name"],
         max_seq_length=args.max_seq_len,
         dtype=None,
-        load_in_4bit=cfg["load_in_4bit"],
-        load_in_16bit=not cfg["load_in_4bit"],
+        load_in_4bit=args.load_in_4bit,
+        load_in_16bit=not args.load_in_4bit,
     )
     return model, unwrap_tokenizer(tokenizer)
 
@@ -291,6 +314,29 @@ def generate_tests(model, tokenizer, cfg, run_dir, max_new_tokens):
     return results
 
 
+# ---------------------------------------------------------------- resume
+
+# Pengaturan yang menentukan hasil training; checkpoint hanya dilanjutkan jika semuanya sama.
+TRAINING_KEYS = ["model", "dataset", "mix_args", "load_in_4bit", "max_seq_len", "epochs", "lr", "lora_r", "lora_alpha",
+                 "batch_size", "grad_accum", "seed"]
+
+
+def archive_stale_run(run_dir, ckpt_dir, fingerprint):
+    """Jika checkpoint lama berasal dari data atau pengaturan lain, pindahkan hasil lama ke arsip/ supaya training
+    dimulai dari awal (melanjutkannya akan diam-diam memakai bobot lama)."""
+    fp_file = ckpt_dir / "fingerprint.json"
+    if not ckpt_dir.exists() or (fp_file.exists() and fp_file.read_text() == fingerprint):
+        return
+    old = [p for p in run_dir.iterdir() if p.name in ("checkpoints", "lora-adapter", "gguf") or p.name.startswith("contoh-")]
+    if not old:
+        return
+    dest = run_dir / "arsip" / time.strftime("%Y%m%d-%H%M%S")
+    dest.mkdir(parents=True)
+    for p in old:
+        shutil.move(str(p), str(dest / p.name))
+    print(f"data atau pengaturan berubah: hasil lama dipindah ke {dest}, training dimulai dari awal", flush=True)
+
+
 # ---------------------------------------------------------------- commands
 
 def cmd_prepare(args, cfg, status, run_dir):
@@ -310,7 +356,8 @@ def cmd_prepare(args, cfg, status, run_dir):
 
 def cmd_train(args, cfg, status, run_dir):
     status.update(stage="loading", message=f"memuat {cfg['name']}")
-    rows = load_rows(data_file_for(args))
+    data_file = data_file_for(args)
+    rows = load_rows(data_file)
 
     from unsloth import FastLanguageModel, is_bfloat16_supported  # harus di-import sebelum trl/transformers
     from datasets import Dataset
@@ -354,6 +401,11 @@ def cmd_train(args, cfg, status, run_dir):
                           elapsed_min=round(elapsed / 60, 1), eta_min=round(eta, 1) if eta is not None else None)
 
     ckpt_dir = run_dir / "checkpoints"
+    fingerprint = json.dumps({"data": sha256_file(data_file), **{k: getattr(args, k) for k in TRAINING_KEYS}},
+                             sort_keys=True)
+    archive_stale_run(run_dir, ckpt_dir, fingerprint)
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
+    (ckpt_dir / "fingerprint.json").write_text(fingerprint)
     trainer = SFTTrainer(
         model=model,
         processing_class=tokenizer,
@@ -423,6 +475,18 @@ def cmd_gguf(args, cfg, status, run_dir):
     status.update(stage="done", message="GGUF tersimpan", gguf=str(run_dir / "gguf"))
 
 
+def detect_small_gpu():
+    """True jika GPU tidak mendukung bf16 dan VRAM < 20 GB (misalnya T4): Qwen3.5 dilatih dalam float32 di sana,
+    dan di T4 16-bit maupun 4-bit dengan konteks 8192 terbukti kehabisan memori."""
+    try:
+        import torch
+        if not torch.cuda.is_available():
+            return False
+        return not torch.cuda.is_bf16_supported() and torch.cuda.get_device_properties(0).total_memory < 20e9
+    except ImportError:
+        return False
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("command", nargs="?", choices=["info", "prepare", "train", "test", "gguf"])
@@ -431,6 +495,8 @@ def parse_args():
     parser.add_argument("--out", help="folder hasil, misalnya di Google Drive")
     parser.add_argument("--data", help="path train.jsonl (bawaan: cari otomatis, lalu unduh dari GitHub)")
     parser.add_argument("--mix-args", help='argumen tambahan mix_general.py, tulis dengan =, misalnya --mix-args="--code 0 --chat 0"')
+    parser.add_argument("--load-in-4bit", action=argparse.BooleanOptionalAction, default=None,
+                        help="QLoRA 4-bit (hemat VRAM); --no-load-in-4bit memaksa bawaan model")
     parser.add_argument("--max-seq-len", type=int, help="sampel yang lebih panjang dibuang")
     parser.add_argument("--epochs", type=float, help="bawaan: 3 untuk own, 2 untuk mix")
     parser.add_argument("--lr", type=float)
@@ -451,15 +517,27 @@ def parse_args():
         raise ValueError(f"command tidak dikenal: {args.command!r}")
     if args.epochs is None:
         args.epochs = 2 if args.dataset == "mix" else 3
+    if args.load_in_4bit is None or args.max_seq_len is None:
+        small = detect_small_gpu()
+        if args.load_in_4bit is None:
+            args.load_in_4bit = MODELS[args.model]["load_in_4bit"] or small
+        if args.max_seq_len is None:
+            args.max_seq_len = 6144 if small else 8192
+        if small:
+            print("GPU kecil tanpa bf16 terdeteksi (misalnya T4): memakai pengaturan hemat memori "
+                  f"(load_in_4bit={args.load_in_4bit}, max_seq_len={args.max_seq_len})", flush=True)
     return args
 
 
 def main():
     args = parse_args()
     cfg = MODELS[args.model]
-    run_dir = Path(args.out) / f"{args.model}-{args.dataset}"
+    # Hasil QLoRA 4-bit untuk model yang bawaannya 16-bit disimpan terpisah supaya checkpoint tidak tercampur.
+    suffix = "-4bit" if args.load_in_4bit and not cfg["load_in_4bit"] else ""
+    run_dir = Path(args.out) / f"{args.model}-{args.dataset}{suffix}"
     if args.command == "info":
-        print(json.dumps({"model": args.model, "dataset": args.dataset, "max_seq_len": args.max_seq_len,
+        print(json.dumps({"model": args.model, "dataset": args.dataset, "load_in_4bit": args.load_in_4bit,
+                          "max_seq_len": args.max_seq_len,
                           "epochs": args.epochs, "run_dir": str(run_dir), "status": str(run_dir / "status.json")},
                          indent=1))
         return
@@ -469,15 +547,20 @@ def main():
     print(f"folder hasil: {run_dir}", flush=True)
     status = Status(run_dir / "status.json")
     status.update(stage="starting", message=args.command, command=args.command, model=args.model,
-                  dataset=args.dataset, max_seq_len=args.max_seq_len, pid=os.getpid())
+                  dataset=args.dataset, load_in_4bit=args.load_in_4bit, max_seq_len=args.max_seq_len,
+                  pid=os.getpid())
     commands = {"prepare": cmd_prepare, "train": cmd_train, "test": cmd_test, "gguf": cmd_gguf}
     try:
         commands[args.command](args, cfg, status, run_dir)
     except BaseException as e:
         tb = traceback.format_exc()
         hint = None
-        if "out of memory" in tb.lower():
-            hint = "VRAM tidak cukup: ulangi dengan max_seq_len 6144 (CONFIG atau --max-seq-len 6144)"
+        if "out of memory" in tb.lower() and not args.load_in_4bit:
+            hint = "VRAM tidak cukup: ulangi dengan --load-in-4bit --max-seq-len 6144 (di T4 keduanya diperlukan)"
+        elif "out of memory" in tb.lower():
+            smaller = 6144 if args.max_seq_len > 6144 else 4096
+            hint = (f"VRAM tidak cukup: ulangi dengan --max-seq-len {smaller}"
+                    + (" (sebagian besar sampel web akan terbuang; GPU L4 lebih disarankan)" if smaller < 6144 else ""))
         elif re.search(r"\bnan\b", str(e), re.IGNORECASE):
             hint = "loss NaN: pasang ulang Unsloth terbaru; untuk Qwen3.5 di T4 Unsloth harus beralih ke float32"
         elif "drive belum ter-mount" in str(e).lower():

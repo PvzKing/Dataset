@@ -10,7 +10,7 @@ Dataset instruksi berbahasa Indonesia untuk fine-tuning **Qwen3.5-4B** dalam mod
 | Teknologi & pemrograman | 22 | ±700 | algoritma, struktur data, database, keamanan, sistem terdistribusi, Git, testing, AI |
 | Matematika | 10 | ±690 | kalkulus, pembuktian, probabilitas, statistik, aljabar |
 | Sains | 10 | ±850 | fisika, biologi, kimia, ilmu bumi |
-| **Total** | **62** | | ±115 ribu token, sampel terpanjang ±6.600 token |
+| **Total** | **62** | | ±114 ribu token, sampel terpanjang ±6.200 token |
 
 Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 
@@ -49,7 +49,7 @@ Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
   "category": "web_oneshot",
   "messages": [
     {"role": "user", "content": "bikin aplikasi to-do list dalam satu file html ..."},
-    {"role": "assistant", "content": "Berikut aplikasi to-do list ...\n\n```html\n<!DOCTYPE html>...</html>\n```\n\n**Fitur** ..."}
+    {"role": "assistant", "content": "Berikut aplikasi to-do list ...\n\n```html\n<!DOCTYPE html>...</html>\n```\n\n**Cek kebutuhan**\n- **Tambah** → form `#new-todo`.\n..."}
   ]
 }
 ```
@@ -58,6 +58,7 @@ Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 - Sebagian besar sampel **tidak memakai system message**. Saat training, chat template model yang menentukan system prompt bawaannya (Qwen2.5 menyisipkan "You are Qwen..."). Kondisi ini sama dengan pemakaian model sehari-hari di Ollama, LM Studio, atau vLLM.
 - **Qwen3.5 dilatih dalam mode non-thinking** (`enable_thinking=False`). Dataset ini tidak berisi jejak penalaran, jadi model diajari langsung menjawab. Notebook menempelkan jawaban tepat setelah prompt inferensi, termasuk blok `<think>` kosong jika template menambahkannya, supaya format training sama dengan saat dipakai.
 - Dua sampel web (`web-012`, `web-019`) memakai system prompt khusus, misalnya batas maksimal 3 poin penjelasan, supaya model tetap patuh pada instruksi system.
+- Jawaban web terdiri dari: pengantar singkat, tepat satu blok ```` ```html ````, lalu bagian **Cek kebutuhan**. Bagian itu memetakan setiap permintaan di prompt ke kode yang mengerjakannya, dengan format `- **permintaan** → fungsi/elemen dan cara kerjanya`. Tujuannya melatih model memeriksa sendiri bahwa tidak ada fitur yang terlewat, kelemahan yang terlihat pada uji model hasil fine-tuning pertama. Setelahnya boleh ada catatan teknis dan cara menyesuaikan. `scripts/validate.py` menolak sampel web tanpa pemetaan ini.
 
 ## Standar kualitas sampel website
 
@@ -65,6 +66,8 @@ Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 - Setiap website diuji otomatis di Chromium (Playwright) pada lebar 1280px dan 375px. Kriterianya: tanpa error JavaScript, tanpa scroll horizontal (juga dicek di 320px), dan lolos skenario interaksi khusus. Contohnya, kalkulator harus menghasilkan `2 + 3 × 4 = 14`, minimax tic-tac-toe tidak pernah kalah, dan editor markdown kebal terhadap `<img onerror>` serta link `javascript:`.
 - Responsif dan aksesibel: HTML semantik, label form, atribut `aria-*`, fokus keyboard yang terlihat, dan dukungan `prefers-reduced-motion`.
 - Aman: data dari pengguna dipasang dengan `textContent`, tanpa `eval()`, dan akses `localStorage` dibungkus `try/catch`.
+- Panjang maksimal sekitar 6.200 token, supaya semua sampel tetap ikut dilatih di T4 dengan `max_seq_len` 6144.
+- Tanpa data karangan yang bisa menyesatkan: tidak ada testimoni fiktif yang tampil seperti ulasan asli, dan data contoh seperti alamat diberi tanda bahwa itu contoh.
 - Konteks Indonesia yang akurat: format Rupiah dengan `Intl.NumberFormat('id-ID')`, nomor HP Indonesia, zona waktu WIB, dan untuk website kantor hukum penyesuaian dengan Kode Etik Advokat Indonesia, UU No. 18 Tahun 2003 tentang Advokat, serta UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi.
 
 Contoh kode Python di sampel teknologi juga sudah dijalankan, sehingga output yang tertulis di jawaban sesuai dengan hasil eksekusi sebenarnya.
@@ -156,10 +159,10 @@ Perkiraan waktu training Qwen3.5-4B, belum termasuk instalasi dan unduh model (�
 
 | GPU | `own` (±350 ribu token) | `mix` (±1 juta token) |
 |---|---|---|
-| T4 gratis (float32) | ±30–90 menit | ±2–5 jam |
+| T4 gratis (QLoRA 4-bit, float32, konteks 6144) | ±23 menit (terukur) | ±1,5–3 jam |
 | L4 (bf16) | ±10–20 menit | ±40–80 menit |
 
-Angka ini perkiraan dan belum diukur. ETA di progress bar saat training adalah angka yang sebenarnya. Colab gratis membatasi lama sesi dan ketersediaan GPU, jadi data `mix` di T4 kemungkinan butuh lebih dari satu sesi.
+Angka T4 untuk `own` diukur langsung di Colab. Angka lainnya masih perkiraan, dan ETA di progress bar menunjukkan waktu yang sebenarnya. Di T4, script otomatis memakai QLoRA 4-bit dan `max_seq_len` 6144, karena 16-bit maupun 4-bit dengan konteks 8192 kehabisan memori di sana. Semua sampel dijaga di bawah batas itu, jadi tidak ada yang terbuang. Colab gratis membatasi lama sesi dan ketersediaan GPU, jadi data `mix` di T4 kemungkinan butuh lebih dari satu sesi.
 
 ## Training dengan LLaMA-Factory
 
