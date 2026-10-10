@@ -234,6 +234,14 @@ Tips supaya sesi tidak cepat putus:
 
 **Training ulang setelah dataset diperbarui.** Jalankan perintah training yang sama. Checkpoint hanya dilanjutkan jika isi dataset dan pengaturannya persis sama. Jika berbeda, hasil lama (checkpoint, adapter, dan website uji) dipindah ke `arsip/<tanggal-jam>/`, lalu training dimulai dari awal. Output menampilkan `hasil lama dipindah ke ...` dan `mulai dari awal`. Website uji lama tetap ada di arsip, jadi bisa dibandingkan dengan hasil baru.
 
+**Training lanjutan dari adapter yang sudah ada.** Tambahkan `--init-adapter <folder lora-adapter>`, misalnya
+`--init-adapter /content/drive/MyDrive/finetune-id/qwen3.5-4b-own-4bit/lora-adapter`. Training dimulai dari bobot
+adapter itu dengan optimizer dan jadwal learning rate baru, dan hasilnya ditulis ke folder terpisah berakhiran
+`-lanjut`. Adapter asalnya tidak diubah. Selama training lanjutan berjalan, jangan jalankan training biasa di folder
+asal, karena adapter asal akan dipindah ke arsip dan training lanjutan tidak bisa dilanjutkan setelah sesi putus.
+Pakai `--load-in-4bit`, `--lora-r`, dan `--lora-alpha` yang sama dengan training asal. Untuk `test` atau `gguf` hasil
+lanjutan, sertakan `--init-adapter` yang sama.
+
 ## 9. Menilai hasil
 
 Unduh `contoh-bengkel.html` dan `contoh-absensi.html` dari Drive, buka di browser, lalu cek:

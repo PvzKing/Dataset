@@ -24,6 +24,10 @@ Semua hasil ditulis ke <out>/<model>-<dataset>/:
     lora-adapter/    adapter LoRA hasil training
     contoh-*.html    website yang dibuat model dari prompt uji (contoh-*.md berisi jawaban lengkapnya)
     gguf/            hasil ekspor GGUF (opsional)
+
+Training lanjutan (--init-adapter <folder lora-adapter>) memulai dari bobot adapter yang sudah ada, dengan optimizer
+dan jadwal learning rate baru. Hasilnya ditulis ke folder terpisah berakhiran -lanjut, jadi adapter asalnya tidak
+berubah. Untuk test/gguf hasil lanjutan, sertakan --init-adapter yang sama supaya folder -lanjut yang dipakai.
 """
 import argparse
 import hashlib
@@ -49,6 +53,7 @@ CONFIG = {
     "dataset": "own",               # "own" = data/train.jsonl (disarankan), "mix" = ditambah dataset umum
     "out": "/content/drive/MyDrive/finetune-id",  # folder hasil; di Google Drive supaya aman saat sesi putus
     "data": None,                   # path train.jsonl; None = cari otomatis lalu unduh dari GitHub jika tidak ada
+    "init_adapter": None,           # folder lora-adapter untuk training lanjutan; None = mulai dari model dasar
     "mix_args": "",                 # argumen tambahan mix_general.py, misalnya "--code 0 --chat 0" (hanya Aya)
     "load_in_4bit": None,           # None = otomatis: 4-bit di GPU kecil tanpa bf16 (T4), selain itu bawaan model.
                                     # True = QLoRA 4-bit (hemat ±6 GB VRAM, akurasi Qwen3.5 sedikit turun)
@@ -317,11 +322,34 @@ def generate_tests(model, tokenizer, cfg, run_dir, max_new_tokens):
     return results
 
 
+def load_init_adapter(model, args):
+    """Isi LoRA yang baru dibuat dengan bobot adapter lama. Model disiapkan lewat get_peft_model seperti training biasa
+    (termasuk gradient checkpointing yang dibutuhkan T4), lalu bobotnya ditimpa, dan semua bobot harus cocok."""
+    from peft import set_peft_model_state_dict
+    from safetensors.torch import load_file
+
+    folder = Path(args.init_adapter)
+    config_file, weights_file = folder / "adapter_config.json", folder / "adapter_model.safetensors"
+    if not config_file.is_file() or not weights_file.is_file():
+        raise FileNotFoundError(f"adapter tidak lengkap di {folder}: butuh adapter_config.json dan adapter_model.safetensors")
+    old = json.loads(config_file.read_text())
+    if (old.get("r"), old.get("lora_alpha")) != (args.lora_r, args.lora_alpha):
+        raise ValueError(f"adapter lama memakai r={old.get('r')}, alpha={old.get('lora_alpha')}; samakan --lora-r dan "
+                         f"--lora-alpha dengan nilai itu")
+    state = load_file(str(weights_file))
+    result = set_peft_model_state_dict(model, state)
+    missing = [k for k in result.missing_keys if "lora_" in k]
+    if missing or result.unexpected_keys:
+        raise ValueError(f"bobot adapter tidak cocok dengan model: {len(missing)} bobot LoRA tidak terisi "
+                         f"{missing[:3]}, {len(result.unexpected_keys)} bobot tidak dikenal {result.unexpected_keys[:3]}")
+    print(f"melanjutkan dari {folder}: {len(state)} tensor LoRA dimuat", flush=True)
+
+
 # ---------------------------------------------------------------- resume
 
 # Pengaturan yang menentukan hasil training; checkpoint hanya dilanjutkan jika semuanya sama.
-TRAINING_KEYS = ["model", "dataset", "mix_args", "load_in_4bit", "max_seq_len", "epochs", "lr", "lora_r", "lora_alpha",
-                 "batch_size", "grad_accum", "seed"]
+TRAINING_KEYS = ["model", "init_adapter", "dataset", "mix_args", "load_in_4bit", "max_seq_len", "epochs", "lr", "lora_r",
+                 "lora_alpha", "batch_size", "grad_accum", "seed"]
 
 
 def archive_stale_run(run_dir, ckpt_dir, fingerprint):
@@ -384,6 +412,8 @@ def cmd_train(args, cfg, status, run_dir):
         use_gradient_checkpointing="unsloth",
         random_state=args.seed,
     )
+    if args.init_adapter:
+        load_init_adapter(model, args)
 
     bf16 = is_bfloat16_supported()
     texts, lengths, dropped = build_texts(tokenizer, cfg["template_kwargs"], rows, args.max_seq_len)
@@ -502,6 +532,7 @@ def parse_args():
     parser.add_argument("--dataset", choices=["own", "mix"])
     parser.add_argument("--out", help="folder hasil, misalnya di Google Drive")
     parser.add_argument("--data", help="path train.jsonl (bawaan: cari otomatis, lalu unduh dari GitHub)")
+    parser.add_argument("--init-adapter", help="folder lora-adapter untuk training lanjutan (hasil ke folder -lanjut)")
     parser.add_argument("--mix-args", help='argumen tambahan mix_general.py, tulis dengan =, misalnya --mix-args="--code 0 --chat 0"')
     parser.add_argument("--load-in-4bit", action=argparse.BooleanOptionalAction, default=None,
                         help="QLoRA 4-bit (hemat VRAM); --no-load-in-4bit memaksa bawaan model")
@@ -542,6 +573,8 @@ def main():
     cfg = MODELS[args.model]
     # Hasil QLoRA 4-bit untuk model yang bawaannya 16-bit disimpan terpisah supaya checkpoint tidak tercampur.
     suffix = "-4bit" if args.load_in_4bit and not cfg["load_in_4bit"] else ""
+    if args.init_adapter:
+        suffix += "-lanjut"
     run_dir = Path(args.out) / f"{args.model}-{args.dataset}{suffix}"
     if args.command == "info":
         print(json.dumps({"model": args.model, "dataset": args.dataset, "load_in_4bit": args.load_in_4bit,
