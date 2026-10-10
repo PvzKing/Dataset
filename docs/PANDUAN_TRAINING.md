@@ -118,7 +118,7 @@ Cara ini hanya mendukung mode A.
 1. **Jalankan training.** Di Cara 1, jalankan sel **Mode A** (`!python /content/train_unsloth.py train`). Di Cara 2, cukup jalankan sel 2. Output yang akan muncul berurutan:
    - Di T4: `GPU kecil tanpa bf16 terdeteksi ... (load_in_4bit=True, max_seq_len=6144)`. Ini pengaturan hemat memori otomatis.
    - `folder hasil: /content/drive/MyDrive/finetune-id/qwen3.5-4b-own-4bit`. Di GPU yang mendukung bf16, nama foldernya tanpa `-4bit`.
-   - `data valid: 66 sampel`. Jika belum ada `train.jsonl`, akan muncul `mengunduh ...` dulu.
+   - `data valid: 67 sampel`. Jika belum ada `train.jsonl`, akan muncul `mengunduh ...` dulu.
    - Ringkasan data: jumlah sampel, jumlah step, dan perkiraan waktu.
    - `cek masking: ...`: bagian yang dilatih harus diawali jawaban, bukan pertanyaan.
    - Progress bar training dengan ETA (sisa waktu). Baris `loss` muncul setiap step.
