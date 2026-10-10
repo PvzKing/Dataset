@@ -59,7 +59,7 @@ Cara 1 atau Cara 2 ─► pilih GPU ─► instalasi ─► jalankan training (M
 
 T4 lebih lambat karena tidak mendukung bf16. Qwen3.5 menghasilkan error numerik (NaN) pada fp16, jadi Unsloth otomatis
 melatihnya dalam float32. Supaya muat di 16 GB VRAM T4, script otomatis memakai **QLoRA 4-bit** dan **`max_seq_len` 6144**.
-Akibatnya, 2 sampel web terpanjang (`web-001` dan `web-018`) tidak ikut dilatih, dan akurasinya sedikit di bawah 16-bit.
+Semua sampel dataset dijaga di bawah batas 6144, jadi seharusnya tidak ada yang terbuang. Output training menampilkan jumlah sampel yang dibuang, dan seharusnya 0. Akurasi 4-bit sedikit di bawah 16-bit.
 GPU L4 tidak butuh kompromi ini.
 
 ## 2. Yang perlu disiapkan

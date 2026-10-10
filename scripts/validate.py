@@ -2,7 +2,7 @@
 
 Pemakaian:
     python scripts/validate.py
-    python scripts/validate.py --tokenizer Qwen/Qwen3.5-4B --max-len 8192
+    python scripts/validate.py --tokenizer Qwen/Qwen3.5-4B --max-len 6144   # batas otomatis di T4
 
 Opsi --tokenizer butuh paket `transformers` dan menghitung panjang token setelah chat template diterapkan.
 """
@@ -41,6 +41,14 @@ def check_sample(sample, line_no):
             errors.append(f"sampel web harus berisi tepat satu blok ```html, ditemukan {len(blocks)}")
         elif not (blocks[0].lstrip().startswith("<!DOCTYPE html>") and blocks[0].rstrip().endswith("</html>")):
             errors.append("blok HTML harus dokumen lengkap dari <!DOCTYPE html> sampai </html>")
+        # Penjelasan setelah kode memetakan setiap permintaan di prompt ke implementasinya ("- **permintaan** → ...").
+        # Sampel dengan system prompt boleh tanpa judul "Cek kebutuhan" bila system prompt membatasi formatnya.
+        notes = messages[-1]["content"].rsplit("\n```", 1)[-1]
+        mapped = [line for line in notes.splitlines() if line.lstrip().startswith("- ") and "→" in line]
+        if len(mapped) < 2:
+            errors.append("penjelasan sampel web harus memetakan permintaan ke implementasi: minimal 2 baris '- **permintaan** → ...'")
+        if messages[0]["role"] != "system" and "**Cek kebutuhan**" not in notes:
+            errors.append("penjelasan sampel web harus diawali bagian **Cek kebutuhan**")
     return [f"baris {line_no}: {e}" for e in errors]
 
 

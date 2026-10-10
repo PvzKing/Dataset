@@ -38,7 +38,7 @@
     .section-head h2 { font-size: clamp(1.8rem, 3.5vw, 2.4rem); margin: .4rem 0 .6rem; }
     .section-head p { margin: 0; color: var(--muted); }
 
-    .practice { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+    .practice { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
     .practice article { padding: 1.75rem; border: 1px solid var(--border); border-top: 3px solid var(--gold); background: #fff; }
     .practice h3 { margin: 0 0 .5rem; font-size: 1.2rem; }
     .practice p { margin: 0; color: var(--muted); }
@@ -79,7 +79,7 @@
     footer p { margin: 0 0 .75rem; max-width: 60rem; }
 
     @media (max-width: 960px) {
-      .practice, .team { grid-template-columns: 1fr 1fr; }
+      .team { grid-template-columns: 1fr 1fr; }
       .steps { grid-template-columns: 1fr 1fr; }
       .contact { grid-template-columns: minmax(0, 1fr); }
     }
@@ -115,7 +115,7 @@
       <div class="container">
         <span class="eyebrow">Kantor Advokat &amp; Konsultan Hukum</span>
         <h1>Pendampingan hukum yang jelas dan dapat dipertanggungjawabkan.</h1>
-        <p>Kami membantu individu dan pelaku usaha memahami posisi hukumnya, menimbang pilihan penyelesaian, dan menjalani setiap proses dengan informasi yang lengkap.</p>
+        <p>Kami membantu individu dan pelaku usaha memahami posisi hukumnya dan menimbang pilihan penyelesaian.</p>
         <div class="actions">
           <a href="#kontak" class="btn light">Jadwalkan Konsultasi</a>
         </div>
@@ -130,12 +130,10 @@
           <p>Dalam perkara perdata, kami mengutamakan penyelesaian secara damai sebelum menempuh jalur pengadilan.</p>
         </div>
         <div class="practice">
-          <article><h3>Perdata &amp; Sengketa Kontrak</h3><p>Wanprestasi, perbuatan melawan hukum, serta penyelesaian sengketa melalui negosiasi, mediasi, atau litigasi.</p></article>
-          <article><h3>Ketenagakerjaan</h3><p>Perselisihan hubungan industrial, PHK, serta penyusunan perjanjian kerja dan peraturan perusahaan.</p></article>
+          <article><h3>Perdata &amp; Sengketa Kontrak</h3><p>Wanprestasi, perbuatan melawan hukum, serta negosiasi, mediasi, atau litigasi.</p></article>
+          <article><h3>Ketenagakerjaan</h3><p>Perselisihan hubungan industrial, PHK, dan perjanjian kerja.</p></article>
           <article><h3>Keluarga &amp; Waris</h3><p>Perceraian, hak asuh anak, pembagian harta bersama, dan penyelesaian sengketa waris.</p></article>
           <article><h3>Pendampingan Pidana</h3><p>Pendampingan sejak pemeriksaan di kepolisian, penuntutan, hingga persidangan.</p></article>
-          <article><h3>Bisnis &amp; Perizinan</h3><p>Pendirian badan usaha, perizinan berusaha, penyusunan kontrak, dan uji tuntas hukum.</p></article>
-          <article><h3>Pertanahan &amp; Properti</h3><p>Sengketa tanah, pemeriksaan dokumen hak atas tanah, dan pendampingan transaksi properti.</p></article>
         </div>
       </div>
     </section>
@@ -148,7 +146,7 @@
         </div>
         <!-- Ganti dengan data dan foto advokat yang sebenarnya. -->
         <div class="team">
-          <article class="member"><div class="avatar" aria-hidden="true">RA</div><h3>Raden Adiwangsa, S.H., M.H.</h3><p class="role">Managing Partner</p><p>Fokus pada sengketa perdata dan pertanahan.</p></article>
+          <article class="member"><div class="avatar" aria-hidden="true">RA</div><h3>Raden Adiwangsa, S.H., M.H.</h3><p class="role">Managing Partner</p><p>Fokus pada sengketa perdata dan kontrak.</p></article>
           <article class="member"><div class="avatar" aria-hidden="true">LP</div><h3>Larasati Putri, S.H., LL.M.</h3><p class="role">Partner</p><p>Fokus pada hukum bisnis, kontrak, dan ketenagakerjaan.</p></article>
           <article class="member"><div class="avatar" aria-hidden="true">BS</div><h3>Bima Saputra, S.H.</h3><p class="role">Associate</p><p>Fokus pada hukum keluarga dan pendampingan pidana.</p></article>
         </div>
@@ -163,9 +161,9 @@
         </div>
         <ol class="steps">
           <li><h3>Ajukan jadwal</h3><p>Isi formulir di bawah dengan ringkasan singkat masalah hukum Anda.</p></li>
-          <li><h3>Konfirmasi</h3><p>Tim kami menghubungi Anda untuk memastikan jadwal dan dokumen yang perlu dibawa.</p></li>
+          <li><h3>Konfirmasi</h3><p>Kami menghubungi Anda untuk memastikan jadwal dan dokumen yang perlu dibawa.</p></li>
           <li><h3>Konsultasi awal</h3><p>Kami menjelaskan posisi hukum, pilihan penyelesaian, serta risiko masing-masing pilihan.</p></li>
-          <li><h3>Kesepakatan tertulis</h3><p>Jika Anda melanjutkan, ruang lingkup jasa dan honorarium disepakati secara tertulis dan Anda menandatangani surat kuasa.</p></li>
+          <li><h3>Kesepakatan tertulis</h3><p>Ruang lingkup jasa dan honorarium disepakati secara tertulis, lalu surat kuasa ditandatangani.</p></li>
         </ol>
         <p class="pro-bono">Kami memberikan bantuan hukum secara cuma-cuma bagi pencari keadilan yang tidak mampu, sebagaimana diwajibkan Pasal 22 Undang-Undang Nomor 18 Tahun 2003 tentang Advokat.</p>
       </div>
@@ -205,8 +203,6 @@
               <option>Ketenagakerjaan</option>
               <option>Keluarga &amp; waris</option>
               <option>Pendampingan pidana</option>
-              <option>Bisnis &amp; perizinan</option>
-              <option>Pertanahan &amp; properti</option>
               <option>Lainnya</option>
             </select>
           </div>
