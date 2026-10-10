@@ -1,4 +1,4 @@
-"""Bangun notebooks/train_colab.ipynb dari scripts/train_unsloth.py dan docs/RUNBOOK_CLAUDE.md.
+"""Bangun notebooks/train_colab.ipynb dari scripts/train_unsloth.py, scripts/chat_gradio.py, dan docs/RUNBOOK_CLAUDE.md.
 
 Notebook ini mandiri: isi script training dan runbook disisipkan ke sel `%%writefile`, sehingga notebook cukup
 di-upload ke Colab tanpa clone repo. Jalankan ulang setelah mengubah salah satu file sumber:
@@ -154,6 +154,20 @@ md("""
 Jalankan setelah training selesai. Butuh ±15–40 menit dan ±3 GB ruang di Drive (untuk 4B).
 """)
 code("!python /content/train_unsloth.py gguf")
+
+md("""
+---
+## Chat dengan model (Gradio)
+Jalankan setelah training selesai, dan pastikan tidak ada training yang sedang berjalan karena GPU-nya dipakai bersama.
+Adapter terbaru di `finetune-id/` dipilih otomatis. Ganti `CONFIG["adapter"]` di sel kedua untuk memilih adapter
+lain, atau `"none"` untuk model dasar. Tampilan chat muncul di bawah sel ketiga.
+""")
+code("""
+%%capture
+!pip install "gradio>=6.30,<7"
+""")
+code("%%writefile /content/chat_gradio.py\n" + (ROOT / "scripts/chat_gradio.py").read_text(encoding="utf-8"))
+code("%run /content/chat_gradio.py")
 
 nb = {
     "cells": cells,

@@ -293,6 +293,40 @@ Untuk menguji ulang adapter dengan prompt uji:
 
 Untuk prompt sendiri, ubah `TEST_PROMPTS` di script, atau minta Claude melakukannya.
 
+### Chat di Colab (Gradio)
+
+[`scripts/chat_gradio.py`](../scripts/chat_gradio.py) membuka tampilan chat untuk mencoba model dengan prompt apa
+pun. Fiturnya:
+- streaming jawaban, tombol stop, ulangi, batalkan, dan edit pesan;
+- preset instruksi sistem dan mode berpikir;
+- pengaturan sampling lengkap;
+- sakelar **adapter ↔ model dasar** untuk membandingkan keduanya tanpa memuat ulang;
+- pratinjau website dari blok ```` ```html ```` beserta tombol unduh;
+- ekspor percakapan dan mode gelap.
+
+Di notebook, jalankan tiga sel di bagian **Chat dengan model**. Tanpa notebook, gunakan tiga sel ini:
+
+```python
+!pip install --upgrade unsloth "gradio>=6.30,<7"
+```
+```python
+from google.colab import drive; drive.mount("/content/drive")
+!wget -q -O /content/chat_gradio.py https://raw.githubusercontent.com/PvzKing/Dataset/main/scripts/chat_gradio.py
+```
+```python
+%run /content/chat_gradio.py
+```
+
+- Adapter terbaru di `finetune-id/` dipilih otomatis. Untuk memilih adapter lain, tambahkan
+  `--adapter <folder lora-adapter>`. Untuk model dasar saja, tambahkan `--adapter none`.
+- Untuk mencoba tampilannya tanpa GPU, tambahkan `--demo`.
+- Jangan menjalankan chat bersamaan dengan training, karena GPU T4 tidak cukup untuk keduanya.
+- Pratinjau website berjalan di iframe ber-*sandbox* yang tidak bisa mengakses halaman chat. `localStorage`
+  diganti penyimpanan sementara di memori, jadi data hilang saat pratinjau dimuat ulang.
+- `--share --auth user:sandi` membuat link publik `*.gradio.live`. Link ini terbuka bagi siapa pun yang tahu
+  alamatnya, jadi `--auth` wajib. Ketentuan Colab tier gratis juga membatasi pemakaian layanan web yang tidak terkait
+  komputasi interaktif. Untuk pemakaian pribadi, tampilan di dalam notebook sudah cukup.
+
 ## 11. Mengatasi masalah
 
 | Pesan / gejala | Penyebab | Solusi |

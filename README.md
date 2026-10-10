@@ -249,6 +249,7 @@ train/qwen3.5-4b-lora.yaml            konfigurasi LoRA Qwen3.5-4B untuk LLaMA-Fa
 train/qwen2.5-coder-7b-lora.yaml      konfigurasi LoRA Qwen2.5-Coder-7B (pembanding)
 notebooks/train_colab.ipynb           notebook Colab mandiri untuk di-upload (mode A dan mode B)
 scripts/train_unsloth.py              script training mandiri (Unsloth): info/prepare/train/test/gguf, menulis status.json
+scripts/chat_gradio.py                chatbot Gradio untuk mencoba adapter (streaming, pengaturan lengkap, pratinjau HTML)
 scripts/build_notebook.py             membangun notebooks/train_colab.ipynb dari script dan runbook
 docs/PANDUAN_TRAINING.md              panduan training lengkap untuk pengguna
 docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol training di Colab
