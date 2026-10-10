@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kasir Toko</title>
+  <style>
+    :root { --bg: #f1f5f9; --text: #0f172a; --muted: #64748b; --primary: #0f766e; --dark: #115e59; --line: #e2e8f0; --danger: #b91c1c; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    header { background: var(--primary); color: #fff; padding: .8rem 1rem; }
+    h1 { margin: 0; font-size: 1.2rem; }
+    h2 { font-size: 1rem; margin: 0 0 .75rem; }
+    main { max-width: 1200px; margin: 0 auto; padding: 1rem; display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr) minmax(0, 380px); }
+    .card { background: #fff; border-radius: 12px; padding: 1rem; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
+    input[type="search"], input[type="text"] { width: 100%; padding: .65rem .75rem; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; }
+    :focus-visible { outline: 3px solid #5eead4; outline-offset: 1px; }
+    button { font: inherit; cursor: pointer; }
+    .products { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .6rem; }
+    .product { text-align: left; border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: .65rem; color: inherit; display: grid; gap: .15rem; }
+    .product:hover:not(:disabled) { border-color: var(--primary); }
+    .product:disabled { opacity: .5; cursor: not-allowed; }
+    .product small { color: var(--muted); }
+    .product b { color: var(--dark); }
+    .msg { min-height: 1.2em; font-size: .85rem; color: var(--danger); margin: .4rem 0; }
+    .cart { list-style: none; margin: 0; padding: 0; max-height: 300px; overflow-y: auto; }
+    .cart li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .3rem; padding: .5rem 0; border-bottom: 1px solid var(--line); }
+    .cart small { display: block; color: var(--muted); }
+    .qty { display: flex; gap: .3rem; align-items: center; width: 100%; justify-content: flex-end; }
+    .qty button { width: 30px; height: 30px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; }
+    .totals { margin: .75rem 0; font-variant-numeric: tabular-nums; }
+    .totals div, .change { display: flex; justify-content: space-between; padding: .15rem 0; }
+    .totals .grand { font-size: 1.35rem; font-weight: 800; border-top: 2px solid var(--text); padding-top: .4rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0; }
+    .chip { border: 1px solid #99f6e4; background: #f0fdfa; color: var(--dark); border-radius: 999px; padding: .3rem .7rem; font-size: .85rem; }
+    .change { font-weight: 700; font-size: 1.1rem; }
+    .change.short { color: var(--danger); }
+    .btn { width: 100%; border: 0; border-radius: 10px; padding: .8rem; font-weight: 700; background: var(--primary); color: #fff; }
+    .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+    .btn.secondary { background: #e2e8f0; color: var(--text); }
+    .setting { display: flex; gap: .5rem; font-size: .85rem; color: var(--muted); margin-top: .75rem; }
+    .report { grid-column: 1 / -1; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .6rem; margin-bottom: 1rem; }
+    .stats div { background: #f8fafc; border-radius: 10px; padding: .6rem .8rem; }
+    .stats span { display: block; font-size: .8rem; color: var(--muted); }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    th, td { text-align: left; padding: .45rem .5rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    .empty { color: var(--muted); font-size: .9rem; }
+    dialog { border: 0; border-radius: 12px; padding: 1rem; width: min(360px, 94vw); }
+    #receipt { font: 12px/1.45 ui-monospace, Consolas, monospace; white-space: pre; margin: 0 0 .75rem; padding: .75rem; border: 1px dashed #cbd5e1; overflow-x: auto; }
+    .actions { display: flex; gap: .5rem; }
+    @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+    @media print {
+      body > :not(dialog), .actions { display: none !important; }
+      dialog { position: static; padding: 0; }
+      #receipt { border: 0; }
+    }
+  </style>
+</head>
+<body>
+  <header><h1>Kasir Toko Berkah <small style="font-weight:400">(simulasi)</small></h1></header>
+  <main>
+    <section class="card" aria-labelledby="products-title">
+      <h2 id="products-title">Produk</h2>
+      <input type="search" id="search" placeholder="Cari nama, atau ketik/scan kode barang lalu Enter" autocomplete="off" aria-label="Cari produk atau kode barang">
+      <p class="msg" id="search-msg" aria-live="polite"></p>
+      <div class="products" id="products"></div>
+    </section>
+
+    <section class="card" aria-labelledby="cart-title">
+      <h2 id="cart-title">Keranjang</h2>
+      <ul class="cart" id="cart"></ul>
+      <p class="empty" id="cart-empty">Belum ada barang. Klik produk atau ketik kodenya.</p>
+      <div class="totals">
+        <div><span>Subtotal</span><span id="subtotal"></span></div>
+        <div id="ppn-row"><span>PPN (12% × DPP 11/12)</span><span id="ppn"></span></div>
+        <div class="grand"><span>Total</span><span id="total"></span></div>
+      </div>
+      <label for="paid"><strong>Uang diterima (tunai)</strong></label>
+      <input type="text" id="paid" inputmode="numeric" placeholder="0" autocomplete="off">
+      <div class="chips" id="quick" aria-label="Nominal cepat"></div>
+      <div class="change" id="change-row"><span id="change-label">Kembalian</span><span id="change"></span></div>
+      <button class="btn" type="button" id="pay" disabled>Bayar &amp; cetak struk</button>
+      <label class="setting"><input type="checkbox" id="pkp"> Toko PKP (pungut PPN di luar harga)</label>
+    </section>
+
+    <section class="card report" aria-labelledby="report-title">
+      <h2 id="report-title">Rekap hari ini</h2>
+      <div class="stats">
+        <div><span>Transaksi</span><strong id="stat-count"></strong></div>
+        <div><span>Total penjualan</span><strong id="stat-sales"></strong></div>
+        <div><span>Barang terjual</span><strong id="stat-items"></strong></div>
+        <div><span>Paling laris</span><strong id="stat-best"></strong></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>No. transaksi</th><th>Jam</th><th>Item</th><th>Total</th><th aria-label="Aksi"></th></tr></thead>
+          <tbody id="history"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="history-empty">Belum ada transaksi hari ini.</p>
+    </section>
+  </main>
+
+  <dialog id="receipt-dialog" aria-label="Struk">
+    <pre id="receipt"></pre>
+    <div class="actions">
+      <button class="btn" type="button" id="print">Cetak</button>
+      <button class="btn secondary" type="button" id="close-receipt">Transaksi baru</button>
+    </div>
+  </dialog>
+
+  <script>
+    const STORAGE_KEY = 'kasir-toko-v1';
+    const STORE = ['TOKO BERKAH', 'Jl. Contoh No. 1 (alamat contoh)'];
+    const SEED = [
+      ['1001', 'Beras premium 5 kg', 78000, 12], ['1002', 'Minyak goreng 2 L', 38000, 15],
+      ['1003', 'Gula pasir 1 kg', 18000, 20], ['1004', 'Telur ayam 1 kg', 29000, 10],
+      ['1005', 'Mi instan goreng', 3500, 80], ['1006', 'Kopi sachet isi 10', 15000, 25],
+      ['1007', 'Teh celup isi 25', 7500, 30], ['1008', 'Air mineral 600 ml', 4000, 48],
+      ['1009', 'Sabun mandi batang', 4500, 36], ['1010', 'Deterjen bubuk 800 g', 22000, 14],
+      ['1011', 'Kecap manis 520 ml', 21000, 2], ['1012', 'Garam halus 250 g', 3000, 0],
+    ];
+
+    const $ = (id) => document.getElementById(id);
+    const rp = (n) => 'Rp ' + n.toLocaleString('id-ID');
+    const parseRp = (s) => parseInt(String(s).replace(/\D/g, ''), 10) || 0;
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+    const pad = (n, w = 2) => String(n).padStart(w, '0');
+    const dateKey = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+
+    let db = { products: SEED.map(([code, name, price, stock]) => ({ code, name, price, stock })), transactions: [], pkp: false };
+    const cart = new Map(); // kode → jumlah; stok baru berkurang saat transaksi dibayar
+
+    const save = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); return true; } catch (e) { return false; } };
+    try {
+      const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (d && Array.isArray(d.products) && Array.isArray(d.transactions)) db = d;
+    } catch (e) { /* data rusak: pakai data awal */ }
+
+    const product = (code) => db.products.find((p) => p.code === code);
+    const left = (p) => p.stock - (cart.get(p.code) || 0);
+    const say = (text) => { $('search-msg').textContent = text; };
+    const todayTrx = () => db.transactions.filter((t) => t.no.includes(dateKey(new Date())));
+
+    function totals() {
+      const subtotal = [...cart].reduce((sum, [code, qty]) => sum + product(code).price * qty, 0);
+      // PMK 131/2024: barang non-mewah dikenai 12% × DPP nilai lain 11/12, efektif 11%
+      const ppn = db.pkp ? Math.round(subtotal * 11 / 12 * 0.12) : 0;
+      return { subtotal, ppn, total: subtotal + ppn };
+    }
+
+    function add(code, delta = 1) {
+      const p = product(code);
+      if (!p) return say(`Kode "${code}" tidak ditemukan.`);
+      if (delta > 0 && left(p) <= 0) return say(`Stok ${p.name} tidak cukup.`);
+      say('');
+      const qty = (cart.get(code) || 0) + delta;
+      qty > 0 ? cart.set(code, qty) : cart.delete(code);
+      render();
+    }
+
+    function render() {
+      const q = $('search').value.trim().toLowerCase();
+      const list = db.products.filter((p) => !q || p.name.toLowerCase().includes(q) || p.code.startsWith(q));
+      $('products').innerHTML = list.map((p) => {
+        const n = left(p);
+        const stock = p.stock === 0 ? 'Habis' : `Stok ${n}`;
+        return `<button type="button" class="product" data-code="${esc(p.code)}" ${n <= 0 ? 'disabled' : ''}>
+          <small>${esc(p.code)}</small><strong>${esc(p.name)}</strong><b>${rp(p.price)}</b><small class="stock">${stock}</small></button>`;
+      }).join('') || '<p class="empty">Produk tidak ditemukan.</p>';
+
+      $('cart').innerHTML = [...cart].map(([code, qty]) => {
+        const p = product(code);
+        const name = esc(p.name);
+        const btn = (step, label, text) => `<button type="button" data-step="${step}" data-code="${esc(code)}" aria-label="${label} ${name}">${text}</button>`;
+        return `<li><div>${name}<small>${qty} × ${rp(p.price)}</small></div><strong>${rp(p.price * qty)}</strong>
+          <div class="qty">${btn(-1, 'Kurangi', '−')}<span>${qty}</span>${btn(1, 'Tambah', '+')}${btn(-qty, 'Hapus', '✕')}</div></li>`;
+      }).join('');
+      $('cart-empty').hidden = cart.size > 0;
+
+      const { subtotal, ppn, total } = totals();
+      $('subtotal').textContent = rp(subtotal);
+      $('ppn').textContent = rp(ppn);
+      $('ppn-row').hidden = !db.pkp;
+      $('total').textContent = rp(total);
+      const paid = parseRp($('paid').value);
+      const short = paid > 0 && paid < total;
+      $('change-row').classList.toggle('short', short);
+      $('change-label').textContent = short ? 'Kurang' : 'Kembalian';
+      $('change').textContent = rp(paid > 0 ? Math.abs(paid - total) : 0);
+      $('pay').disabled = !cart.size || paid < total;
+      const options = total ? [...new Set([1, 5000, 10000, 50000, 100000].map((k) => Math.ceil(total / k) * k))] : [];
+      $('quick').innerHTML = options.map((v) => `<button type="button" class="chip" data-paid="${v}">${v === total ? 'Uang pas' : rp(v)}</button>`).join('');
+
+      const today = todayTrx();
+      const sold = new Map();
+      today.forEach((t) => t.items.forEach((it) => sold.set(it.name, (sold.get(it.name) || 0) + it.qty)));
+      const best = [...sold].sort((a, b) => b[1] - a[1])[0];
+      $('stat-count').textContent = today.length;
+      $('stat-sales').textContent = rp(today.reduce((a, t) => a + t.total, 0));
+      $('stat-items').textContent = [...sold.values()].reduce((a, b) => a + b, 0);
+      $('stat-best').textContent = best ? `${best[0]} (${best[1]})` : '-';
+      $('history').innerHTML = today.map((t, i) => `<tr><td>${esc(t.no)}</td>
+        <td>${new Date(t.time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
+        <td>${t.items.reduce((a, it) => a + it.qty, 0)}</td><td>${rp(t.total)}</td>
+        <td><button type="button" class="chip" data-receipt="${i}" aria-label="Lihat struk ${esc(t.no)}">Struk</button></td></tr>`).reverse().join('');
+      $('history-empty').hidden = today.length > 0;
+    }
+
+    function pay() {
+      const { subtotal, ppn, total } = totals();
+      const paid = parseRp($('paid').value);
+      if (!cart.size || paid < total) return;
+      const now = new Date();
+      const trx = {
+        no: `TRX-${dateKey(now)}-${pad(todayTrx().length + 1, 3)}`, time: now.toISOString(), subtotal, ppn, total, paid, change: paid - total,
+        items: [...cart].map(([code, qty]) => ({ code, name: product(code).name, price: product(code).price, qty })),
+      };
+      trx.items.forEach((it) => { product(it.code).stock -= it.qty; });
+      db.transactions = [...db.transactions, trx].slice(-500);
+      cart.clear();
+      $('paid').value = '';
+      $('search').value = '';
+      render();
+      if (!save()) say('Peringatan: data tidak bisa disimpan di browser ini.');
+      showReceipt(trx);
+    }
+
+    function showReceipt(t) {
+      const W = 32;
+      const num = (n) => n.toLocaleString('id-ID');
+      const line = (l, r) => l.slice(0, W - r.length - 1).padEnd(W - r.length) + r;
+      const center = (s) => s.slice(0, W).padStart(Math.floor((W + Math.min(s.length, W)) / 2));
+      const sep = '-'.repeat(W);
+      const rows = [...STORE.map(center), sep, t.no, new Date(t.time).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }), sep];
+      t.items.forEach((it) => rows.push(it.name.slice(0, W), line(`  ${it.qty} x ${num(it.price)}`, num(it.qty * it.price))));
+      rows.push(sep, line('Subtotal', num(t.subtotal)));
+      if (t.ppn) rows.push(line('PPN', num(t.ppn)));
+      rows.push(line('TOTAL', num(t.total)), line('Tunai', num(t.paid)), line('Kembali', num(t.change)), sep, center('Terima kasih'));
+      $('receipt').textContent = rows.join('\n');
+      $('receipt-dialog').showModal();
+    }
+
+    $('search').addEventListener('input', () => { say(''); render(); });
+    $('search').addEventListener('keydown', (e) => {
+      const q = e.target.value.trim();
+      if (e.key !== 'Enter' || !q) return;
+      // Scanner barcode mengetik kode lalu Enter, jadi kode yang cocok persis langsung masuk keranjang.
+      const matches = [...document.querySelectorAll('.product:not(:disabled)')];
+      if (product(q)) add(q);
+      else if (matches.length === 1) add(matches[0].dataset.code);
+      else return say(matches.length ? 'Lebih dari satu produk cocok, klik salah satunya.' : `"${q}" tidak ditemukan.`);
+      e.target.value = '';
+      render();
+    });
+    $('products').addEventListener('click', (e) => { const b = e.target.closest('.product'); if (b) add(b.dataset.code); });
+    $('cart').addEventListener('click', (e) => { const b = e.target.closest('[data-step]'); if (b) add(b.dataset.code, Number(b.dataset.step)); });
+    $('quick').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-paid]');
+      if (b) { $('paid').value = Number(b.dataset.paid).toLocaleString('id-ID'); render(); }
+    });
+    $('paid').addEventListener('input', (e) => {
+      const n = parseRp(e.target.value);
+      e.target.value = n ? n.toLocaleString('id-ID') : '';
+      render();
+    });
+    $('paid').addEventListener('keydown', (e) => { if (e.key === 'Enter') pay(); });
+    $('pay').addEventListener('click', pay);
+    $('history').addEventListener('click', (e) => { const b = e.target.closest('[data-receipt]'); if (b) showReceipt(todayTrx()[b.dataset.receipt]); });
+    $('print').addEventListener('click', () => window.print());
+    $('close-receipt').addEventListener('click', () => { $('receipt-dialog').close(); $('search').focus(); });
+    $('pkp').addEventListener('change', (e) => { db.pkp = e.target.checked; save(); render(); });
+
+    $('pkp').checked = db.pkp;
+    render();
+    $('search').focus();
+  </script>
+</body>
+</html>

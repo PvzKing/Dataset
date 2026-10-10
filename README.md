@@ -6,11 +6,11 @@ Dataset instruksi berbahasa Indonesia untuk fine-tuning **Qwen3.5-4B** dalam mod
 
 | Kelompok | Sampel | Rata-rata token | Topik |
 |---|---|---|---|
-| Website one-shot (`web_oneshot`) | 20 | ±4.200 | landing page, portfolio, dashboard, toko online, game, kalkulator, form, undangan, dan lainnya |
+| Website one-shot (`web_oneshot`) | 24 | ±4.500 | landing page, portfolio, dashboard, toko online, game, kalkulator, sistem kasir, form, undangan, dan lainnya |
 | Teknologi & pemrograman | 22 | ±700 | algoritma, struktur data, database, keamanan, sistem terdistribusi, Git, testing, AI |
 | Matematika | 10 | ±690 | kalkulus, pembuktian, probabilitas, statistik, aljabar |
 | Sains | 10 | ±850 | fisika, biologi, kimia, ilmu bumi |
-| **Total** | **62** | | ±114 ribu token, sampel terpanjang ±6.200 token |
+| **Total** | **66** | | ±138 ribu token, sampel terpanjang ±6.200 token |
 
 Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 
@@ -38,6 +38,10 @@ Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 | web-018 | Website kantor hukum | sesuai kode etik advokat dan UU PDP |
 | web-019 | Password generator | `crypto.getRandomValues`, entropi |
 | web-020 | Tes kecepatan mengetik | WPM, akurasi, highlight per huruf |
+| web-021 | Kalkulator ilmiah | parser tanpa `eval()`, derajat/radian, riwayat yang bisa diklik |
+| web-022 | Kalkulator patungan | menu dibagi rata, diskon proporsional, pembulatan tanpa selisih |
+| web-023 | Kasir toko kelontong (POS) | stok, kode barang/scanner, kembalian, struk, rekap harian, opsi PPN |
+| web-024 | Kasir kafe | dine-in/take away, PBJT dan service, tunai/QRIS/debit, antrean dapur |
 
 ## Format
 
@@ -68,17 +72,17 @@ Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 - Aman: data dari pengguna dipasang dengan `textContent`, tanpa `eval()`, dan akses `localStorage` dibungkus `try/catch`.
 - Panjang maksimal sekitar 6.200 token, supaya semua sampel tetap ikut dilatih di T4 dengan `max_seq_len` 6144.
 - Tanpa data karangan yang bisa menyesatkan: tidak ada testimoni fiktif yang tampil seperti ulasan asli, dan data contoh seperti alamat diberi tanda bahwa itu contoh.
-- Konteks Indonesia yang akurat: format Rupiah dengan `Intl.NumberFormat('id-ID')`, nomor HP Indonesia, zona waktu WIB, dan untuk website kantor hukum penyesuaian dengan Kode Etik Advokat Indonesia, UU No. 18 Tahun 2003 tentang Advokat, serta UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi.
+- Konteks Indonesia yang akurat: format Rupiah dengan `Intl.NumberFormat('id-ID')`, nomor HP Indonesia, zona waktu WIB, dan untuk website kantor hukum penyesuaian dengan Kode Etik Advokat Indonesia, UU No. 18 Tahun 2003 tentang Advokat, serta UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi. Sampel kasir dan patungan mengikuti aturan pajak yang berlaku: PPN 12% × DPP nilai lain 11/12 untuk toko PKP (PMK 131 Tahun 2024), dan pajak restoran berupa PBJT paling tinggi 10% (UU No. 1 Tahun 2022), bukan PPN.
 
 Contoh kode Python di sampel teknologi juga sudah dijalankan, sehingga output yang tertulis di jawaban sesuai dengan hasil eksekusi sebenarnya.
 
 ## Mencampur dengan dataset umum
 
-Melatih model hanya dengan 62 sampel berisiko membuat model "terlalu fokus", misalnya selalu menjawab dengan file HTML walaupun pertanyaannya bukan soal website. Selain itu, kemampuan umumnya bisa menurun. Karena itu, config training memakai data campuran yang dibuat oleh `scripts/mix_general.py`:
+Melatih model hanya dengan 66 sampel berisiko membuat model "terlalu fokus", misalnya selalu menjawab dengan file HTML walaupun pertanyaannya bukan soal website. Selain itu, kemampuan umumnya bisa menurun. Karena itu, config training memakai data campuran yang dibuat oleh `scripts/mix_general.py`:
 
 | Sumber | Jumlah bawaan | Isi |
 |---|---|---|
-| Dataset ini (`data/train.jsonl`) | 62 | semua sampel, tanpa dikurangi |
+| Dataset ini (`data/train.jsonl`) | 66 | semua sampel, tanpa dikurangi |
 | [`CohereForAI/aya_dataset`](https://huggingface.co/datasets/CohereForAI/aya_dataset), bagian bahasa Indonesia | 600 | tanya-jawab umum yang ditulis manusia |
 | [`ise-uiuc/Magicoder-Evol-Instruct-110K`](https://huggingface.co/datasets/ise-uiuc/Magicoder-Evol-Instruct-110K) | 200 | instruksi pemrograman (bahasa Inggris) |
 | [`HuggingFaceH4/ultrachat_200k`](https://huggingface.co/datasets/HuggingFaceH4/ultrachat_200k), split `train_sft` | 100 | percakapan umum multi-turn (bahasa Inggris) |
@@ -114,14 +118,14 @@ Hal-hal yang dilakukan script:
 
 ## Pilihan data: `own` atau `mix`
 
-- **`own`**: hanya `data/train.jsonl`, 62 sampel, 3 epoch, ±350 ribu token dilatih.
+- **`own`**: hanya `data/train.jsonl`, 66 sampel, 3 epoch, ±400 ribu token dilatih.
 - **`mix`**: dataset ini ditambah ±900 sampel umum dari `scripts/mix_general.py`, 2 epoch, ±1 juta token dilatih.
 
 Mulailah dengan **`own`**, lalu beralih ke `mix` jika hasilnya menunjukkan gejala lupa kemampuan umum.
 
 - **Alasan memulai dengan `own`:**
-  - Qwen3.5-4B sudah dilatih dengan data umum dalam jumlah sangat besar. 62 sampel dengan LoRA rank 16 hanya mengubah sedikit bobot, jadi risiko model melupakan kemampuan umumnya kecil.
-  - Hampir 75% token di dataset ini adalah sampel website one-shot. Itu memang kemampuan utama yang ingin diajarkan.
+  - Qwen3.5-4B sudah dilatih dengan data umum dalam jumlah sangat besar. 66 sampel dengan LoRA rank 16 hanya mengubah sedikit bobot, jadi risiko model melupakan kemampuan umumnya kecil.
+  - Hampir 80% token di dataset ini adalah sampel website one-shot. Itu memang kemampuan utama yang ingin diajarkan.
   - Training di T4 butuh ±30–90 menit, tidak berjam-jam, jadi cepat untuk iterasi.
 - **Kapan beralih ke `mix`.** Jika setelah training dengan `own` muncul salah satu gejala berikut:
   - Setiap pertanyaan dijawab dengan HTML.
@@ -157,9 +161,9 @@ Script ini memakai [Unsloth](https://github.com/unslothai/unsloth):
 
 Perkiraan waktu training Qwen3.5-4B, belum termasuk instalasi dan unduh model (±10–15 menit):
 
-| GPU | `own` (±350 ribu token) | `mix` (±1 juta token) |
+| GPU | `own` (±400 ribu token) | `mix` (±1 juta token) |
 |---|---|---|
-| T4 gratis (QLoRA 4-bit, float32, konteks 6144) | ±23 menit (terukur) | ±1,5–3 jam |
+| T4 gratis (QLoRA 4-bit, float32, konteks 6144) | ±27 menit (23 menit terukur saat masih 62 sampel) | ±1,5–3 jam |
 | L4 (bf16) | ±10–20 menit | ±40–80 menit |
 
 Angka T4 untuk `own` diukur langsung di Colab. Angka lainnya masih perkiraan, dan ETA di progress bar menunjukkan waktu yang sebenarnya. Di T4, script otomatis memakai QLoRA 4-bit dan `max_seq_len` 6144, karena 16-bit maupun 4-bit dengan konteks 8192 kehabisan memori di sana. Semua sampel dijaga di bawah batas itu, jadi tidak ada yang terbuang. Colab gratis membatasi lama sesi dan ketersediaan GPU, jadi data `mix` di T4 kemungkinan butuh lebih dari satu sesi.
@@ -214,12 +218,12 @@ Script ini memeriksa struktur JSON, urutan role, ID dan prompt duplikat, kelengk
 
 ## Catatan penting
 
-- **Ukuran dataset kecil.** Fine-tuning dengan 62 sampel terutama membentuk gaya dan format jawaban, misalnya kebiasaan menghasilkan satu file HTML lengkap dengan penjelasan berbahasa Indonesia. Pengetahuan baru tidak banyak bertambah. Karena itu, config bawaan memakai data campuran dengan dataset umum (lihat bagian *Mencampur dengan dataset umum*).
+- **Ukuran dataset kecil.** Fine-tuning dengan 66 sampel terutama membentuk gaya dan format jawaban, misalnya kebiasaan menghasilkan satu file HTML lengkap dengan penjelasan berbahasa Indonesia. Pengetahuan baru tidak banyak bertambah. Karena itu, config bawaan memakai data campuran dengan dataset umum (lihat bagian *Mencampur dengan dataset umum*).
 - **Hindari overfitting.** Pantau training loss. Dengan data sekecil ini, terlalu banyak epoch membuat model sekadar menghafal jawaban.
 
 ## Melihat dan menguji website
 
-Ke-20 website juga tersedia sebagai file terpisah di `examples/web/`, isinya identik dengan yang ada di `data/train.jsonl`. Buka saja file `.html`-nya di browser untuk melihat hasilnya.
+Ke-24 website juga tersedia sebagai file terpisah di `examples/web/`, isinya identik dengan yang ada di `data/train.jsonl`. Buka saja file `.html`-nya di browser untuk melihat hasilnya.
 
 Untuk menjalankan ulang tes otomatis (Chromium, desktop 1280px dan HP 375px):
 
@@ -249,13 +253,14 @@ train/qwen3.5-4b-lora.yaml            konfigurasi LoRA Qwen3.5-4B untuk LLaMA-Fa
 train/qwen2.5-coder-7b-lora.yaml      konfigurasi LoRA Qwen2.5-Coder-7B (pembanding)
 notebooks/train_colab.ipynb           notebook Colab mandiri untuk di-upload (mode A dan mode B)
 scripts/train_unsloth.py              script training mandiri (Unsloth): info/prepare/train/test/gguf, menulis status.json
+scripts/chat_gradio.py                chatbot Gradio untuk mencoba adapter (streaming, pengaturan lengkap, pratinjau HTML)
 scripts/build_notebook.py             membangun notebooks/train_colab.ipynb dari script dan runbook
 docs/PANDUAN_TRAINING.md              panduan training lengkap untuk pengguna
 docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol training di Colab
 CLAUDE.md                             catatan singkat untuk Claude Code di repo ini
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
 scripts/validate.py                   validasi dataset
-examples/web/*.html                   20 website dari sampel web, siap dibuka di browser
+examples/web/*.html                   24 website dari sampel web, siap dibuka di browser
 tests/test_web.mjs                    tes otomatis website dengan Playwright
 tests/interactions.mjs                skenario interaksi per website
 ```

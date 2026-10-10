@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kasir Kafe</title>
+  <style>
+    :root { --bg: #faf6f1; --text: #2b1d14; --muted: #7c6a5d; --brand: #7c2d12; --brand-2: #9a3412; --line: #eadfd4; --ok: #166534; --danger: #b91c1c; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    header { background: var(--brand); color: #fff; padding: .8rem 1rem; }
+    h1 { margin: 0; font-size: 1.2rem; }
+    h2 { font-size: 1rem; margin: 0 0 .75rem; }
+    main { max-width: 1200px; margin: 0 auto; padding: 1rem; display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr) minmax(0, 390px); align-items: start; }
+    .card { background: #fff; border-radius: 12px; padding: 1rem; border: 1px solid var(--line); }
+    button { font: inherit; cursor: pointer; }
+    :focus-visible { outline: 3px solid #fdba74; outline-offset: 1px; }
+    input[type="text"], input[type="number"] { width: 100%; padding: .55rem .65rem; border: 1px solid #d6c7b8; border-radius: 8px; font: inherit; }
+    .tabs { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .75rem; }
+    .tab, .seg button { border: 1px solid #d6c7b8; background: #fff; border-radius: 999px; padding: .35rem .9rem; }
+    .tab[aria-selected="true"], .seg button[aria-pressed="true"] { background: var(--brand); color: #fff; border-color: var(--brand); }
+    .menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .6rem; }
+    .menu button { text-align: left; border: 1px solid var(--line); border-radius: 10px; background: #fffaf5; padding: .7rem; color: inherit; display: grid; gap: .2rem; }
+    .menu button:hover { border-color: var(--brand-2); }
+    .menu b { color: var(--brand-2); }
+    .seg { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .6rem; }
+    .lines { list-style: none; margin: .5rem 0; padding: 0; }
+    .lines li { border-bottom: 1px solid var(--line); padding: .5rem 0; display: grid; grid-template-columns: 1fr auto; gap: .35rem; align-items: center; }
+    .lines input { grid-column: 1 / -1; font-size: .85rem; padding: .35rem .5rem; }
+    .qty { display: flex; align-items: center; gap: .3rem; }
+    .qty button { width: 28px; height: 28px; border: 1px solid #d6c7b8; border-radius: 6px; background: #fff; }
+    .sum div { display: flex; justify-content: space-between; padding: .12rem 0; }
+    .sum .grand { font-size: 1.3rem; font-weight: 800; border-top: 2px solid var(--text); margin-top: .3rem; padding-top: .35rem; }
+    .muted, .empty { color: var(--muted); font-size: .85rem; }
+    .msg { color: var(--danger); font-size: .85rem; min-height: 1.2em; margin: .4rem 0; }
+    .pay { width: 100%; border: 0; border-radius: 10px; padding: .8rem; font-weight: 700; background: var(--brand); color: #fff; }
+    .pay:disabled { background: #a8a29e; cursor: not-allowed; }
+    #toast { color: var(--ok); font-weight: 600; min-height: 1.3em; margin: .5rem 0 0; }
+    details { margin-top: .75rem; font-size: .9rem; }
+    .row { display: flex; gap: .5rem; margin-top: .5rem; }
+    .queue { grid-column: 1 / -1; }
+    .cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+    .col { background: #fdf8f3; border-radius: 10px; padding: .6rem; min-height: 120px; }
+    .col h3 { font-size: .9rem; margin: 0 0 .5rem; }
+    .order { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: .55rem; margin-bottom: .5rem; font-size: .88rem; }
+    .order ul { margin: .3rem 0; padding-left: 1.1rem; }
+    .order em { color: var(--brand-2); }
+    .order button { border: 0; border-radius: 6px; background: var(--ok); color: #fff; padding: .3rem .7rem; font-size: .85rem; }
+    @media (max-width: 860px) { main, .cols { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header><h1>Kasir Kafe Senja <small style="font-weight:400">(simulasi)</small></h1></header>
+  <main>
+    <section class="card" aria-labelledby="menu-title">
+      <h2 id="menu-title">Menu</h2>
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <div class="menu" id="menu" role="tabpanel"></div>
+    </section>
+
+    <section class="card" aria-labelledby="order-title">
+      <h2 id="order-title">Pesanan baru</h2>
+      <div class="seg" id="type" aria-label="Jenis pesanan">
+        <button type="button" data-type="dine" aria-pressed="true">Makan di tempat</button>
+        <button type="button" data-type="take" aria-pressed="false">Bawa pulang</button>
+      </div>
+      <div id="table-wrap"><label for="table">Nomor meja</label> <input type="text" id="table" inputmode="numeric" maxlength="3" style="width:5rem"></div>
+      <ul class="lines" id="lines"></ul>
+      <p class="empty" id="lines-empty">Belum ada item. Klik menu untuk menambahkan.</p>
+      <div class="sum">
+        <div><span>Subtotal</span><span id="subtotal"></span></div>
+        <div><span id="service-label"></span><span id="service"></span></div>
+        <div><span id="tax-label"></span><span id="tax"></span></div>
+        <div class="grand"><span>Total</span><span id="total"></span></div>
+      </div>
+      <h2 style="margin-top:1rem">Pembayaran</h2>
+      <div class="seg" id="method" aria-label="Metode pembayaran">
+        <button type="button" data-method="tunai" aria-pressed="true">Tunai</button>
+        <button type="button" data-method="qris" aria-pressed="false">QRIS</button>
+        <button type="button" data-method="debit" aria-pressed="false">Kartu debit</button>
+      </div>
+      <div id="cash-wrap">
+        <label for="cash">Uang diterima</label>
+        <input type="text" id="cash" inputmode="numeric" autocomplete="off">
+        <p class="muted" id="change"></p>
+      </div>
+      <p class="muted" id="noncash-info" hidden>Simulasi: tekan konfirmasi setelah pembayaran berhasil di aplikasi atau mesin EDC.</p>
+      <p class="msg" id="msg" aria-live="polite"></p>
+      <button type="button" class="pay" id="pay" disabled>Bayar</button>
+      <p id="toast" aria-live="polite"></p>
+      <details>
+        <summary>Pengaturan pajak &amp; service</summary>
+        <div class="row">
+          <div><label for="set-service">Service (%), makan di tempat</label><input type="number" id="set-service" min="0" max="20" step="0.5"></div>
+          <div><label for="set-tax">Pajak resto/PBJT (%)</label><input type="number" id="set-tax" min="0" max="10" step="0.5"></div>
+        </div>
+      </details>
+    </section>
+
+    <section class="card queue" aria-labelledby="queue-title">
+      <h2 id="queue-title">Antrean dapur hari ini</h2>
+      <div class="cols" id="queue"></div>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = 'kasir-kafe-v1';
+    const MENU = {
+      Kopi: [['Espresso', 18000], ['Americano', 22000], ['Kopi susu gula aren', 25000], ['Cappuccino', 28000]],
+      'Non-kopi': [['Matcha latte', 30000], ['Cokelat panas', 27000], ['Teh tarik', 20000], ['Lemon tea', 18000]],
+      Makanan: [['Croissant', 22000], ['Roti bakar', 20000], ['Nasi goreng kampung', 35000], ['Kentang goreng', 23000]],
+    };
+    const STATUS = [['diproses', 'Diproses', 'Tandai siap'], ['siap', 'Siap diambil', 'Selesai'], ['selesai', 'Selesai', '']];
+
+    const $ = (id) => document.getElementById(id);
+    const rp = (n) => 'Rp ' + n.toLocaleString('id-ID');
+    const parseRp = (s) => parseInt(String(s).replace(/\D/g, ''), 10) || 0;
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+    const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD waktu lokal
+
+    let data = { orders: [], service: 5, tax: 10 };
+    try {
+      const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (d && Array.isArray(d.orders)) data = { ...data, ...d };
+    } catch (e) { /* mulai kosong */ }
+    const save = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { $('msg').textContent = 'Data tidak bisa disimpan di browser ini.'; } };
+
+    let category = 'Kopi';
+    let order = { type: 'dine', method: 'tunai', lines: [] };
+
+    function totals() {
+      const subtotal = order.lines.reduce((a, l) => a + l.price * l.qty, 0);
+      const service = order.type === 'dine' ? Math.round(subtotal * data.service / 100) : 0;
+      // PBJT dihitung dari jumlah yang dibayar konsumen, jadi service charge ikut menjadi dasar pajak.
+      const tax = Math.round((subtotal + service) * data.tax / 100);
+      return { subtotal, service, tax, total: subtotal + service + tax };
+    }
+
+    function problem(t) {
+      if (!order.lines.length) return 'Pesanan masih kosong.';
+      if (order.type === 'dine' && !$('table').value.trim()) return 'Isi nomor meja untuk pesanan makan di tempat.';
+      if (order.method === 'tunai' && parseRp($('cash').value) < t.total) return 'Uang tunai kurang dari total.';
+      return '';
+    }
+
+    function render() {
+      $('tabs').innerHTML = Object.keys(MENU).map((c) =>
+        `<button type="button" class="tab" role="tab" data-cat="${c}" aria-selected="${c === category}">${c}</button>`).join('');
+      $('menu').innerHTML = MENU[category].map(([name, price]) =>
+        `<button type="button" data-add="${esc(name)}" data-price="${price}"><strong>${esc(name)}</strong><b>${rp(price)}</b></button>`).join('');
+
+      $('lines').innerHTML = order.lines.map((l, i) => `<li><span>${esc(l.name)}<br><small class="muted">${rp(l.price * l.qty)}</small></span>
+        <span class="qty"><button type="button" data-step="-1" data-line="${i}" aria-label="Kurangi ${esc(l.name)}">−</button>${l.qty}
+        <button type="button" data-step="1" data-line="${i}" aria-label="Tambah ${esc(l.name)}">+</button></span>
+        <input type="text" data-note="${i}" value="${esc(l.note)}" maxlength="60" placeholder="Catatan, mis. less sugar" aria-label="Catatan ${esc(l.name)}"></li>`).join('');
+      $('lines-empty').hidden = order.lines.length > 0;
+      document.querySelectorAll('#type button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.type === order.type));
+      document.querySelectorAll('#method button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.method === order.method));
+      $('table-wrap').hidden = order.type !== 'dine';
+      $('cash-wrap').hidden = order.method !== 'tunai';
+      $('noncash-info').hidden = order.method === 'tunai';
+      updateTotals();
+
+      const list = data.orders.filter((o) => o.date === today());
+      $('queue').innerHTML = STATUS.map(([key, title, next]) => {
+        const items = list.filter((o) => o.status === key).slice(key === 'selesai' ? -5 : 0);
+        return `<div class="col"><h3>${title} (${list.filter((o) => o.status === key).length})</h3>${items.map((o) => `<div class="order" data-no="${o.no}">
+          <strong>${o.no}</strong> · ${o.type === 'dine' ? `Meja ${esc(o.table)}` : 'Bawa pulang'}
+          <ul>${o.lines.map((l) => `<li>${l.qty}× ${esc(l.name)}${l.note ? ` — <em>${esc(l.note)}</em>` : ''}</li>`).join('')}</ul>
+          ${next ? `<button type="button" data-advance="${o.no}">${next}</button>` : ''}</div>`).join('') || '<p class="empty">Kosong</p>'}</div>`;
+      }).join('');
+    }
+
+    function updateTotals() {
+      const t = totals();
+      $('subtotal').textContent = rp(t.subtotal);
+      $('service-label').textContent = `Service ${data.service}%${order.type === 'dine' ? '' : ' (tidak untuk bawa pulang)'}`;
+      $('service').textContent = rp(t.service);
+      $('tax-label').textContent = `Pajak resto ${data.tax}%`;
+      $('tax').textContent = rp(t.tax);
+      $('total').textContent = rp(t.total);
+      const cash = parseRp($('cash').value);
+      $('change').textContent = cash ? (cash >= t.total ? `Kembalian ${rp(cash - t.total)}` : `Kurang ${rp(t.total - cash)}`) : '';
+      $('pay').disabled = Boolean(problem(t));
+      $('pay').textContent = order.method === 'tunai' ? `Bayar ${rp(t.total)}` : `Konfirmasi ${order.method === 'qris' ? 'QRIS' : 'debit'} ${rp(t.total)}`;
+    }
+
+    function pay() {
+      const t = totals();
+      const err = problem(t);
+      $('msg').textContent = err;
+      if (err) return;
+      const seq = data.orders.filter((o) => o.date === today()).length + 1;
+      const o = {
+        no: 'A-' + String(seq).padStart(3, '0'), date: today(), time: new Date().toISOString(), status: 'diproses',
+        type: order.type, table: order.type === 'dine' ? $('table').value.trim() : '', method: order.method,
+        lines: order.lines, ...t, paid: order.method === 'tunai' ? parseRp($('cash').value) : t.total,
+      };
+      data.orders = [...data.orders.filter((x) => x.date === today()), o]; // simpan antrean hari ini saja
+      save();
+      $('toast').textContent = `Pesanan ${o.no} masuk antrean${o.method === 'tunai' ? `, kembalian ${rp(o.paid - o.total)}` : ''}.`;
+      order = { type: order.type, method: order.method, lines: [] };
+      $('table').value = '';
+      $('cash').value = '';
+      render();
+    }
+
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      const d = b.dataset;
+      if (d.cat) category = d.cat;
+      else if (d.add) {
+        const line = order.lines.find((l) => l.name === d.add && !l.note);
+        line ? line.qty++ : order.lines.push({ name: d.add, price: Number(d.price), qty: 1, note: '' });
+        $('toast').textContent = '';
+      } else if (d.step) {
+        const l = order.lines[d.line];
+        l.qty += Number(d.step);
+        if (l.qty <= 0) order.lines.splice(d.line, 1);
+      } else if (d.type) order.type = d.type;
+      else if (d.method) order.method = d.method;
+      else if (d.advance) {
+        const o = data.orders.find((x) => x.no === d.advance);
+        o.status = STATUS[STATUS.findIndex(([k]) => k === o.status) + 1][0];
+        save();
+      } else return;
+      $('msg').textContent = '';
+      render();
+    });
+
+    $('lines').addEventListener('input', (e) => { if (e.target.dataset.note) order.lines[e.target.dataset.note].note = e.target.value; });
+    $('cash').addEventListener('input', (e) => {
+      const n = parseRp(e.target.value);
+      e.target.value = n ? n.toLocaleString('id-ID') : '';
+      updateTotals();
+    });
+    $('table').addEventListener('input', updateTotals);
+    $('pay').addEventListener('click', pay);
+    [['set-service', 'service', 20], ['set-tax', 'tax', 10]].forEach(([id, key, max]) => {
+      $(id).value = data[key];
+      $(id).addEventListener('input', (e) => {
+        data[key] = Math.min(max, Math.max(0, parseFloat(e.target.value) || 0));
+        save();
+        updateTotals();
+      });
+    });
+
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator Patungan</title>
+  <style>
+    :root { --bg: #fff7ed; --card: #fff; --text: #1c1917; --muted: #78716c; --accent: #ea580c; --accent-dark: #c2410c; --border: #e7e5e4; --ok: #15803d; --warn: #b45309; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.5; }
+    header { padding: 1.5rem 1rem .5rem; max-width: 1040px; margin: 0 auto; }
+    h1 { margin: 0; font-size: 1.6rem; }
+    header p { margin: .25rem 0 0; color: var(--muted); }
+    main { max-width: 1040px; margin: 0 auto; padding: 1rem; display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr) minmax(0, 400px); align-items: start; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1rem; }
+    .card + .card { margin-top: 1rem; }
+    h2 { font-size: 1.05rem; margin: 0 0 .75rem; }
+    label { font-size: .85rem; font-weight: 600; display: block; margin-bottom: .2rem; }
+    input[type="text"], input[type="number"] { width: 100%; padding: .55rem .65rem; border: 1px solid #d6d3d1; border-radius: 8px; font: inherit; }
+    input:focus-visible, button:focus-visible { outline: 3px solid #fdba74; outline-offset: 1px; }
+    .row { display: flex; gap: .5rem; align-items: flex-end; flex-wrap: wrap; }
+    .row > div { flex: 1 1 120px; min-width: 0; }
+    .btn { border: 0; border-radius: 8px; padding: .6rem 1rem; font: inherit; font-weight: 600; cursor: pointer; background: var(--accent); color: #fff; }
+    .btn:hover { background: var(--accent-dark); }
+    .btn.ghost { background: #f5f5f4; color: var(--text); }
+    .chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .75rem 0 0; padding: 0; list-style: none; }
+    .chip { display: inline-flex; align-items: center; gap: .3rem; background: #ffedd5; border-radius: 999px; padding: .2rem .35rem .2rem .75rem; font-size: .9rem; }
+    .chip button { border: 0; background: none; cursor: pointer; font-size: 1rem; line-height: 1; padding: .2rem .4rem; border-radius: 999px; }
+    .toggle { border: 1px solid #d6d3d1; background: #fff; border-radius: 999px; padding: .25rem .7rem; font: inherit; font-size: .85rem; cursor: pointer; }
+    .toggle[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+    fieldset { border: 0; padding: 0; margin: .75rem 0; }
+    legend { font-size: .85rem; font-weight: 600; margin-bottom: .3rem; }
+    .error { color: #b91c1c; font-size: .85rem; min-height: 1.2em; margin: .3rem 0 0; }
+    .items { list-style: none; margin: .75rem 0 0; padding: 0; }
+    .item { border-top: 1px solid var(--border); padding: .6rem 0; }
+    .item-head { display: flex; justify-content: space-between; gap: .5rem; }
+    .item-name { font-weight: 600; overflow-wrap: anywhere; }
+    .item .chips { margin-top: .35rem; }
+    .del { border: 0; background: none; color: #b91c1c; cursor: pointer; font: inherit; font-size: .85rem; }
+    .check { display: flex; gap: .5rem; align-items: center; font-weight: 400; margin-top: .6rem; }
+    .hint { color: var(--muted); font-size: .8rem; margin: .4rem 0 0; }
+    .result { position: sticky; top: 1rem; }
+    .person { border: 1px solid var(--border); border-radius: 10px; padding: .6rem .75rem; margin-bottom: .5rem; }
+    .person-top { display: flex; justify-content: space-between; font-weight: 700; gap: .5rem; }
+    .person-top span:last-child { color: var(--accent-dark); white-space: nowrap; }
+    .person small { color: var(--muted); display: block; overflow-wrap: anywhere; }
+    .grand { display: flex; justify-content: space-between; font-size: 1.15rem; font-weight: 700; border-top: 2px dashed var(--border); padding-top: .6rem; margin-top: .6rem; }
+    .warning { background: #fef3c7; color: var(--warn); border-radius: 8px; padding: .5rem .7rem; font-size: .85rem; }
+    textarea { width: 100%; min-height: 150px; font: .85rem ui-monospace, Consolas, monospace; border: 1px solid #d6d3d1; border-radius: 8px; padding: .5rem; margin-top: .75rem; resize: vertical; }
+    .actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .5rem; }
+    #copy-status { color: var(--ok); font-size: .85rem; margin: .3rem 0 0; min-height: 1.2em; }
+    .empty { color: var(--muted); font-size: .9rem; }
+    @media (max-width: 800px) { main { grid-template-columns: 1fr; } .result { position: static; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Kalkulator Patungan</h1>
+    <p>Bagi tagihan makan bareng secara adil, termasuk menu yang dimakan bersama.</p>
+  </header>
+  <main>
+    <div>
+      <section class="card" aria-labelledby="people-title">
+        <h2 id="people-title">1. Siapa saja yang ikut?</h2>
+        <form id="person-form" class="row" novalidate>
+          <div><label for="person-name">Nama</label><input type="text" id="person-name" maxlength="30" placeholder="mis. Andi"></div>
+          <button class="btn" type="submit">Tambah</button>
+        </form>
+        <p class="error" id="person-error" aria-live="polite"></p>
+        <ul class="chips" id="people"></ul>
+      </section>
+
+      <section class="card" aria-labelledby="items-title">
+        <h2 id="items-title">2. Pesanan</h2>
+        <form id="item-form" novalidate>
+          <div class="row">
+            <div><label for="item-name">Menu</label><input type="text" id="item-name" maxlength="40" placeholder="mis. Nasi goreng"></div>
+            <div><label for="item-price">Harga satuan (Rp)</label><input type="text" id="item-price" inputmode="numeric" placeholder="25.000"></div>
+            <div style="flex-basis:70px"><label for="item-qty">Jumlah</label><input type="number" id="item-qty" min="1" value="1"></div>
+          </div>
+          <fieldset>
+            <legend>Dimakan oleh (pilih lebih dari satu untuk dibagi rata)</legend>
+            <div class="chips" id="item-shares"></div>
+          </fieldset>
+          <button class="btn" type="submit">Tambah menu</button>
+          <p class="error" id="item-error" aria-live="polite"></p>
+        </form>
+        <ul class="items" id="items"></ul>
+      </section>
+
+      <section class="card" aria-labelledby="fees-title">
+        <h2 id="fees-title">3. Diskon, service, dan pajak</h2>
+        <div class="row">
+          <div><label for="discount">Diskon/promo (Rp)</label><input type="text" id="discount" inputmode="numeric" value="0"></div>
+          <div><label for="service">Service charge (%)</label><input type="number" id="service" min="0" max="100" step="0.5" value="5"></div>
+          <div><label for="tax">Pajak restoran (%)</label><input type="number" id="tax" min="0" max="100" step="0.5" value="10"></div>
+        </div>
+        <label class="check"><input type="checkbox" id="tax-after-service" checked> Pajak dihitung dari subtotal + service</label>
+        <p class="hint">Samakan dengan struk. Diskon dibagi sebanding dengan pesanan tiap orang, lalu service dan pajak dihitung setelah diskon.</p>
+      </section>
+    </div>
+
+    <aside class="card result" aria-labelledby="result-title">
+      <h2 id="result-title">Yang harus dibayar</h2>
+      <div id="warning" class="warning" hidden></div>
+      <div id="result" aria-live="polite"></div>
+      <div class="grand"><span>Total tagihan</span><span id="grand-total">Rp 0</span></div>
+      <label for="summary" style="margin-top:.75rem">Teks untuk grup WA</label>
+      <textarea id="summary" readonly></textarea>
+      <div class="actions">
+        <button class="btn" type="button" id="copy">Salin ringkasan</button>
+        <button class="btn ghost" type="button" id="example">Isi contoh</button>
+        <button class="btn ghost" type="button" id="reset">Mulai baru</button>
+      </div>
+      <p id="copy-status" aria-live="polite"></p>
+    </aside>
+  </main>
+
+  <script>
+    const STORAGE_KEY = 'patungan-v1';
+    const $ = (id) => document.getElementById(id);
+    const rp = (n) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+    const parseRp = (s) => parseInt(String(s).replace(/\D/g, ''), 10) || 0;
+    const clampPct = (v) => Math.min(100, Math.max(0, parseFloat(v) || 0));
+    // Nama orang dan menu adalah input pengguna, jadi di-escape sebelum masuk ke innerHTML.
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+    const EMPTY = { people: [], items: [], nextId: 1, discount: 0, service: 5, tax: 10, taxAfterService: true };
+    let state = { ...EMPTY };
+    const selectedForNew = new Set();
+
+    const save = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* mode privat */ } };
+    try {
+      const s = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (s && Array.isArray(s.people) && Array.isArray(s.items)) state = { ...state, ...s };
+    } catch (e) { /* data rusak, mulai kosong */ }
+
+    // ---------- Perhitungan ----------
+    function compute() {
+      const per = new Map(state.people.map((p) => [p.id, { sub: 0, menus: [] }]));
+      const unassigned = [];
+      let itemsTotal = 0;
+      for (const it of state.items) {
+        const sharers = it.shares.filter((id) => per.has(id));
+        if (!sharers.length) { unassigned.push(it.name); continue; }
+        itemsTotal += it.price * it.qty;
+        for (const id of sharers) {
+          per.get(id).sub += it.price * it.qty / sharers.length;
+          per.get(id).menus.push(sharers.length > 1 ? `${it.name} (1/${sharers.length})` : it.name);
+        }
+      }
+      const discount = Math.min(state.discount, itemsTotal);
+      const rows = state.people.map((p) => {
+        const { sub, menus } = per.get(p.id);
+        const disc = itemsTotal ? discount * sub / itemsTotal : 0; // diskon dibagi sebanding pesanan
+        const service = (sub - disc) * state.service / 100;
+        const tax = (state.taxAfterService ? sub - disc + service : sub - disc) * state.tax / 100;
+        return { name: p.name, sub, disc, service, tax, exact: sub - disc + service + tax, menus };
+      });
+      // Bulatkan ke rupiah penuh tanpa selisih: sisa pembulatan diberikan ke pecahan terbesar.
+      const grand = Math.round(rows.reduce((a, r) => a + r.exact, 0));
+      rows.forEach((r) => { r.pay = Math.floor(r.exact); });
+      let rest = grand - rows.reduce((a, r) => a + r.pay, 0);
+      [...rows].sort((a, b) => (b.exact - b.pay) - (a.exact - a.pay)).forEach((r) => { if (rest-- > 0) r.pay++; });
+      return { rows, grand, unassigned, discount };
+    }
+
+    // ---------- Tampilan ----------
+    const toggles = (isOn, attrs) => state.people.map((p) =>
+      `<button type="button" class="toggle" ${attrs} data-person="${p.id}" aria-pressed="${isOn(p.id)}">${esc(p.name)}</button>`).join('');
+
+    function render() {
+      $('people').innerHTML = state.people.map((p) =>
+        `<li class="chip">${esc(p.name)}<button type="button" data-remove-person="${p.id}" aria-label="Hapus ${esc(p.name)}">×</button></li>`).join('');
+      $('item-shares').innerHTML = toggles((id) => selectedForNew.has(id), '')
+        || '<span class="empty">Tambahkan orang dulu di langkah 1.</span>';
+      $('items').innerHTML = state.items.map((it, i) => `<li class="item">
+        <div class="item-head"><span class="item-name">${it.qty}× ${esc(it.name)} — ${rp(it.price * it.qty)}</span>
+        <button type="button" class="del" data-remove-item="${i}" aria-label="Hapus ${esc(it.name)}">Hapus</button></div>
+        <div class="chips" aria-label="Yang makan ${esc(it.name)}">${toggles((id) => it.shares.includes(id), `data-item="${i}"`)}</div></li>`).join('');
+
+      const { rows, grand, unassigned, discount } = compute();
+      $('result').innerHTML = rows.map((r) => `<div class="person">
+        <div class="person-top"><span>${esc(r.name)}</span><span>${rp(r.pay)}</span></div>
+        <small>${esc(r.menus.join(', ') || 'Belum ada menu')}</small>
+        <small>Pesanan ${rp(r.sub)} − diskon ${rp(r.disc)} + service ${rp(r.service)} + pajak ${rp(r.tax)}</small></div>`).join('')
+        || '<p class="empty">Belum ada data. Tambahkan orang dan pesanan, atau klik "Isi contoh".</p>';
+      $('grand-total').textContent = rp(grand);
+      $('warning').hidden = !unassigned.length;
+      $('warning').textContent = `Belum dipilih siapa yang makan: ${unassigned.join(', ')}. Menu ini belum dihitung.`;
+
+      const date = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+      $('summary').value = rows.length ? [`Patungan ${date}`, '',
+        ...rows.map((r) => `${r.name}: ${rp(r.pay)} (${r.menus.join(', ') || '-'})`), '', `Total: ${rp(grand)}`,
+        `Service ${state.service}%, pajak ${state.tax}%${discount ? `, diskon ${rp(discount)}` : ''}`].join('\n') : '';
+    }
+
+    function syncFeeInputs() {
+      $('discount').value = state.discount.toLocaleString('id-ID');
+      $('service').value = state.service;
+      $('tax').value = state.tax;
+      $('tax-after-service').checked = state.taxAfterService;
+    }
+
+    const update = () => { save(); render(); };
+
+    // ---------- Event ----------
+    $('person-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = $('person-name').value.trim();
+      const dup = state.people.some((p) => p.name.toLowerCase() === name.toLowerCase());
+      $('person-error').textContent = !name ? 'Nama wajib diisi.' : dup ? `${name} sudah ada.` : '';
+      if (!name || dup) return;
+      state.people.push({ id: state.nextId++, name });
+      $('person-name').value = '';
+      update();
+    });
+
+    $('item-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = $('item-name').value.trim();
+      const price = parseRp($('item-price').value);
+      const err = !name ? 'Nama menu wajib diisi.' : !price ? 'Harga harus lebih dari 0.'
+        : !selectedForNew.size ? 'Pilih minimal satu orang yang makan menu ini.' : '';
+      $('item-error').textContent = err;
+      if (err) return;
+      state.items.push({ name, price, qty: Math.max(1, parseInt($('item-qty').value, 10) || 1), shares: [...selectedForNew] });
+      $('item-form').reset();
+      selectedForNew.clear();
+      $('item-name').focus();
+      update();
+    });
+
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      const d = b.dataset;
+      if (d.removePerson) {
+        const id = Number(d.removePerson);
+        state.people = state.people.filter((p) => p.id !== id);
+        selectedForNew.delete(id);
+        update();
+      } else if (d.removeItem) {
+        state.items.splice(Number(d.removeItem), 1);
+        update();
+      } else if (d.person) {
+        const id = Number(d.person);
+        const set = d.item ? new Set(state.items[d.item].shares) : selectedForNew;
+        set.has(id) ? set.delete(id) : set.add(id);
+        if (d.item) state.items[d.item].shares = [...set];
+        update();
+      }
+    });
+
+    const money = (input, onChange) => input.addEventListener('input', () => {
+      const n = parseRp(input.value);
+      input.value = n ? n.toLocaleString('id-ID') : '';
+      if (onChange) onChange(n);
+    });
+    money($('item-price'));
+    money($('discount'), (n) => { state.discount = n; update(); });
+    $('service').addEventListener('input', (e) => { state.service = clampPct(e.target.value); update(); });
+    $('tax').addEventListener('input', (e) => { state.tax = clampPct(e.target.value); update(); });
+    $('tax-after-service').addEventListener('change', (e) => { state.taxAfterService = e.target.checked; update(); });
+
+    $('copy').addEventListener('click', async () => {
+      const text = $('summary').value;
+      if (!text) { $('copy-status').textContent = 'Belum ada yang bisa disalin.'; return; }
+      try {
+        await navigator.clipboard.writeText(text);
+        $('copy-status').textContent = 'Ringkasan disalin. Tinggal tempel di grup.';
+      } catch (e) {
+        $('summary').select(); // clipboard diblokir (mis. dibuka dari file://): pilih teks agar bisa disalin manual
+        $('copy-status').textContent = 'Tidak bisa menyalin otomatis. Teks sudah dipilih, tekan Ctrl+C.';
+      }
+    });
+
+    $('reset').addEventListener('click', () => {
+      if (!confirm('Hapus semua orang dan pesanan?')) return;
+      state = { ...EMPTY, people: [], items: [], service: state.service, tax: state.tax, taxAfterService: state.taxAfterService };
+      selectedForNew.clear();
+      syncFeeInputs();
+      update();
+    });
+
+    $('example').addEventListener('click', () => {
+      const item = (name, price, qty, shares) => ({ name, price, qty, shares });
+      state = {
+        ...EMPTY, nextId: 4, discount: 10000,
+        people: [{ id: 1, name: 'Andi' }, { id: 2, name: 'Budi' }, { id: 3, name: 'Citra' }],
+        items: [item('Nasi goreng', 25000, 1, [1]), item('Mie ayam', 20000, 1, [2]), item('Es teh', 5000, 3, [1, 2, 3]),
+          item('Pisang goreng', 18000, 1, [1, 3]), item('Ayam bakar', 30000, 1, [3])],
+      };
+      selectedForNew.clear();
+      syncFeeInputs();
+      update();
+    });
+
+    syncFeeInputs();
+    render();
+  </script>
+</body>
+</html>

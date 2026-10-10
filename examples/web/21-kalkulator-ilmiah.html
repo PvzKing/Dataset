@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator Ilmiah</title>
+  <style>
+    :root {
+      --bg: #eef2f7; --panel: #ffffff; --screen: #0b1220; --screen-text: #e2e8f0; --muted: #64748b;
+      --key: #f1f5f9; --key-hover: #e2e8f0; --fn: #dbeafe; --op: #2563eb; --danger: #dc2626; --border: #cbd5e1;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; padding: 1rem; background: var(--bg); color: #0f172a;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    .layout { max-width: 860px; margin: 0 auto; display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr) 280px; align-items: start; }
+    h1 { grid-column: 1 / -1; margin: .25rem 0; font-size: 1.3rem; }
+    .calc, .history { background: var(--panel); border-radius: 18px; padding: 1rem; box-shadow: 0 10px 30px rgba(15, 23, 42, .08); }
+    .screen { background: var(--screen); color: var(--screen-text); border-radius: 12px; padding: .75rem; margin-bottom: .9rem; }
+    .screen-top { display: flex; justify-content: space-between; font-size: .75rem; color: #94a3b8; margin-bottom: .35rem; }
+    #expr {
+      width: 100%; border: 0; background: transparent; color: inherit; font: 1.15rem ui-monospace, Consolas, monospace;
+      text-align: right; padding: .2rem 0; outline: none;
+    }
+    #expr:focus-visible { box-shadow: 0 2px 0 #60a5fa; }
+    #result { display: block; text-align: right; font-size: clamp(1.6rem, 7vw, 2.3rem); min-height: 1.3em; word-break: break-all; }
+    #result.error { color: #fca5a5; font-size: 1.1rem; }
+    #result.preview { color: #94a3b8; }
+    .keys { display: grid; grid-template-columns: repeat(5, 1fr); gap: .45rem; }
+    .key {
+      min-height: 48px; border: 1px solid var(--border); border-radius: 10px; background: var(--key);
+      font: inherit; font-size: 1.05rem; cursor: pointer; color: inherit; transition: background-color .12s, transform .06s;
+    }
+    .key:hover { background: var(--key-hover); }
+    .key:active { transform: scale(.96); }
+    .key:focus-visible { outline: 3px solid #93c5fd; outline-offset: 1px; }
+    .key.fn { background: var(--fn); border-color: #bfdbfe; }
+    .key.op { background: var(--op); color: #fff; border-color: var(--op); }
+    .key.clear { color: var(--danger); font-weight: 600; }
+    .key.wide { grid-column: span 2; }
+    #angle[aria-pressed="true"] { background: #fde68a; border-color: #f59e0b; }
+    .history h2 { font-size: 1rem; margin: 0 0 .5rem; display: flex; justify-content: space-between; align-items: center; }
+    .link-btn { border: 0; background: none; color: var(--danger); font: inherit; font-size: .85rem; cursor: pointer; }
+    #history-list { list-style: none; margin: 0; padding: 0; max-height: 420px; overflow-y: auto; }
+    #history-list button {
+      width: 100%; text-align: right; border: 0; border-bottom: 1px solid #e2e8f0; background: none; padding: .55rem .35rem;
+      font: inherit; cursor: pointer; border-radius: 6px; color: inherit;
+    }
+    #history-list button:hover, #history-list button:focus-visible { background: #f1f5f9; outline: none; }
+    .h-expr { display: block; font-size: .8rem; color: var(--muted); font-family: ui-monospace, Consolas, monospace; word-break: break-all; }
+    .h-res { font-weight: 600; word-break: break-all; }
+    .empty { color: var(--muted); font-size: .9rem; }
+    .hint { color: var(--muted); font-size: .8rem; margin: .75rem 0 0; }
+    @media (max-width: 720px) { .layout { grid-template-columns: 1fr; } .key { font-size: .95rem; } }
+    @media (prefers-reduced-motion: reduce) { .key { transition: none; } .key:active { transform: none; } }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <h1>Kalkulator Ilmiah</h1>
+    <main class="calc">
+      <div class="screen">
+        <div class="screen-top"><span id="mode-label">Mode: derajat</span><span id="ans-label">Ans = 0</span></div>
+        <input id="expr" type="text" autocomplete="off" spellcheck="false" inputmode="none" aria-label="Ekspresi" placeholder="0">
+        <output id="result" aria-live="polite"></output>
+      </div>
+      <div class="keys" id="keys">
+        <button class="key fn" type="button" id="angle" aria-pressed="true" title="Ganti derajat/radian">DEG</button>
+        <button class="key fn" type="button" data-insert="(">(</button>
+        <button class="key fn" type="button" data-insert=")">)</button>
+        <button class="key clear" type="button" data-action="clear" aria-label="Hapus semua">AC</button>
+        <button class="key clear" type="button" data-action="backspace" aria-label="Hapus satu karakter">⌫</button>
+        <button class="key fn" type="button" data-insert="sin(">sin</button>
+        <button class="key fn" type="button" data-insert="cos(">cos</button>
+        <button class="key fn" type="button" data-insert="tan(">tan</button>
+        <button class="key fn" type="button" data-insert="ln(">ln</button>
+        <button class="key fn" type="button" data-insert="log(" aria-label="Logaritma basis 10">log</button>
+        <button class="key fn" type="button" data-insert="^2" aria-label="Kuadrat">x²</button>
+        <button class="key fn" type="button" data-insert="^" aria-label="Pangkat">xʸ</button>
+        <button class="key fn" type="button" data-insert="√(" aria-label="Akar kuadrat">√</button>
+        <button class="key fn" type="button" data-insert="!" aria-label="Faktorial">n!</button>
+        <button class="key op" type="button" data-insert="÷" aria-label="Bagi">÷</button>
+        <button class="key" type="button" data-insert="7">7</button>
+        <button class="key" type="button" data-insert="8">8</button>
+        <button class="key" type="button" data-insert="9">9</button>
+        <button class="key fn" type="button" data-insert="π" aria-label="Pi">π</button>
+        <button class="key op" type="button" data-insert="×" aria-label="Kali">×</button>
+        <button class="key" type="button" data-insert="4">4</button>
+        <button class="key" type="button" data-insert="5">5</button>
+        <button class="key" type="button" data-insert="6">6</button>
+        <button class="key fn" type="button" data-insert="e" aria-label="Bilangan Euler">e</button>
+        <button class="key op" type="button" data-insert="−" aria-label="Kurang">−</button>
+        <button class="key" type="button" data-insert="1">1</button>
+        <button class="key" type="button" data-insert="2">2</button>
+        <button class="key" type="button" data-insert="3">3</button>
+        <button class="key fn" type="button" data-insert="Ans" aria-label="Hasil terakhir">Ans</button>
+        <button class="key op" type="button" data-insert="+" aria-label="Tambah">+</button>
+        <button class="key wide" type="button" data-insert="0">0</button>
+        <button class="key" type="button" data-insert="," aria-label="Koma desimal">,</button>
+        <button class="key fn" type="button" data-insert="%" aria-label="Persen">%</button>
+        <button class="key op" type="button" data-action="equals" aria-label="Sama dengan">=</button>
+      </div>
+      <p class="hint">Bisa diketik langsung: <code>2^10</code>, <code>sqrt(2)</code>, <code>pi</code>. Desimal pakai koma atau titik. Enter = hitung, Esc = hapus.</p>
+    </main>
+    <aside class="history" aria-labelledby="history-title">
+      <h2 id="history-title">Riwayat <button class="link-btn" type="button" id="clear-history">Hapus</button></h2>
+      <ul id="history-list"></ul>
+      <p class="empty" id="history-empty">Belum ada perhitungan. Klik riwayat untuk memakai ekspresinya lagi.</p>
+    </aside>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'kalkulator-ilmiah';
+    const MAX_HISTORY = 20;
+    const exprEl = document.getElementById('expr');
+    const resultEl = document.getElementById('result');
+    const angleBtn = document.getElementById('angle');
+    const listEl = document.getElementById('history-list');
+
+    let useDegrees = true;
+    let ans = 0;
+    let history = [];
+
+    const load = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch (e) { return {}; } };
+    const save = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ history, ans, useDegrees })); } catch (e) { /* mode privat */ } };
+
+    // ---------- Tokenizer ----------
+    const FUNCS = ['sin', 'cos', 'tan', 'ln', 'log', 'sqrt', '√'];
+    function tokenize(src) {
+      const s = src.replace(/\s+/g, '').replace(/[×*]/g, '*').replace(/[÷/:]/g, '/').replace(/[−–]/g, '-');
+      const tokens = [];
+      let i = 0;
+      while (i < s.length) {
+        const rest = s.slice(i);
+        const num = rest.match(/^(\d+[.,]?\d*|[.,]\d+)/);
+        if (num) { tokens.push({ type: 'num', value: parseFloat(num[0].replace(',', '.')) }); i += num[0].length; continue; }
+        const word = rest.match(/^(sqrt|sin|cos|tan|ln|log|ans|pi|π|√|e)/i);
+        if (word) {
+          const w = word[0].toLowerCase();
+          if (w === 'pi' || w === 'π') tokens.push({ type: 'num', value: Math.PI });
+          else if (w === 'e') tokens.push({ type: 'num', value: Math.E });
+          else if (w === 'ans') tokens.push({ type: 'num', value: ans });
+          else tokens.push({ type: 'func', value: w === 'sqrt' ? '√' : w });
+          i += w.length; continue;
+        }
+        if ('+-*/^()!%'.includes(s[i])) { tokens.push({ type: 'op', value: s[i] }); i++; continue; }
+        throw new Error(`Karakter "${s[i]}" tidak dikenal`);
+      }
+      return tokens;
+    }
+
+    // ---------- Parser recursive descent (tanpa eval) ----------
+    // expr := term (+|- term)* ; term := unary (*|/ unary | perkalian implisit)*
+    // unary := (+|-) unary | power ; power := postfix (^ unary)?  → 2^3^2 = 2^9, -2^2 = -4
+    function parse(tokens) {
+      let pos = 0;
+      const peek = () => tokens[pos];
+      const isOp = (v) => peek() && peek().type === 'op' && peek().value === v;
+      const startsOperand = () => peek() && (peek().type !== 'op' || peek().value === '(');
+
+      function expr() {
+        let v = term();
+        while (isOp('+') || isOp('-')) v = tokens[pos++].value === '+' ? v + term() : v - term();
+        return v;
+      }
+      function term() {
+        let v = unary();
+        for (;;) {
+          if (isOp('*')) { pos++; v *= unary(); }
+          else if (isOp('/')) {
+            pos++;
+            const d = unary();
+            if (d === 0) throw new Error('Tidak bisa dibagi nol');
+            v /= d;
+          } else if (startsOperand()) v *= power(); // 2π, 3(4+1), 2sin(30)
+          else return v;
+        }
+      }
+      function unary() {
+        if (isOp('-')) { pos++; return -unary(); }
+        if (isOp('+')) { pos++; return unary(); }
+        return power();
+      }
+      function power() {
+        const base = postfix();
+        if (isOp('^')) { pos++; return Math.pow(base, unary()); }
+        return base;
+      }
+      function postfix() {
+        let v = primary();
+        while (isOp('!') || isOp('%')) v = tokens[pos++].value === '!' ? factorial(v) : v / 100;
+        return v;
+      }
+      function primary() {
+        const t = tokens[pos++];
+        if (!t) throw new Error('Ekspresi belum lengkap');
+        if (t.type === 'num') return t.value;
+        if (t.type === 'func') return applyFunc(t.value, t.value === '√' && !isOp('(') ? power() : primary());
+        if (t.value === '(') {
+          const v = expr();
+          if (isOp(')')) pos++; // kurung tutup di akhir boleh dilupakan, seperti kalkulator HP
+          else if (peek()) throw new Error('Kurung tidak seimbang');
+          return v;
+        }
+        throw new Error(`"${t.value}" tidak di tempat yang benar`);
+      }
+
+      const value = expr();
+      if (pos < tokens.length) throw new Error(tokens[pos].value === ')' ? 'Kurung tidak seimbang' : 'Ekspresi tidak valid');
+      return value;
+    }
+
+    function factorial(n) {
+      if (!Number.isInteger(n) || n < 0) throw new Error('Faktorial hanya untuk bilangan bulat ≥ 0');
+      if (n > 170) throw new Error('Hasil terlalu besar');
+      let r = 1;
+      for (let i = 2; i <= n; i++) r *= i;
+      return r;
+    }
+
+    const snap = (v) => (Math.abs(v) < 1e-12 ? 0 : v); // sin(180°) = 0, bukan 1,2e-16
+    function applyFunc(name, x) {
+      const rad = useDegrees ? x * Math.PI / 180 : x;
+      switch (name) {
+        case 'sin': return snap(Math.sin(rad));
+        case 'cos': return snap(Math.cos(rad));
+        case 'tan':
+          if (Math.abs(Math.cos(rad)) < 1e-12) throw new Error('tan tidak terdefinisi di sudut ini');
+          return snap(Math.tan(rad));
+        case 'ln': if (x <= 0) throw new Error('ln hanya untuk bilangan > 0'); return Math.log(x);
+        case 'log': if (x <= 0) throw new Error('log hanya untuk bilangan > 0'); return Math.log10(x);
+        case '√': if (x < 0) throw new Error('Akar dari bilangan negatif'); return Math.sqrt(x);
+      }
+    }
+
+    function calculate(src) {
+      const tokens = tokenize(src);
+      if (!tokens.length) throw new Error('Ekspresi kosong');
+      const v = parse(tokens);
+      if (!Number.isFinite(v)) throw new Error('Hasil di luar jangkauan');
+      return v;
+    }
+
+    const plain = new Intl.NumberFormat('id-ID', { maximumSignificantDigits: 12 });
+    const sci = new Intl.NumberFormat('id-ID', { notation: 'scientific', maximumSignificantDigits: 10 });
+    function format(v) {
+      const a = Math.abs(v);
+      if (a !== 0 && (a >= 1e15 || a < 1e-9)) return sci.format(v).replace('E', ' × 10^');
+      return plain.format(v).replace('-', '−');
+    }
+
+    // ---------- UI ----------
+    function showResult(text, kind) {
+      resultEl.textContent = text;
+      resultEl.className = kind || '';
+    }
+
+    function preview() {
+      const src = exprEl.value.trim();
+      if (!src) return showResult('');
+      try { showResult('= ' + format(calculate(src)), 'preview'); } catch (e) { showResult(''); }
+    }
+
+    function equals() {
+      const src = exprEl.value.trim();
+      if (!src) return;
+      try {
+        const v = calculate(src);
+        ans = v;
+        showResult(format(v));
+        history.unshift({ expr: src, result: format(v) });
+        history = history.slice(0, MAX_HISTORY);
+        save();
+        renderHistory();
+        document.getElementById('ans-label').textContent = 'Ans = ' + format(ans);
+      } catch (e) {
+        showResult(e.message, 'error');
+      }
+    }
+
+    function insert(text) {
+      const start = exprEl.selectionStart ?? exprEl.value.length;
+      const end = exprEl.selectionEnd ?? exprEl.value.length;
+      exprEl.setRangeText(text, start, end, 'end');
+      preview();
+    }
+
+    function backspace() {
+      let start = exprEl.selectionStart ?? exprEl.value.length;
+      const end = exprEl.selectionEnd ?? start;
+      if (start === end) {
+        // hapus nama fungsi sekaligus, misalnya "sin(" atau "Ans"
+        const before = exprEl.value.slice(0, start);
+        const m = before.match(/(sqrt\(|sin\(|cos\(|tan\(|log\(|ln\(|√\(|Ans|.)$/);
+        start -= m ? m[0].length : 0;
+      }
+      exprEl.setRangeText('', Math.max(0, start), end, 'end');
+      preview();
+    }
+
+    function renderHistory() {
+      listEl.replaceChildren();
+      history.forEach((h) => {
+        const li = document.createElement('li');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const e = document.createElement('span');
+        e.className = 'h-expr';
+        e.textContent = h.expr;
+        const r = document.createElement('span');
+        r.className = 'h-res';
+        r.textContent = '= ' + h.result;
+        btn.append(e, r);
+        btn.addEventListener('click', () => { exprEl.value = h.expr; exprEl.focus(); preview(); });
+        li.append(btn);
+        listEl.append(li);
+      });
+      document.getElementById('history-empty').hidden = history.length > 0;
+    }
+
+    function setAngle(deg) {
+      useDegrees = deg;
+      angleBtn.textContent = deg ? 'DEG' : 'RAD';
+      angleBtn.setAttribute('aria-pressed', String(deg));
+      document.getElementById('mode-label').textContent = 'Mode: ' + (deg ? 'derajat' : 'radian');
+      save();
+      preview();
+    }
+
+    document.getElementById('keys').addEventListener('click', (e) => {
+      const key = e.target.closest('.key');
+      if (!key || key === angleBtn) return;
+      if (key.dataset.insert) insert(key.dataset.insert);
+      else if (key.dataset.action === 'clear') { exprEl.value = ''; showResult(''); }
+      else if (key.dataset.action === 'backspace') backspace();
+      else if (key.dataset.action === 'equals') equals();
+      if (matchMedia('(pointer: fine)').matches) exprEl.focus();
+    });
+    angleBtn.addEventListener('click', () => setAngle(!useDegrees));
+    exprEl.addEventListener('input', preview);
+    exprEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); equals(); }
+      else if (e.key === 'Escape') { exprEl.value = ''; showResult(''); }
+    });
+    document.getElementById('clear-history').addEventListener('click', () => { history = []; save(); renderHistory(); });
+
+    const saved = load();
+    history = Array.isArray(saved.history) ? saved.history.slice(0, MAX_HISTORY) : [];
+    ans = Number.isFinite(saved.ans) ? saved.ans : 0;
+    document.getElementById('ans-label').textContent = 'Ans = ' + format(ans);
+    setAngle(saved.useDegrees !== false);
+    renderHistory();
+    exprEl.focus();
+  </script>
+</body>
+</html>
