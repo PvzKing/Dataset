@@ -7,10 +7,11 @@ Dataset instruksi berbahasa Indonesia untuk fine-tuning **Qwen3.5-4B** dalam mod
 | Kelompok | Sampel | Rata-rata token | Topik |
 |---|---|---|---|
 | Website one-shot (`web_oneshot`) | 24 | ±4.500 | landing page, portfolio, dashboard, toko online, game, kalkulator, sistem kasir, form, undangan, dan lainnya |
+| Perbaikan bug website (`web_debug`) | 12 | ±3.650 | XSS, urutan operasi, timer di tab latar, `localStorage` rusak, overflow di HP, acak tidak aman, dan lainnya |
 | Teknologi & pemrograman | 22 | ±700 | algoritma, struktur data, database, keamanan, sistem terdistribusi, Git, testing, AI |
 | Matematika & logika | 11 | ±800 | kalkulus, pembuktian, probabilitas, statistik, aljabar, teka-teki logika |
 | Sains | 10 | ±850 | fisika, biologi, kimia, ilmu bumi |
-| **Total** | **67** | | ±140 ribu token, sampel terpanjang ±6.200 token |
+| **Total** | **79** | | ±184 ribu token, sampel terpanjang ±6.200 token |
 
 Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 
@@ -62,6 +63,7 @@ Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 - Sebagian besar sampel **tidak memakai system message**. Saat training, chat template model yang menentukan system prompt bawaannya (Qwen2.5 menyisipkan "You are Qwen..."). Kondisi ini sama dengan pemakaian model sehari-hari di Ollama, LM Studio, atau vLLM.
 - **Qwen3.5 dilatih dalam mode non-thinking** (`enable_thinking=False`). Dataset ini tidak berisi jejak penalaran, jadi model diajari langsung menjawab. Notebook menempelkan jawaban tepat setelah prompt inferensi, termasuk blok `<think>` kosong jika template menambahkannya, supaya format training sama dengan saat dipakai.
 - Dua sampel web (`web-012`, `web-019`) memakai system prompt khusus, misalnya batas maksimal 3 poin penjelasan, supaya model tetap patuh pada instruksi system.
+- **Sampel perbaikan bug (`web_debug`)** berisi satu website dari `examples/web` yang sengaja diberi satu bug realistis. Di prompt, user menempelkan kode itu bersama pesan error atau gejalanya. Jawabannya menjelaskan penyebab, lalu memperbaiki hanya bagian yang rusak dengan blok `<<<<<<< SEARCH` / `=======` / `>>>>>>> REPLACE`, bukan menulis ulang seluruh file. Kode ber-bug hanya ada di pesan user, yang tidak ikut dilatih, jadi model tidak belajar menulis bug. Format ini juga bisa dipakai apa adanya oleh script cek-dan-perbaiki otomatis.
 - Jawaban web terdiri dari: pengantar singkat, tepat satu blok ```` ```html ````, lalu bagian **Cek kebutuhan**. Bagian itu memetakan setiap permintaan di prompt ke kode yang mengerjakannya, dengan format `- **permintaan** → fungsi/elemen dan cara kerjanya`. Tujuannya melatih model memeriksa sendiri bahwa tidak ada fitur yang terlewat, kelemahan yang terlihat pada uji model hasil fine-tuning pertama. Setelahnya boleh ada catatan teknis dan cara menyesuaikan. `scripts/validate.py` menolak sampel web tanpa pemetaan ini.
 
 ## Standar kualitas sampel website
@@ -78,11 +80,11 @@ Contoh kode Python di sampel teknologi juga sudah dijalankan, sehingga output ya
 
 ## Mencampur dengan dataset umum
 
-Melatih model hanya dengan 67 sampel berisiko membuat model "terlalu fokus", misalnya selalu menjawab dengan file HTML walaupun pertanyaannya bukan soal website. Selain itu, kemampuan umumnya bisa menurun. Karena itu, config training memakai data campuran yang dibuat oleh `scripts/mix_general.py`:
+Melatih model hanya dengan 79 sampel berisiko membuat model "terlalu fokus", misalnya selalu menjawab dengan file HTML walaupun pertanyaannya bukan soal website. Selain itu, kemampuan umumnya bisa menurun. Karena itu, config training memakai data campuran yang dibuat oleh `scripts/mix_general.py`:
 
 | Sumber | Jumlah bawaan | Isi |
 |---|---|---|
-| Dataset ini (`data/train.jsonl`) | 67 | semua sampel, tanpa dikurangi |
+| Dataset ini (`data/train.jsonl`) | 79 | semua sampel, tanpa dikurangi |
 | [`CohereForAI/aya_dataset`](https://huggingface.co/datasets/CohereForAI/aya_dataset), bagian bahasa Indonesia | 600 | tanya-jawab umum yang ditulis manusia |
 | [`ise-uiuc/Magicoder-Evol-Instruct-110K`](https://huggingface.co/datasets/ise-uiuc/Magicoder-Evol-Instruct-110K) | 200 | instruksi pemrograman (bahasa Inggris) |
 | [`HuggingFaceH4/ultrachat_200k`](https://huggingface.co/datasets/HuggingFaceH4/ultrachat_200k), split `train_sft` | 100 | percakapan umum multi-turn (bahasa Inggris) |
@@ -118,14 +120,14 @@ Hal-hal yang dilakukan script:
 
 ## Pilihan data: `own` atau `mix`
 
-- **`own`**: hanya `data/train.jsonl`, 67 sampel, 3 epoch, ±400 ribu token dilatih.
+- **`own`**: hanya `data/train.jsonl`, 79 sampel, 3 epoch, ±540 ribu token diproses.
 - **`mix`**: dataset ini ditambah ±900 sampel umum dari `scripts/mix_general.py`, 2 epoch, ±1 juta token dilatih.
 
 Mulailah dengan **`own`**, lalu beralih ke `mix` jika hasilnya menunjukkan gejala lupa kemampuan umum.
 
 - **Alasan memulai dengan `own`:**
-  - Qwen3.5-4B sudah dilatih dengan data umum dalam jumlah sangat besar. 67 sampel dengan LoRA rank 16 hanya mengubah sedikit bobot, jadi risiko model melupakan kemampuan umumnya kecil.
-  - Hampir 80% token di dataset ini adalah sampel website one-shot. Itu memang kemampuan utama yang ingin diajarkan.
+  - Qwen3.5-4B sudah dilatih dengan data umum dalam jumlah sangat besar. 79 sampel dengan LoRA rank 16 hanya mengubah sedikit bobot, jadi risiko model melupakan kemampuan umumnya kecil.
+  - Sekitar 80% token di dataset ini adalah sampel website, baik one-shot maupun perbaikan bug. Itu memang kemampuan utama yang ingin diajarkan.
   - Training di T4 butuh ±30–90 menit, tidak berjam-jam, jadi cepat untuk iterasi.
 - **Kapan beralih ke `mix`.** Jika setelah training dengan `own` muncul salah satu gejala berikut:
   - Setiap pertanyaan dijawab dengan HTML.
@@ -161,9 +163,9 @@ Script ini memakai [Unsloth](https://github.com/unslothai/unsloth):
 
 Perkiraan waktu training Qwen3.5-4B, belum termasuk instalasi dan unduh model (±10–15 menit):
 
-| GPU | `own` (±400 ribu token) | `mix` (±1 juta token) |
+| GPU | `own` (±540 ribu token) | `mix` (±1 juta token) |
 |---|---|---|
-| T4 gratis (QLoRA 4-bit, float32, konteks 6144) | ±27 menit (23 menit terukur saat masih 62 sampel) | ±1,5–3 jam |
+| T4 gratis (QLoRA 4-bit, float32, konteks 6144) | ±35 menit (23 menit terukur saat masih 62 sampel) | ±1,5–3 jam |
 | L4 (bf16) | ±10–20 menit | ±40–80 menit |
 
 Angka T4 untuk `own` diukur langsung di Colab. Angka lainnya masih perkiraan, dan ETA di progress bar menunjukkan waktu yang sebenarnya. Di T4, script otomatis memakai QLoRA 4-bit dan `max_seq_len` 6144, karena 16-bit maupun 4-bit dengan konteks 8192 kehabisan memori di sana. Semua sampel dijaga di bawah batas itu, jadi tidak ada yang terbuang. Colab gratis membatasi lama sesi dan ketersediaan GPU, jadi data `mix` di T4 kemungkinan butuh lebih dari satu sesi.
@@ -218,7 +220,7 @@ Script ini memeriksa struktur JSON, urutan role, ID dan prompt duplikat, kelengk
 
 ## Catatan penting
 
-- **Ukuran dataset kecil.** Fine-tuning dengan 67 sampel terutama membentuk gaya dan format jawaban, misalnya kebiasaan menghasilkan satu file HTML lengkap dengan penjelasan berbahasa Indonesia. Pengetahuan baru tidak banyak bertambah. Karena itu, config bawaan memakai data campuran dengan dataset umum (lihat bagian *Mencampur dengan dataset umum*).
+- **Ukuran dataset kecil.** Fine-tuning dengan 79 sampel terutama membentuk gaya dan format jawaban, misalnya kebiasaan menghasilkan satu file HTML lengkap dengan penjelasan berbahasa Indonesia. Pengetahuan baru tidak banyak bertambah. Karena itu, config bawaan memakai data campuran dengan dataset umum (lihat bagian *Mencampur dengan dataset umum*).
 - **Hindari overfitting.** Pantau training loss. Dengan data sekecil ini, terlalu banyak epoch membuat model sekadar menghafal jawaban.
 
 ## Melihat dan menguji website
@@ -236,6 +238,11 @@ node test_web.mjs 04-          # satu website saja
 ```
 
 Tes gagal jika ada error JavaScript, request ke luar, scroll horizontal, atau skenario interaksi di `tests/interactions.mjs` yang tidak terpenuhi. Screenshot disimpan di `tests/screenshots/`.
+
+Sampel perbaikan bug diuji dengan `node test_debug.mjs`. Untuk setiap sampel, tes memeriksa tiga hal:
+1. Blok SEARCH/REPLACE di jawaban, bila diterapkan ke kode di prompt, menghasilkan website asli di `examples/web` persis sama.
+2. Versi ber-bug benar-benar gagal di browser.
+3. Pemeriksaan khusus bug tersebut lolos di versi asli.
 
 ## Menambah sampel
 
@@ -263,4 +270,5 @@ scripts/validate.py                   validasi dataset
 examples/web/*.html                   24 website dari sampel web, siap dibuka di browser
 tests/test_web.mjs                    tes otomatis website dengan Playwright
 tests/interactions.mjs                skenario interaksi per website
+tests/test_debug.mjs                  tes sampel perbaikan bug (web_debug)
 ```

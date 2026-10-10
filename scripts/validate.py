@@ -13,6 +13,7 @@ import sys
 from collections import Counter
 
 HTML_BLOCK = re.compile(r"```html\n(.*?)\n```", re.S)
+PATCH_BLOCK = re.compile(r"<<<<<<< SEARCH\n(.*?)\n=======\n(.*?)\n>>>>>>> REPLACE", re.S)
 
 
 def check_sample(sample, line_no):
@@ -49,6 +50,25 @@ def check_sample(sample, line_no):
             errors.append("penjelasan sampel web harus memetakan permintaan ke implementasi: minimal 2 baris '- **permintaan** → ...'")
         if messages[0]["role"] != "system" and "**Cek kebutuhan**" not in notes:
             errors.append("penjelasan sampel web harus diawali bagian **Cek kebutuhan**")
+
+    if sample.get("category") == "web_debug":
+        # Prompt berisi satu file HTML ber-bug; jawaban memperbaikinya dengan blok SEARCH/REPLACE, bukan menulis ulang file.
+        user = next((m["content"] for m in messages if m.get("role") == "user"), "")
+        files = HTML_BLOCK.findall(user)
+        patches = PATCH_BLOCK.findall(messages[-1]["content"])
+        if len(files) != 1:
+            errors.append(f"prompt sampel debug harus berisi tepat satu blok ```html, ditemukan {len(files)}")
+        elif not patches:
+            errors.append("jawaban sampel debug harus berisi minimal satu blok <<<<<<< SEARCH / ======= / >>>>>>> REPLACE")
+        else:
+            html = files[0]
+            for search, replace in patches:
+                if html.count(search) != 1:
+                    errors.append(f"blok SEARCH harus cocok tepat 1 kali di HTML prompt, ditemukan {html.count(search)}: {search[:50]!r}")
+                    break
+                html = html.replace(search, replace)
+        if any(b.lstrip().startswith("<!DOCTYPE") for b in HTML_BLOCK.findall(messages[-1]["content"])):
+            errors.append("jawaban sampel debug tidak boleh menulis ulang file lengkap dalam blok ```html")
     return [f"baris {line_no}: {e}" for e in errors]
 
 
