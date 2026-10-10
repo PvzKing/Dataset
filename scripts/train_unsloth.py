@@ -247,6 +247,9 @@ def build_texts(tokenizer, template_kwargs, rows, max_seq_len):
         lengths.append(n)
     if not texts:
         raise ValueError(f"semua sampel lebih panjang dari max_seq_len={max_seq_len}")
+    kept = [row["id"] for row in rows if row["id"] not in {d[0] for d in dropped}]
+    longest = sorted(zip(lengths, kept), reverse=True)[:3]
+    print("sampel terpanjang: " + ", ".join(f"{rid} ({n:,})" for n, rid in longest), flush=True)
     return texts, lengths, dropped
 
 
@@ -347,7 +350,7 @@ def cmd_prepare(args, cfg, status, run_dir):
     texts, lengths, dropped = build_texts(tokenizer, cfg["template_kwargs"], rows, args.max_seq_len)
     try:
         import torch
-        bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+        bf16 = native_bf16(torch)
     except ImportError:
         bf16 = False
     summary = summarize(texts, lengths, dropped, args, bf16)
@@ -475,6 +478,11 @@ def cmd_gguf(args, cfg, status, run_dir):
     status.update(stage="done", message="GGUF tersimpan", gguf=str(run_dir / "gguf"))
 
 
+def native_bf16(torch):
+    """bf16 asli (Ampere ke atas). torch.cuda.is_bf16_supported() bernilai True juga di T4 karena emulasi."""
+    return torch.cuda.is_available() and torch.cuda.get_device_properties(0).major >= 8
+
+
 def detect_small_gpu():
     """True jika GPU tidak mendukung bf16 dan VRAM < 20 GB (misalnya T4): Qwen3.5 dilatih dalam float32 di sana,
     dan di T4 16-bit maupun 4-bit dengan konteks 8192 terbukti kehabisan memori."""
@@ -482,7 +490,7 @@ def detect_small_gpu():
         import torch
         if not torch.cuda.is_available():
             return False
-        return not torch.cuda.is_bf16_supported() and torch.cuda.get_device_properties(0).total_memory < 20e9
+        return not native_bf16(torch) and torch.cuda.get_device_properties(0).total_memory < 20e9
     except ImportError:
         return False
 
@@ -558,9 +566,11 @@ def main():
         if "out of memory" in tb.lower() and not args.load_in_4bit:
             hint = "VRAM tidak cukup: ulangi dengan --load-in-4bit --max-seq-len 6144 (di T4 keduanya diperlukan)"
         elif "out of memory" in tb.lower():
-            smaller = 6144 if args.max_seq_len > 6144 else 4096
+            # Di T4 dengan 4-bit, sampel 5.976 token terbukti muat dan 6.726 token kehabisan memori.
+            smaller = 6144 if args.max_seq_len > 6144 else 6000 if args.max_seq_len > 6000 else 4096
             hint = (f"VRAM tidak cukup: ulangi dengan --max-seq-len {smaller}"
-                    + (" (sebagian besar sampel web akan terbuang; GPU L4 lebih disarankan)" if smaller < 6144 else ""))
+                    + (" (1–2 sampel web terpanjang akan terbuang)" if smaller == 6000 else
+                       " (sebagian besar sampel web akan terbuang; GPU L4 lebih disarankan)" if smaller < 6000 else ""))
         elif re.search(r"\bnan\b", str(e), re.IGNORECASE):
             hint = "loss NaN: pasang ulang Unsloth terbaru; untuk Qwen3.5 di T4 Unsloth harus beralih ke float32"
         elif "drive belum ter-mount" in str(e).lower():
