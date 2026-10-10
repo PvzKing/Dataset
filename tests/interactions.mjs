@@ -574,6 +574,9 @@ export default {
     expect(await page.isChecked('#pkp'), 'PKP setting persists', out);
     await page.click('#history tr:first-child button');
     expect((await page.textContent('#receipt')).includes('PPN'), 'reopen receipt from history', out);
+    await page.click('#close-receipt');
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow <= 0, `no horizontal overflow once history has rows, got ${overflow}px`, out);
     return out;
   },
   '24-': async (page) => {

@@ -244,6 +244,41 @@ Sampel perbaikan bug diuji dengan `node test_debug.mjs`. Untuk setiap sampel, te
 2. Versi ber-bug benar-benar gagal di browser.
 3. Pemeriksaan khusus bug tersebut lolos di versi asli.
 
+## Agen coding (`scripts/agent_gradio.py`)
+
+`scripts/agent_gradio.py` adalah tampilan Gradio bergaya Claude Code untuk model hasil fine-tuning (bawaan: adapter v3). Model tidak hanya menjawab, tetapi bekerja dalam loop:
+
+1. **Write.** Model menulis `index.html`. Jika jawaban terpotong di batas token, agen menyambungnya otomatis dari titik terakhir (prefill), bukan mengulang dari awal.
+2. **Bash.** Halaman dibuka di Chromium headless pada lebar 1280px dan 375px, lalu setiap tombol diklik. Error JavaScript, `console.error`, dan scroll horizontal dicatat beserta lokasinya, misalnya `index.html:190:43`.
+3. **Update.** Kode dan daftar error dikirim ke model dengan format yang sama seperti sampel `web_debug`. Blok SEARCH/REPLACE di jawabannya diterapkan ke file dan ditampilkan sebagai diff, lalu agen kembali ke langkah 2, maksimal 3 putaran.
+
+Panel kanan berisi:
+- editor kode bernomor baris yang bisa diubah langsung;
+- pratinjau website;
+- daftar masalah;
+- tombol Uji, Perbaiki, Undo, Stop, dan Unduh.
+
+Jika editor sudah berisi kode, pesan biasa diperlakukan sebagai permintaan perubahan pada file itu. Perintah yang tersedia: `/baru`, `/cek`, `/perbaiki [keluhan]`, `/undo`, `/reset`, `/bantuan`.
+
+```python
+# Colab, GPU T4
+!pip install --upgrade unsloth "gradio>=6.30,<7" playwright
+!playwright install --with-deps chromium
+from google.colab import drive; drive.mount("/content/drive")
+BR = "https://raw.githubusercontent.com/PvzKing/Dataset/main/scripts"
+!wget -q -O /content/agent_gradio.py {BR}/agent_gradio.py
+!wget -q -O /content/chat_gradio.py {BR}/chat_gradio.py
+%run /content/agent_gradio.py            # --adapter <folder> untuk adapter lain, --demo tanpa GPU
+```
+
+Batasan yang perlu diketahui:
+- **Uji browser hanya menangkap error yang terlihat mesin.** Contohnya error JavaScript, error setelah tombol diklik, dan tampilan yang meluber. Bug logika seperti hasil hitung yang salah tidak terdeteksi, jadi jelaskan lewat `/perbaiki <keluhan>`.
+- **Kode, daftar error, dan jawaban harus muat di konteks** (bawaan 8.192 token). File di atas ±6.000 token sebaiknya diperbaiki manual.
+- **Model 4B bisa gagal menyalin teks SEARCH persis.**
+  - Agen sudah mencoba pencocokan yang mengabaikan indentasi.
+  - Blok yang tetap tidak cocok dilaporkan dan dilewati, tidak diterapkan sembarangan.
+  - Setiap versi disimpan di `<workdir>/.versi/`, dan perubahan bisa dibatalkan dengan `/undo`.
+
 ## Menambah sampel
 
 1. Tambahkan satu baris JSON ke `data/train.jsonl` dengan `id` unik.
@@ -261,6 +296,7 @@ train/qwen2.5-coder-7b-lora.yaml      konfigurasi LoRA Qwen2.5-Coder-7B (pemband
 notebooks/train_colab.ipynb           notebook Colab mandiri untuk di-upload (mode A dan mode B)
 scripts/train_unsloth.py              script training mandiri (Unsloth): info/prepare/train/test/gguf, menulis status.json
 scripts/chat_gradio.py                chatbot Gradio untuk mencoba adapter (streaming, pengaturan lengkap, pratinjau HTML)
+scripts/agent_gradio.py               agen coding bergaya Claude Code: tulis → uji di browser → perbaiki (SEARCH/REPLACE)
 scripts/build_notebook.py             membangun notebooks/train_colab.ipynb dari script dan runbook
 docs/PANDUAN_TRAINING.md              panduan training lengkap untuk pengguna
 docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol training di Colab
