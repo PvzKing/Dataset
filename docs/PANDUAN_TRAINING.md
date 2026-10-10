@@ -197,11 +197,12 @@ Semua hasil ada di Google Drive, di folder `finetune-id/<model>-<dataset>/`, mis
 |---|---|
 | `status.json` | Kondisi terkini. Bisa dibuka dari Google Drive di HP untuk mengecek tanpa membuka Colab. |
 | `checkpoints/` | Titik simpan otomatis setiap 10 step |
+| `arsip/<tanggal-jam>/` | Hasil training sebelumnya, dipindahkan otomatis saat dataset atau pengaturan berubah |
 | `lora-adapter/` | Adapter hasil training |
 | `contoh-bengkel.html`, `contoh-absensi.html` | Website buatan model. Unduh lalu buka di browser. |
 | `contoh-*.md` | Jawaban lengkap model, termasuk penjelasannya |
 
-`train.jsonl` diunduh ke `finetune-id/`. Di mode B, log lengkap ada di `/content/train.log`.
+Jika tidak ada `train.jsonl` di `/content`, versi terbaru diunduh ulang ke `finetune-id/` setiap kali training dijalankan. Di mode B, log lengkap ada di `/content/train.log`.
 
 Arti isi `status.json`:
 
@@ -230,6 +231,8 @@ Tips supaya sesi tidak cepat putus:
 - **Tab dan layar:** tetap buka tab Colab, dan jangan biarkan laptop sleep.
 - **Batas tier gratis:** sesi tier gratis maksimal sekitar 12 jam, dan GPU kadang tidak tersedia di jam sibuk. Jika muncul *Cannot connect to GPU backend*, coba lagi beberapa jam kemudian.
 - **Data `mix` di T4:** kemungkinan butuh 2 sesi. Itu normal karena training dilanjutkan dari checkpoint.
+
+**Training ulang setelah dataset diperbarui.** Jalankan perintah training yang sama. Checkpoint hanya dilanjutkan jika isi dataset dan pengaturannya persis sama. Jika berbeda, hasil lama (checkpoint, adapter, dan website uji) dipindah ke `arsip/<tanggal-jam>/`, lalu training dimulai dari awal. Output menampilkan `hasil lama dipindah ke ...` dan `mulai dari awal`. Website uji lama tetap ada di arsip, jadi bisa dibandingkan dengan hasil baru.
 
 ## 9. Menilai hasil
 

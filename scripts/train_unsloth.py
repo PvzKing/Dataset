@@ -19,16 +19,19 @@ Atau simpan sebagai file (sel diawali `%%writefile /content/train_unsloth.py`) l
 
 Semua hasil ditulis ke <out>/<model>-<dataset>/:
     status.json      tahap yang sedang berjalan, step, loss, ETA, atau pesan error (dibaca untuk memantau)
-    checkpoints/     checkpoint training; training otomatis dilanjutkan dari yang terakhir
+    checkpoints/     checkpoint training; dilanjutkan dari yang terakhir jika data dan pengaturan masih sama
+    arsip/           hasil training lama yang dipindahkan karena data atau pengaturan berubah
     lora-adapter/    adapter LoRA hasil training
     contoh-*.html    website yang dibuat model dari prompt uji (contoh-*.md berisi jawaban lengkapnya)
     gguf/            hasil ekspor GGUF (opsional)
 """
 import argparse
+import hashlib
 import json
 import math
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -136,32 +139,47 @@ def download(url, dest):
 
 
 def find_own_data(args):
-    """Cari train.jsonl: --data, folder script/repo, folder kerja, folder hasil; jika tidak ada, unduh dari GitHub."""
+    """Cari train.jsonl: --data, folder script/repo, folder kerja; jika tidak ada, unduh versi terbaru dari GitHub."""
     candidates = [args.data] if args.data else []
     candidates += [HERE / "train.jsonl", HERE.parent / "data/train.jsonl", Path.cwd() / "train.jsonl",
-                   Path.cwd() / "data/train.jsonl", Path(args.out) / "train.jsonl"]
+                   Path.cwd() / "data/train.jsonl"]
     for path in candidates:
         if path and Path(path).is_file():
             return Path(path)
     if args.data:
         raise FileNotFoundError(f"file data tidak ditemukan: {args.data}")
-    return download(f"{REPO_RAW}/data/train.jsonl", Path(args.out) / "train.jsonl")
+    # Selalu unduh ulang supaya perubahan dataset di GitHub ikut terpakai; salinan lama hanya dipakai jika offline.
+    cached = Path(args.out) / "train.jsonl"
+    try:
+        return download(f"{REPO_RAW}/data/train.jsonl", cached)
+    except OSError as e:
+        if not cached.is_file():
+            raise
+        print(f"unduhan gagal ({e}), memakai salinan lama {cached}", flush=True)
+        return cached
+
+
+def sha256_file(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
 def data_file_for(args):
     own = find_own_data(args)
     if args.dataset == "own":
         return own
-    # Data campuran disimpan di folder hasil supaya sesi berikutnya memakai file yang sama persis (penting untuk resume).
-    # Hapus train_mix.jsonl di folder itu untuk membuatnya ulang, misalnya setelah mengubah mix_args.
+    # Data campuran disimpan di folder hasil supaya sesi berikutnya memakai file yang sama persis (penting untuk resume),
+    # dan dibuat ulang otomatis jika data own, mix_args, atau seed berubah.
     mix = Path(args.out) / "train_mix.jsonl"
-    if not mix.exists():
+    source = Path(args.out) / "train_mix.source"
+    key = f"{sha256_file(own)} {args.mix_args} {args.seed}"
+    if not mix.exists() or not source.exists() or source.read_text().strip() != key:
         mixer = HERE / "mix_general.py"
         if not mixer.exists():
             mixer = download(f"{REPO_RAW}/scripts/mix_general.py", Path(args.out) / "mix_general.py")
         print("membuat data campuran ...", flush=True)
         subprocess.run([sys.executable, str(mixer), "--input", str(own), "--output", str(mix),
                         "--seed", str(args.seed), *args.mix_args.split()], check=True)
+        source.write_text(key)
     return mix
 
 
@@ -296,6 +314,29 @@ def generate_tests(model, tokenizer, cfg, run_dir, max_new_tokens):
     return results
 
 
+# ---------------------------------------------------------------- resume
+
+# Pengaturan yang menentukan hasil training; checkpoint hanya dilanjutkan jika semuanya sama.
+TRAINING_KEYS = ["model", "dataset", "mix_args", "load_in_4bit", "max_seq_len", "epochs", "lr", "lora_r", "lora_alpha",
+                 "batch_size", "grad_accum", "seed"]
+
+
+def archive_stale_run(run_dir, ckpt_dir, fingerprint):
+    """Jika checkpoint lama berasal dari data atau pengaturan lain, pindahkan hasil lama ke arsip/ supaya training
+    dimulai dari awal (melanjutkannya akan diam-diam memakai bobot lama)."""
+    fp_file = ckpt_dir / "fingerprint.json"
+    if not ckpt_dir.exists() or (fp_file.exists() and fp_file.read_text() == fingerprint):
+        return
+    old = [p for p in run_dir.iterdir() if p.name in ("checkpoints", "lora-adapter", "gguf") or p.name.startswith("contoh-")]
+    if not old:
+        return
+    dest = run_dir / "arsip" / time.strftime("%Y%m%d-%H%M%S")
+    dest.mkdir(parents=True)
+    for p in old:
+        shutil.move(str(p), str(dest / p.name))
+    print(f"data atau pengaturan berubah: hasil lama dipindah ke {dest}, training dimulai dari awal", flush=True)
+
+
 # ---------------------------------------------------------------- commands
 
 def cmd_prepare(args, cfg, status, run_dir):
@@ -315,7 +356,8 @@ def cmd_prepare(args, cfg, status, run_dir):
 
 def cmd_train(args, cfg, status, run_dir):
     status.update(stage="loading", message=f"memuat {cfg['name']}")
-    rows = load_rows(data_file_for(args))
+    data_file = data_file_for(args)
+    rows = load_rows(data_file)
 
     from unsloth import FastLanguageModel, is_bfloat16_supported  # harus di-import sebelum trl/transformers
     from datasets import Dataset
@@ -359,6 +401,11 @@ def cmd_train(args, cfg, status, run_dir):
                           elapsed_min=round(elapsed / 60, 1), eta_min=round(eta, 1) if eta is not None else None)
 
     ckpt_dir = run_dir / "checkpoints"
+    fingerprint = json.dumps({"data": sha256_file(data_file), **{k: getattr(args, k) for k in TRAINING_KEYS}},
+                             sort_keys=True)
+    archive_stale_run(run_dir, ckpt_dir, fingerprint)
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
+    (ckpt_dir / "fingerprint.json").write_text(fingerprint)
     trainer = SFTTrainer(
         model=model,
         processing_class=tokenizer,

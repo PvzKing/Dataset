@@ -11,13 +11,14 @@ denganmu hanya lewat terminal ini, jadi tulis setiap laporan sebagai jawaban di 
   - Konfigurasi ada di blok `CONFIG` di awal file. Argumen seperti `--max-seq-len 6144` menimpa nilai `CONFIG` hanya untuk perintah itu.
   - Jangan mengubah file ini tanpa izin pengguna.
 - **Google Drive:** ada di `/content/drive/MyDrive`. Semua yang tidak disimpan di Drive hilang saat runtime Colab di-reset.
-- **Data `own`:** dicari otomatis. Jika tidak ada, diunduh dari repo GitHub publik `PvzKing/Dataset` ke folder hasil.
+- **Data `own`:** `train.jsonl` di `/content` dipakai lebih dulu. Jika tidak ada, versi terbaru diunduh ulang dari repo GitHub publik `PvzKing/Dataset` ke folder hasil setiap kali perintah dijalankan.
 - **Lokasi hasil:** `python /content/train_unsloth.py info` menampilkan konfigurasi dan folder hasil `RUN_DIR`. Isi `RUN_DIR`:
 
   | File | Isi |
   |---|---|
   | `status.json` | `stage`, `message`, `step`/`max_steps`, `loss`, `eta_min`, `result`, `tests`; saat error juga `hint` dan `traceback` |
-  | `checkpoints/` | checkpoint; perintah `train` otomatis melanjutkan dari checkpoint terakhir |
+  | `checkpoints/` | checkpoint; perintah `train` melanjutkan dari checkpoint terakhir jika data dan pengaturannya sama |
+  | `arsip/<waktu>/` | hasil lama yang dipindahkan otomatis karena data atau pengaturan berubah; training lalu dimulai dari awal. Ini normal, bukan error. |
   | `lora-adapter/` | adapter hasil training |
   | `contoh-*.md`, `contoh-*.html` | jawaban model untuk prompt uji dan HTML yang diekstrak darinya |
 
