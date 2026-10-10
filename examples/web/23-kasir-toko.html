@@ -6,14 +6,14 @@
   <title>Kasir Toko</title>
   <style>
     :root { --bg: #f1f5f9; --text: #0f172a; --muted: #64748b; --primary: #0f766e; --dark: #115e59; --line: #e2e8f0; --danger: #b91c1c; }
-    *, *::before, *::after { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; }
     header { background: var(--primary); color: #fff; padding: .8rem 1rem; }
     h1 { margin: 0; font-size: 1.2rem; }
     h2 { font-size: 1rem; margin: 0 0 .75rem; }
     main { max-width: 1200px; margin: 0 auto; padding: 1rem; display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr) minmax(0, 380px); }
     .card { background: #fff; border-radius: 12px; padding: 1rem; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
-    input[type="search"], input[type="text"] { width: 100%; padding: .65rem .75rem; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; }
+    #search, #paid { width: 100%; padding: .65rem .75rem; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; }
     :focus-visible { outline: 3px solid #5eead4; outline-offset: 1px; }
     button { font: inherit; cursor: pointer; }
     .products { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .6rem; }
@@ -50,7 +50,7 @@
     dialog { border: 0; border-radius: 12px; padding: 1rem; width: min(360px, 94vw); }
     #receipt { font: 12px/1.45 ui-monospace, Consolas, monospace; white-space: pre; margin: 0 0 .75rem; padding: .75rem; border: 1px dashed #cbd5e1; overflow-x: auto; }
     .actions { display: flex; gap: .5rem; }
-    @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+    @media (max-width: 860px) { main { grid-template-columns: minmax(0, 1fr); } }
     @media print {
       body > :not(dialog), .actions { display: none !important; }
       dialog { position: static; padding: 0; }
@@ -124,7 +124,8 @@
     ];
 
     const $ = (id) => document.getElementById(id);
-    const rp = (n) => 'Rp ' + n.toLocaleString('id-ID');
+    const num = (n) => n.toLocaleString('id-ID');
+    const rp = (n) => 'Rp ' + num(n);
     const parseRp = (s) => parseInt(String(s).replace(/\D/g, ''), 10) || 0;
     const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
     const pad = (n, w = 2) => String(n).padStart(w, '0');
@@ -230,7 +231,6 @@
 
     function showReceipt(t) {
       const W = 32;
-      const num = (n) => n.toLocaleString('id-ID');
       const line = (l, r) => l.slice(0, W - r.length - 1).padEnd(W - r.length) + r;
       const center = (s) => s.slice(0, W).padStart(Math.floor((W + Math.min(s.length, W)) / 2));
       const sep = '-'.repeat(W);
@@ -259,11 +259,11 @@
     $('cart').addEventListener('click', (e) => { const b = e.target.closest('[data-step]'); if (b) add(b.dataset.code, Number(b.dataset.step)); });
     $('quick').addEventListener('click', (e) => {
       const b = e.target.closest('[data-paid]');
-      if (b) { $('paid').value = Number(b.dataset.paid).toLocaleString('id-ID'); render(); }
+      if (b) { $('paid').value = num(Number(b.dataset.paid)); render(); }
     });
     $('paid').addEventListener('input', (e) => {
       const n = parseRp(e.target.value);
-      e.target.value = n ? n.toLocaleString('id-ID') : '';
+      e.target.value = n ? num(n) : '';
       render();
     });
     $('paid').addEventListener('keydown', (e) => { if (e.key === 'Enter') pay(); });
