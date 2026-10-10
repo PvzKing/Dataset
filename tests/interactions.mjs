@@ -441,4 +441,185 @@ export default {
     expect(!(await page.isVisible('#result')) && (await page.inputValue('#input')) === '', 'Esc resets', out);
     return out;
   },
+  '21-': async (page) => {
+    const out = [];
+    const calc = async (expr) => {
+      await page.fill('#expr', expr);
+      await page.press('#expr', 'Enter');
+      return page.textContent('#result');
+    };
+    const cases = [
+      ['2+3*4', '14'], ['2^3^2', '512'], ['-2^2', '−4'], ['(1+2)(3+4)', '21'], ['5!', '120'],
+      ['sin(30)', '0,5'], ['cos(90)', '0'], ['√(16)+log(1000)', '7'], ['√9', '3'], ['0,1+0,2', '0,3'],
+      ['2π', '6,28318530718'], ['50%', '0,5'], ['1234567', '1.234.567'], ['2^60', '1,152921505 × 10^18'],
+    ];
+    for (const [e, want] of cases) {
+      const got = await calc(e);
+      expect(got === want, `${e} should be ${want}, got ${got}`, out);
+    }
+    expect((await calc('tan(90)')).includes('tidak terdefinisi'), 'tan(90°) undefined', out);
+    expect((await calc('1/0')).includes('nol'), 'divide by zero error', out);
+    expect((await calc('ln(0)')).includes('> 0'), 'ln domain error', out);
+    expect((await calc('(2+3')) === '5', 'missing closing paren tolerated', out);
+    expect((await calc('2+3)')).includes('Kurung'), 'extra closing paren rejected', out);
+    await calc('10');
+    expect((await calc('Ans×2')) === '20', 'Ans holds last result', out);
+    for (let i = 1; i <= 5; i++) await calc(`${i}+${i}`);
+    await page.click('#angle');
+    expect((await page.textContent('#angle')) === 'RAD', 'switch to radian', out);
+    await page.fill('#expr', '');
+    for (const k of ['sin(', 'π', '÷', '2', ')']) await page.click(`[data-insert="${k}"]`);
+    await page.click('[data-action="equals"]');
+    expect((await page.textContent('#result')) === '1', `sin(π÷2) in RAD should be 1, got ${await page.textContent('#result')}`, out);
+    await page.click('[data-action="backspace"]');
+    await page.click('[data-action="backspace"]');
+    expect((await page.inputValue('#expr')) === 'sin(π÷', 'backspace removes one char', out);
+    await page.fill('#expr', 'log(');
+    await page.click('[data-action="backspace"]');
+    expect((await page.inputValue('#expr')) === '', 'backspace removes whole function name', out);
+    await page.reload();
+    expect((await page.textContent('#angle')) === 'RAD', 'angle mode persists', out);
+    const items = page.locator('#history-list button');
+    expect(await items.count() === 20, `history capped at 20, got ${await items.count()}`, out);
+    await items.first().click();
+    expect((await page.inputValue('#expr')) === 'sin(π÷2)', 'clicking history restores expression', out);
+    await page.click('#clear-history');
+    expect(await items.count() === 0 && await page.isVisible('#history-empty'), 'history cleared', out);
+    return out;
+  },
+  '22-': async (page) => {
+    const out = [];
+    const rp = (s) => s.replace(/\s/g, ' ');
+    const payOf = async (name) => rp(await page.locator('.person', { hasText: name }).locator('.person-top span').last().textContent());
+    await page.click('#example');
+    expect(rp(await page.textContent('#grand-total')) === 'Rp 113.190', `grand total 113.190, got ${await page.textContent('#grand-total')}`, out);
+    const want = { Andi: 'Rp 40.874', Budi: 'Rp 26.201', Citra: 'Rp 46.115' };
+    for (const [n, v] of Object.entries(want)) expect(await payOf(n) === v, `${n} should pay ${v}, got ${await payOf(n)}`, out);
+    expect((await page.inputValue('#summary')).includes('Citra: Rp'), 'summary text lists people', out);
+    await page.uncheck('#tax-after-service');
+    expect(rp(await page.textContent('#grand-total')) === 'Rp 112.700', `tax on subtotal only -> 112.700, got ${await page.textContent('#grand-total')}`, out);
+    await page.check('#tax-after-service');
+    // tambah orang dan menu bersama
+    await page.fill('#person-name', 'andi');
+    await page.press('#person-name', 'Enter');
+    expect((await page.textContent('#person-error')).includes('sudah ada'), 'duplicate name rejected', out);
+    await page.fill('#person-name', 'Dewi');
+    await page.press('#person-name', 'Enter');
+    await page.fill('#item-name', 'Jus alpukat');
+    await page.fill('#item-price', '22000');
+    expect((await page.inputValue('#item-price')) === '22.000', 'price input formatted', out);
+    await page.click('#item-form button[type="submit"]');
+    expect((await page.textContent('#item-error')).includes('Pilih minimal'), 'item without eater rejected', out);
+    await page.click('#item-shares .toggle:has-text("Dewi")');
+    await page.click('#item-form button[type="submit"]');
+    expect(await page.locator('#items .item').count() === 6, 'item added', out);
+    expect(await payOf('Dewi') !== 'Rp 0', 'Dewi now pays', out);
+    // hapus Citra: menu yang hanya dimakan Citra jadi belum dibagi
+    await page.click('[aria-label="Hapus Citra"]');
+    expect(await page.isVisible('#warning') && (await page.textContent('#warning')).includes('Ayam bakar'), 'warning for unassigned item', out);
+    await page.locator('.item', { hasText: 'Ayam bakar' }).locator('.toggle:has-text("Budi")').click();
+    expect(!(await page.isVisible('#warning')), 'warning gone after reassigning', out);
+    await page.reload();
+    expect(await page.locator('.person').count() === 3, 'state persists after reload', out);
+    await page.click('#copy');
+    await page.waitForTimeout(300);
+    expect((await page.textContent('#copy-status')).length > 0, 'copy gives feedback', out);
+    return out;
+  },
+  '23-': async (page) => {
+    const out = [];
+    const txt = async (sel) => (await page.textContent(sel)).replace(/\s/g, ' ');
+    const scan = async (q) => { await page.fill('#search', q); await page.press('#search', 'Enter'); };
+    expect(await page.locator('.product').count() === 12, '12 products', out);
+    expect(await page.isDisabled('.product[data-code="1012"]'), 'out-of-stock product disabled', out);
+    await page.fill('#search', 'teh');
+    expect(await page.locator('.product').count() === 1, 'search narrows to 1', out);
+    await page.press('#search', 'Enter');
+    await scan('1001');
+    for (let i = 0; i < 3; i++) await scan('1005');
+    await page.click('.product[data-code="1011"]');
+    await page.click('.product[data-code="1011"]');
+    expect(await page.isDisabled('.product[data-code="1011"]'), 'product disabled when cart holds all stock', out);
+    await page.click('[aria-label="Tambah Kecap manis 520 ml"]');
+    expect(/stok/i.test(await page.textContent('#search-msg')), 'cannot exceed stock', out);
+    await scan('9999');
+    expect((await page.textContent('#search-msg')).includes('tidak ditemukan'), 'unknown code message', out);
+    expect(await page.locator('#cart li').count() === 4, `4 cart lines, got ${await page.locator('#cart li').count()}`, out);
+    expect(await txt('#total') === 'Rp 138.000', `total 138.000, got ${await txt('#total')}`, out);
+    expect(await page.isDisabled('#pay'), 'pay disabled before payment', out);
+    await page.fill('#paid', '100000');
+    expect(await txt('#change-label') === 'Kurang' && await txt('#change') === 'Rp 38.000', 'shows shortage', out);
+    expect(await page.isDisabled('#pay'), 'pay disabled when short', out);
+    await page.click('#quick button:has-text("150.000")');
+    expect(await txt('#change') === 'Rp 12.000', `change 12.000, got ${await txt('#change')}`, out);
+    await page.click('#pay');
+    expect(await page.isVisible('#receipt-dialog'), 'receipt opens', out);
+    const r = await page.textContent('#receipt');
+    expect(/TOTAL\s+138\.000/.test(r) && /Kembali\s+12\.000/.test(r) && r.includes('TRX-'), 'receipt content', out);
+    await page.click('#close-receipt');
+    expect(await page.locator('#cart li').count() === 0, 'cart cleared after payment', out);
+    expect((await page.textContent('.product[data-code="1001"] .stock')) === 'Stok 11', 'stock reduced', out);
+    expect(await txt('#stat-sales') === 'Rp 138.000' && await txt('#stat-items') === '7', 'daily recap', out);
+    expect((await page.textContent('#stat-best')).includes('Mi instan'), 'best seller', out);
+    await page.check('#pkp');
+    await scan('1001');
+    expect(await txt('#ppn') === 'Rp 8.580' && await txt('#total') === 'Rp 86.580', `PPN effective 11%, got ${await txt('#ppn')}`, out);
+    await page.click('#quick button:has-text("Uang pas")');
+    await page.press('#paid', 'Enter');
+    expect((await page.textContent('#receipt')).includes('-002'), 'second transaction numbered 002', out);
+    await page.click('#close-receipt');
+    await page.reload();
+    expect((await page.textContent('.product[data-code="1001"] .stock')) === 'Stok 10', 'stock persists', out);
+    expect(await page.locator('#history tr').count() === 2, 'history persists', out);
+    expect(await page.isChecked('#pkp'), 'PKP setting persists', out);
+    await page.click('#history tr:first-child button');
+    expect((await page.textContent('#receipt')).includes('PPN'), 'reopen receipt from history', out);
+    return out;
+  },
+  '24-': async (page) => {
+    const out = [];
+    const txt = async (sel) => (await page.textContent(sel)).replace(/\s/g, ' ');
+    expect(await page.locator('#menu button').count() === 4, '4 coffee items', out);
+    await page.click('[data-cat="Makanan"]');
+    expect((await page.textContent('#menu')).includes('Croissant'), 'food tab', out);
+    await page.click('[data-add="Croissant"]');
+    await page.click('[data-cat="Kopi"]');
+    await page.click('[data-add="Kopi susu gula aren"]');
+    await page.click('[data-add="Kopi susu gula aren"]');
+    expect(await page.locator('#lines li').count() === 2, 'same item merges into one line', out);
+    await page.fill('[aria-label="Catatan Kopi susu gula aren"]', 'less sugar');
+    expect(await txt('#subtotal') === 'Rp 72.000', `subtotal 72.000, got ${await txt('#subtotal')}`, out);
+    expect(await txt('#service') === 'Rp 3.600' && await txt('#tax') === 'Rp 7.560' && await txt('#total') === 'Rp 83.160',
+      `dine-in totals, got ${await txt('#service')} ${await txt('#tax')} ${await txt('#total')}`, out);
+    await page.fill('#cash', '100000');
+    expect(await page.isDisabled('#pay'), 'dine-in needs table number', out);
+    await page.fill('#table', '5');
+    expect((await txt('#change')) === 'Kembalian Rp 16.840', `change, got ${await txt('#change')}`, out);
+    await page.click('#pay');
+    expect((await page.textContent('#toast')).includes('A-001'), 'order A-001 queued', out);
+    expect(await page.locator('#lines li').count() === 0, 'order cleared', out);
+    const card = page.locator('.order[data-no="A-001"]');
+    expect((await card.textContent()).includes('less sugar') && (await card.textContent()).includes('Meja 5'), 'kitchen card shows note and table', out);
+    await card.locator('button').click();
+    expect((await page.locator('.col').nth(1).textContent()).includes('A-001'), 'advanced to siap', out);
+    // bawa pulang + QRIS: tanpa service
+    await page.click('[data-type="take"]');
+    expect(!(await page.isVisible('#table')), 'table hidden for take away', out);
+    await page.click('[data-add="Kopi susu gula aren"]');
+    await page.click('[data-add="Kopi susu gula aren"]');
+    await page.click('[data-cat="Makanan"]');
+    await page.click('[data-add="Croissant"]');
+    await page.click('[data-method="qris"]');
+    expect(await txt('#service') === 'Rp 0' && await txt('#total') === 'Rp 79.200', `take-away total 79.200, got ${await txt('#total')}`, out);
+    expect(!(await page.isDisabled('#pay')) && (await page.textContent('#pay')).includes('QRIS'), 'QRIS confirm enabled', out);
+    await page.click('#pay');
+    await page.click('summary');
+    await page.fill('#set-tax', '15');
+    await page.click('[data-add="Croissant"]');
+    expect(await txt('#tax-label') === 'Pajak resto 10%', 'tax capped at 10%', out);
+    await page.reload();
+    expect(await page.locator('.order').count() === 2, 'queue persists', out);
+    expect((await page.locator('.col').nth(0).textContent()).includes('A-002'), 'A-002 in diproses', out);
+    return out;
+  },
 };
