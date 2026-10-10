@@ -19,6 +19,7 @@ denganmu hanya lewat terminal ini, jadi tulis setiap laporan sebagai jawaban di 
   | `status.json` | `stage`, `message`, `step`/`max_steps`, `loss`, `eta_min`, `result`, `tests`; saat error juga `hint` dan `traceback` |
   | `checkpoints/` | checkpoint; perintah `train` melanjutkan dari checkpoint terakhir jika data dan pengaturannya sama |
   | `arsip/<waktu>/` | hasil lama yang dipindahkan otomatis karena data atau pengaturan berubah; training lalu dimulai dari awal. Ini normal, bukan error. |
+  | folder `...-lanjut` | hasil training lanjutan (`--init-adapter <folder lora-adapter>`); adapter asal tidak diubah |
   | `lora-adapter/` | adapter hasil training |
   | `contoh-*.md`, `contoh-*.html` | jawaban model untuk prompt uji dan HTML yang diekstrak darinya |
 
