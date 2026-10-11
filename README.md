@@ -204,6 +204,44 @@ Skor ini perkiraan dari metadata, bukan ukuran mutu pasti. Klaim "diverifikasi" 
 
 Crawler bersikap sopan terhadap server: memakai User-Agent yang menyebut identitasnya, memberi jeda minimal 1 detik antar-request (`--delay`), dan mematuhi `Retry-After` saat dibatasi (HTTP 429). Isi `HF_TOKEN` untuk batas request yang lebih longgar. Status lisensi diambil dari metadata yang diisi pemilik dataset dan bisa keliru, jadi tetap baca dataset card sebelum memakai kandidat.
 
+## Mengambil isi untuk SFT (`scripts/harvest_code.py`)
+
+`find_datasets.py` hanya menemukan kandidat. Untuk mengambil isinya sebagai bahan mentah dataset SFT, pakai `scripts/harvest_code.py`, lalu ubah hasilnya dengan `scripts/raw_to_sft.py`.
+
+```bash
+python scripts/harvest_code.py hf --from-report runs/kandidat_coding.json --rows 300   # baris dataset HF berlisensi permisif
+python scripts/harvest_code.py github --repos 20                                      # fungsi Python berdocstring dari repo permisif
+python scripts/harvest_code.py mdn --path web/javascript/guide --path web/css         # halaman MDN Web Docs
+python scripts/raw_to_sft.py                                                           # draf format messages
+python scripts/validate.py runs/harvest/sft_draft.jsonl
+```
+
+| Sumber | Isi | Lisensi | Cara mengambil |
+|---|---|---|---|
+| `hf` | Baris dataset (percakapan, instruksi, tanya-jawab) | Hanya yang permisif (bawaan), dicek ulang dari metadata | Dataset viewer resmi, 100 baris per request |
+| `github` | Fungsi dan method Python yang punya docstring, 4–80 baris | MIT, Apache-2.0, BSD, ISC, dan sejenisnya | Pencarian lewat GitHub API, lalu `git clone --depth 1` |
+| `mdn` | Halaman dokumentasi HTML, CSS, dan JavaScript beserta contoh kodenya | Teks CC BY-SA 2.5, contoh kode CC0 | Sparse clone repo resmi `mdn/content` |
+
+**Hasil.** Hasil ada di `runs/harvest/` (tidak di-commit):
+- `raw.jsonl`: satu record per baris, dengan sumber, URL (untuk kode: sampai commit dan nomor baris), lisensi, dan atribusi.
+- `ATTRIBUTION.md`: daftar sumber beserta kewajiban lisensinya.
+- `sft_draft.jsonl`: draf format `messages` dengan field `meta`.
+
+Record yang sama tidak disimpan dua kali, jadi perintah aman diulang untuk menambah bahan.
+
+**Penyaring hukum dan privasi:**
+- **Hugging Face:** dataset nonkomersial, tanpa lisensi, gated, dan benchmark dilewati.
+- **GitHub:** repo berlisensi copyleft dilewati. Folder `vendor`/`third_party` dan file yang header-nya menyebut lisensi lain dari repo induknya juga dilewati.
+- **Kunci rahasia** (token GitHub, Hugging Face, AWS, OpenAI, private key) membuat record dibuang.
+- **Alamat email:** di teks diganti `<email>`. Kode yang memuat email dibuang, karena mengganti isi kode bisa merusaknya.
+- **Token:** `HF_TOKEN` hanya dikirim ke Hugging Face, dan `GITHUB_TOKEN` hanya ke GitHub.
+
+**Stack Overflow sengaja tidak dipakai.** Isinya memang berlisensi CC BY-SA, tetapi sejak 2024 Stack Exchange mewajibkan pengunduh data dump menyetujui bahwa data itu bukan untuk melatih LLM, dan akses untuk keperluan AI dijadikan layanan berbayar. Persetujuan seperti itu mengikat sebagai perjanjian (Pasal 1338 KUHPerdata), jadi risikonya tidak sebanding.
+
+**Draf belum siap latih.** Sebagian besar bahannya berbahasa Inggris. Terjemahkan atau tulis ulang jawabannya ke bahasa Indonesia, periksa kebenarannya, lalu pindahkan sampel yang lolos ke `data/train.jsonl`. Jika dataset hasil olahan didistribusikan:
+- sertakan `ATTRIBUTION.md` dan teks lisensi sumbernya;
+- bagian dari MDN (teks CC BY-SA) wajib dibagikan dengan lisensi yang sama.
+
 ## Kelompok `bench-support` (HumanEval)
 
 Folder `data/bench-support/` berisi sampel latihan dari benchmark kode, terpisah dari dataset `own`. Saat ini isinya 164 soal HumanEval dengan format prompt instruct EvalPlus. Solusinya diambil dari HumanEval+, kecuali satu soal yang ditulis ulang.
@@ -411,6 +449,8 @@ CLAUDE.md                             catatan singkat untuk Claude Code di repo 
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
 scripts/find_datasets.py              crawler penemu kandidat dataset di Hugging Face Hub, dengan penilaian lisensi
 scripts/crawler_viz.html              template visualisasi laba-laba untuk hasil find_datasets.py (putar ulang dan --live)
+scripts/harvest_code.py               crawler isi: bahan mentah SFT dari dataset HF, repo GitHub, dan MDN (lisensi terbuka)
+scripts/raw_to_sft.py                 mengubah hasil harvest_code.py menjadi draf format messages
 scripts/validate.py                   validasi dataset
 scripts/build_bench_support.py        membuat dan memverifikasi kelompok bench-support (HumanEval)
 data/bench-support/                   kelompok dataset bench-support, lisensi, dan catatan perubahannya

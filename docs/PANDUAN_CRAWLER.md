@@ -11,9 +11,10 @@ Panduan ini menjelaskan cara menjalankan [`scripts/find_datasets.py`](../scripts
 5. [Menjalankan pertama kali](#5-menjalankan-pertama-kali)
 6. [Pilihan perintah lain](#6-pilihan-perintah-lain)
 7. [Membaca hasil](#7-membaca-hasil)
-8. [Menjalankan lagi lain kali](#8-menjalankan-lagi-lain-kali)
-9. [Mengatasi masalah](#9-mengatasi-masalah)
-10. [Catatan hukum](#10-catatan-hukum)
+8. [Mengambil isi untuk dataset SFT](#8-mengambil-isi-untuk-dataset-sft)
+9. [Menjalankan lagi lain kali](#9-menjalankan-lagi-lain-kali)
+10. [Mengatasi masalah](#10-mengatasi-masalah)
+11. [Catatan hukum](#11-catatan-hukum)
 
 ---
 
@@ -199,7 +200,54 @@ Folder `runs/` tidak ikut di-commit (ada di `.gitignore`), karena isinya data pi
 4. Buka dataset card asli lewat tautan **Buka di Hugging Face** dan pastikan lisensinya sama dengan metadata.
 5. Kalau sudah yakin, tambahkan dataset itu ke `SOURCES` di [`scripts/mix_general.py`](../scripts/mix_general.py).
 
-## 8. Menjalankan lagi lain kali
+## 8. Mengambil isi untuk dataset SFT
+
+`find_datasets.py` hanya menemukan dan menilai kandidat. Untuk mengambil isinya sebagai bahan dataset SFT, pakai [`scripts/harvest_code.py`](../scripts/harvest_code.py). Script ini butuh **Git** untuk sumber `github` dan `mdn`.
+
+### 8.1 Pilih sumber
+
+```bash
+# a. Baris dataset Hugging Face dari laporan find_datasets (hanya yang berlisensi permisif)
+python scripts/harvest_code.py hf --from-report runs/kandidat_coding.json --rows 300
+
+#    atau dataset tertentu
+python scripts/harvest_code.py hf --dataset nama-org/nama-dataset --rows 500
+
+# b. Fungsi Python berdocstring dari repo GitHub berlisensi permisif
+python scripts/harvest_code.py github --repos 20
+python scripts/harvest_code.py github --repos 10 --query "web framework"
+python scripts/harvest_code.py github --repo psf/requests --repo pallets/flask
+
+# c. Dokumentasi web dari MDN Web Docs (cocok dengan fokus website di dataset ini)
+python scripts/harvest_code.py mdn --path web/javascript/guide --path web/css --path web/html
+```
+
+Catatan per sumber:
+
+- **`github`:** tanpa token, pencarian GitHub dibatasi sekitar 10 request per menit. Untuk pemakaian rutin, buat token di GitHub (**Settings → Developer settings → Personal access tokens**, cukup akses baca publik), lalu pasang sebagai `GITHUB_TOKEN` dengan cara yang sama seperti `HF_TOKEN` di [bagian 4](#4-token-hugging-face-opsional). Repo di-clone dangkal ke `runs/harvest/cache/`, jadi siapkan ruang disk sekitar ukuran repo-repo itu.
+- **`mdn`:** yang di-clone hanya folder yang diminta (sparse clone). Folder yang tersedia bisa dilihat di [github.com/mdn/content/tree/main/files/en-us/web](https://github.com/mdn/content/tree/main/files/en-us/web).
+
+### 8.2 Ubah menjadi draf SFT
+
+```bash
+python scripts/raw_to_sft.py
+python scripts/validate.py runs/harvest/sft_draft.jsonl
+```
+
+| Jenis bahan | Prompt draf | Jawaban draf |
+|---|---|---|
+| Fungsi GitHub | "Tulis fungsi Python `nama` sesuai dokumentasi berikut" + docstring | Kode fungsinya |
+| Halaman MDN | "Jelaskan `judul` dalam pengembangan web, lengkap dengan contoh kodenya." | Isi halaman |
+| Baris HF | Diambil dari kolom `messages`/`conversations`, atau pasangan instruksi-jawaban | Sesuai datanya |
+
+### 8.3 Sebelum dipakai untuk training
+
+1. **Terjemahkan atau tulis ulang ke bahasa Indonesia.** Kebanyakan sumbernya berbahasa Inggris, sedangkan dataset ini berbahasa Indonesia.
+2. **Periksa kebenarannya.** Jalankan kodenya bila memungkinkan, dan buang jawaban yang keliru atau terlalu panjang.
+3. **Sesuaikan formatnya** dengan standar repo (lihat README), lalu pindahkan sampel yang lolos ke `data/train.jsonl` dan jalankan `python scripts/validate.py`.
+4. **Simpan `runs/harvest/ATTRIBUTION.md`.** Jika dataset hasil olahan didistribusikan, sertakan file ini dan teks lisensi sumbernya.
+
+## 9. Menjalankan lagi lain kali
 
 ```bash
 cd Dataset
@@ -210,7 +258,7 @@ python scripts/find_datasets.py --preset coding --live
 
 Laporan lama di `runs/` akan ditimpa. Pakai `--out runs/coding-2026-10-11` kalau ingin menyimpan beberapa hasil.
 
-## 9. Mengatasi masalah
+## 10. Mengatasi masalah
 
 | Gejala | Penyebab dan solusi |
 |---|---|
@@ -226,11 +274,17 @@ Laporan lama di `runs/` akan ditimpa. Pakai `--out runs/coding-2026-10-11` kalau
 | "dataset viewer tidak tersedia" | Dataset viewer tidak aktif untuk dataset itu (format tidak didukung atau dataset terlalu besar). Lihat isinya langsung di Hugging Face |
 | "dataset gated: ..." | Pemilik mewajibkan persetujuan syarat. Buka halaman dataset, setujui syaratnya kalau memang mau memakainya, lalu jalankan lagi dengan token akun yang sama |
 | Laba-laba tertinggal dari crawl | Normal. Ia otomatis mempercepat langkah, atau tekan **Lewati animasi** |
+| `git tidak ditemukan` (harvest_code) | Pasang Git ([bagian 3.1](#31-pasang-python-dan-git)), lalu buka terminal baru |
+| `pencarian GitHub gagal (HTTP 403)` | Batas request GitHub habis. Tunggu sekitar satu menit, atau pasang `GITHUB_TOKEN` |
+| `folder tidak ditemukan di mdn/content` | Nama folder salah atau sudah dipindah oleh MDN. Cek strukturnya di github.com/mdn/content |
+| Banyak dataset `hf` dilewati | Hanya lisensi permisif yang diterima. Tambahkan `--allow-status permisif share-alike` kalau Anda siap memenuhi kewajiban share-alike |
 
-## 10. Catatan hukum
+## 11. Catatan hukum
 
 - **Akses sah.** Crawler hanya memakai API resmi Hugging Face, memberi jeda antar-request, dan mematuhi `Retry-After`. Tidak ada login atau pengamanan yang diterobos, jadi tidak masuk ranah akses tanpa hak (dahulu Pasal 30 UU ITE, kini diatur dalam KUHP baru) atau mengganggu sistem elektronik (Pasal 33 UU ITE).
 - **Dataset gated tidak diakali.** Isinya baru diambil setelah Anda sendiri menyetujui syarat pemiliknya. Syarat itu berlaku sebagai perjanjian (Pasal 1320 dan 1338 KUHPerdata).
 - **Baris contoh hanya untuk menilai.** Baris contoh adalah salinan kecil untuk menilai kualitas dan disimpan lokal di `runs/`. Menyebarkan ulang isi dataset tetap tunduk pada lisensinya dan hak ekonomi pencipta (Pasal 9 UU No. 28 Tahun 2014 tentang Hak Cipta).
 - **Data pribadi.** Baris contoh bisa memuat data pribadi, terutama dataset dari media sosial atau ulasan. Jangan bagikan file di `runs/` sembarangan, dan saring data pribadi sebelum memakai dataset untuk training (UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi).
+- **Isi yang diambil `harvest_code.py`.** Isinya hanya berasal dari sumber berlisensi terbuka. Lisensi itulah yang memberi izin menggandakan dan mengubahnya (Pasal 80 UU Hak Cipta tentang lisensi), dengan syarat atribusinya dipenuhi, dan karena itu `ATTRIBUTION.md` dibuat otomatis. Kode dari folder `vendor`/`third_party` dan file berlisensi copyleft dilewati, karena lisensinya bisa berbeda dari repo induknya.
+- **Stack Overflow tidak dipakai.** Isinya berlisensi CC BY-SA, tetapi syarat Stack Exchange sejak 2024 membatasi pemakaian data dump untuk melatih LLM. Syarat itu mengikat sebagai perjanjian (Pasal 1338 KUHPerdata).
 - **Status lisensi hanya petunjuk awal.** Status lisensi di laporan dibaca dari metadata yang diisi pemilik dataset dan bisa keliru. Laporan adalah daftar untuk direview, bukan izin memakai data.
