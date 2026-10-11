@@ -1,5 +1,5 @@
-"""Agen coding bergaya Claude Code untuk model hasil fine-tuning v3: menulis website, mengujinya di browser,
-lalu memperbaiki sendiri bug yang ditemukan.
+"""Agen coding bergaya Claude Code untuk model hasil fine-tuning terbaru (v3 yang dilanjutkan dengan bench HumanEval):
+menulis website, mengujinya di browser, lalu memperbaiki sendiri bug yang ditemukan.
 
 Alur agen untuk setiap permintaan:
   1. Write   model menulis index.html (format sampel web_oneshot). Jika jawaban terpotong di batas token, agen
@@ -24,7 +24,7 @@ Cara memakai di Google Colab (GPU T4 cukup):
 
 Opsi bisa diganti lewat argumen, misalnya:
 
-    %run /content/agent_gradio.py --adapter /content/drive/MyDrive/finetune-id/qwen3.5-4b-own-4bit-lanjut/lora-adapter
+    %run /content/agent_gradio.py --adapter /content/drive/MyDrive/finetune-id/v3/qwen3.5-4b-own-4bit/lora-adapter  # v3
     %run /content/agent_gradio.py --max-rounds 2 --workdir /content/drive/MyDrive/proyek-web
     %run /content/agent_gradio.py --demo          # coba tampilan dan alur agen tanpa GPU dan tanpa model
 
@@ -45,7 +45,9 @@ from pathlib import Path
 
 # ======================================================== CONFIG: ubah di sini ========================================
 CONFIG = {
-    "adapter": "/content/drive/MyDrive/finetune-id/v3/qwen3.5-4b-own-4bit/lora-adapter",  # "auto", path, atau "none"
+    # Adapter terbaru: v3 yang dilanjutkan dengan dataset bench (--dataset bench --init-adapter <v3>). Jika foldernya
+    # belum ada, agen memakai adapter v3. Isi "auto" (adapter terbaru di folder out), path lain, atau "none".
+    "adapter": "/content/drive/MyDrive/finetune-id/qwen3.5-4b-bench-4bit-lanjut/lora-adapter",
     "out": "/content/drive/MyDrive/finetune-id",   # dipakai jika adapter = "auto"
     "base_model": "unsloth/Qwen3.5-4B",
     "load_in_4bit": None,           # None = otomatis: 4-bit di GPU tanpa bf16 asli (T4)
@@ -59,6 +61,7 @@ CONFIG = {
     "demo": False,                  # True = model tiruan, untuk mencoba tampilan tanpa GPU
 }
 # ======================================================================================================================
+FALLBACK_ADAPTER = "/content/drive/MyDrive/finetune-id/v3/qwen3.5-4b-own-4bit/lora-adapter"
 
 HERE = Path(__file__).resolve().parent if "__file__" in globals() else Path.cwd()
 CHAT_URL = "https://raw.githubusercontent.com/PvzKing/Dataset/main/scripts/chat_gradio.py"
@@ -112,9 +115,13 @@ def parse_args():
             setattr(args, key, value)
     if args.share and not args.auth:
         raise SystemExit("--share membuat agen bisa diakses siapa pun yang tahu link-nya: tambahkan --auth user:sandi")
-    if not args.demo and args.adapter not in ("auto", "none") and not (Path(args.adapter) / "adapter_config.json").is_file():
+    is_adapter = lambda folder: (Path(folder) / "adapter_config.json").is_file()
+    if not args.demo and args.adapter == CONFIG["adapter"] and not is_adapter(args.adapter) and is_adapter(FALLBACK_ADAPTER):
+        print(f"adapter terbaru belum ada di {args.adapter}, memakai adapter v3: {FALLBACK_ADAPTER}", flush=True)
+        args.adapter = FALLBACK_ADAPTER
+    if not args.demo and args.adapter not in ("auto", "none") and not is_adapter(args.adapter):
         raise SystemExit(f"adapter tidak ditemukan: {args.adapter}\n"
-                         "Pastikan Drive sudah di-mount dan training v3 sudah selesai, atau pilih adapter lain dengan "
+                         "Pastikan Drive sudah di-mount dan training sudah selesai, atau pilih adapter lain dengan "
                          "--adapter <folder lora-adapter> (atau --adapter auto / none).")
     return args
 
