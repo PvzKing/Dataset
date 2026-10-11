@@ -6,6 +6,8 @@ Secara bawaan ada dua run dengan satu kali muat model:
 1. **adapter**, bawaan `qwen3.5-4b-bench-4bit-lanjut`;
 2. **model dasar**, yaitu adapter yang sama dimatikan sementara. Bobot dasar dan kuantisasinya identik, jadi perbedaannya murni efek adapter.
 
+Prosedur langkah demi langkah, termasuk cara membaca hasil dan mengatasi masalah, ada di [`PROSEDUR.md`](PROSEDUR.md).
+
 ## Cara memakai di Google Colab (GPU T4 cukup)
 
 ```python
