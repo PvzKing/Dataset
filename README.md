@@ -140,6 +140,30 @@ Laporan ditulis ke `runs/kandidat_dataset.md` dan `.json` (tidak di-commit). Set
   - Dataset gated, yang mengharuskan menyetujui syarat pemilik sebelum mengunduh.
   - Dataset card terlalu singkat sehingga asal-usul datanya tidak jelas.
 
+### Preset coding
+
+`--preset coding` mencari dataset kode dalam semua bahasa. Script menjalankan pencarian dengan kata kunci `code`, `coding`, `program`, `python`, `javascript`, dan `sql`, ditambah tag `code`. Hasil yang bukan dataset kode (barcode, encoder, code-switching) dibuang, lalu kandidat diurutkan menurut skor kualitas 0–100.
+
+```bash
+python scripts/find_datasets.py --preset coding                    # laporan di runs/kandidat_coding.md
+python scripts/find_datasets.py --preset coding --only-permissive --top 30
+```
+
+| Komponen skor | Poin |
+|---|---|
+| Lisensi permisif (share-alike 10, bersyarat 5) | 25 |
+| Bentuk instruksi atau percakapan (tanya-jawab 15) | 25 |
+| Popularitas: unduhan dan likes | 20 |
+| Dataset card menyebut verifikasi dengan unit test atau eksekusi | 15 |
+| Dekontaminasi dari benchmark, deduplikasi, dan dokumentasi lengkap | masing-masing 5 |
+| Nama dataset adalah benchmark (HumanEval, MBPP, LiveCodeBench, ...) | −30 |
+
+Skor ini perkiraan dari metadata, bukan ukuran mutu pasti. Klaim "diverifikasi" hanya dibaca dari dataset card, jadi tetap jalankan sendiri sebagian solusi beserta tesnya. Preset ini juga menambah catatan risiko khusus kode:
+
+- **Benchmark:** dipakai untuk evaluasi, bukan training. Kalau dilatih, skor evaluasinya tidak bersih, seperti yang sudah dicatat untuk kelompok `bench-support`.
+- **Soal dari situs kompetisi** (LeetCode, Codeforces, dan sejenisnya): teks soal dilindungi hak cipta, dan syarat layanan situsnya umumnya melarang pengambilan otomatis.
+- **Korpus kode mentah dari repo publik:** setiap file punya lisensinya sendiri, termasuk GPL. Program komputer adalah ciptaan yang dilindungi (Pasal 40 ayat (1) huruf s UU No. 28 Tahun 2014). Kode juga bisa memuat email atau API key.
+
 Crawler bersikap sopan terhadap server: memakai User-Agent yang menyebut identitasnya, memberi jeda minimal 1 detik antar-request (`--delay`), dan mematuhi `Retry-After` saat dibatasi (HTTP 429). Isi `HF_TOKEN` untuk batas request yang lebih longgar. Status lisensi diambil dari metadata yang diisi pemilik dataset dan bisa keliru, jadi tetap baca dataset card sebelum memakai kandidat.
 
 ## Kelompok `bench-support` (HumanEval)
