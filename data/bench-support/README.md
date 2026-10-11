@@ -44,7 +44,7 @@ File hanya ditulis jika semua soal lolos verifikasi. Menjalankan ulang `python s
 
 ## Menguji skor
 
-`scripts/eval_humaneval.py` menjalankan 164 soal dengan template chat yang sama, greedy decoding, lalu menilainya dengan harness resmi EvalPlus (tes dasar HumanEval dan tes tambahan HumanEval+). Petunjuk Colab ada di docstring script.
+`humaneval-bench-script/eval_humaneval.py` menjalankan 164 soal dengan template chat yang sama, greedy decoding, lalu menilainya dengan harness resmi EvalPlus (tes dasar HumanEval dan tes tambahan HumanEval+). Petunjuk Colab ada di `humaneval-bench-script/README.md`.
 
 - **Pasang EvalPlus dari commit master.** Versi 0.3.1 di PyPI selalu menilai HumanEval/32 gagal, bahkan untuk solusi resminya. Script berhenti dengan pesan jelas jika versi itu yang terpasang.
 - **Bandingkan beberapa model.** Jalankan juga dengan adapter v3 (`--adapter <folder v3>`) dan model dasar (`--adapter none`). Script mencetak tabel perbandingan semua run.
