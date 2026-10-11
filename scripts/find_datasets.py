@@ -10,10 +10,13 @@ Pemakaian (butuh akses internet ke huggingface.co):
     python scripts/find_datasets.py --only-permissive --min-downloads 100
     python scripts/find_datasets.py --no-cards        # lebih cepat, tanpa membaca dataset card
     python scripts/find_datasets.py --preset coding   # dataset coding (semua bahasa), diurutkan menurut skor kualitas
+    python scripts/find_datasets.py --preset coding --live   # tonton laba-labanya merayap selama crawl berjalan
 
 Laporan ditulis ke runs/kandidat_dataset.* (atau runs/kandidat_coding.* untuk preset coding) dalam
 format .md, .json, dan .html. File .html adalah visualisasi laba-laba yang memutar ulang jalannya
-crawl. Isi variabel lingkungan HF_TOKEN (opsional) untuk batas request yang lebih longgar.
+crawl. Dengan --live, script menjalankan server kecil di http://127.0.0.1:8765 dan membuka browser
+supaya jaringnya bisa ditonton tumbuh selama crawl berjalan. Isi variabel lingkungan HF_TOKEN
+(opsional) untuk batas request yang lebih longgar.
 """
 import argparse
 import json
@@ -21,8 +24,11 @@ import math
 import os
 import re
 import sys
+import threading
 import time
+import webbrowser
 from datetime import datetime, timezone
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import requests
@@ -281,7 +287,7 @@ def coding_notes(c):
                           + ("" if "menyebut penyaringan PII/secret" in c["signals"] else ", cek juga email/API key di dalam kode"))
 
 
-def crawl(fetcher, args, search=None, extra_filter=None):
+def crawl(fetcher, args, search=None, extra_filter=None, on_page=None):
     filters = [f"language:{args.language}"] if args.language else []
     if args.task:
         filters.append(f"task_categories:{args.task}")
@@ -303,6 +309,8 @@ def crawl(fetcher, args, search=None, extra_filter=None):
             break
         items.extend(page)
         print(f"  {len(items)} dataset terbaca ...", file=sys.stderr)
+        if on_page:
+            on_page(page)
         url = resp.links.get("next", {}).get("url")
         params = None  # URL halaman berikutnya sudah membawa semua parameter
     return items[: args.scan]
@@ -324,7 +332,7 @@ def write_viz(report, out):
 def write_report(candidates, args, scanned, out, passes, card_order):
     out.parent.mkdir(parents=True, exist_ok=True)
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    query = {k: v for k, v in vars(args).items() if k not in ("out", "delay")}
+    query = {k: v for k, v in vars(args).items() if k not in ("out", "delay", "live", "port", "no_browser")}
     # Urutan perayapan disimpan supaya visualisasi bisa memutar ulang jalannya crawl.
     shown = {c["id"] for c in candidates}
     report = {
@@ -335,6 +343,7 @@ def write_report(candidates, args, scanned, out, passes, card_order):
     }
     out.with_suffix(".json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     write_viz(report, out)
+    return report
 
     coding = args.preset == "coding"
     lines = [
@@ -397,6 +406,196 @@ def write_report(candidates, args, scanned, out, passes, card_order):
     out.with_suffix(".md").write_text("\n".join(lines), encoding="utf-8")
 
 
+def select(items, args, top):
+    """Saring dan urutkan kandidat dari dataset yang sudah dipindai (tanpa membaca dataset card)."""
+    candidates = [summarize(item) for item in items if not item.get("disabled") and not item.get("private")]
+    candidates = [c for c in candidates if c["downloads"] >= args.min_downloads]
+    if args.only_permissive:
+        candidates = [c for c in candidates if c["license_status"] == "permisif"]
+    if args.preset == "coding":
+        for c in candidates:
+            c["score"] = coding_score(c)
+        candidates.sort(key=lambda c: -c["score"])
+    return candidates[:top]
+
+
+def run(args, emit=lambda event: None):
+    """Jalankan crawl dan tulis laporan. `emit` menerima setiap kejadian untuk visualisasi live."""
+    coding = args.preset == "coding"
+    out = Path(args.out or ROOT / ("runs/kandidat_coding" if coding else "runs/kandidat_dataset"))
+
+    def passes_for(candidates):
+        shown = {c["id"] for c in candidates}
+        return [{"label": p["label"], "ids": [i for i in p["ids"] if i in shown]} for p in passes_log]
+
+    def emit_candidates(stage, candidates):
+        emit({"type": "candidates", "stage": stage, "candidates": candidates, "passes": passes_for(candidates)})
+
+    fetcher = Fetcher(make_session(), args.delay)
+    emit({"type": "start", "preset": args.preset})
+    print("membaca katalog Hugging Face ...", file=sys.stderr)
+    if coding and not args.search:
+        # Beberapa pencarian digabung; dataset yang muncul di lebih dari satu pencarian dihitung sekali.
+        passes = [(term, None) for term in CODING_SEARCHES] + [(None, "code")]
+    else:
+        passes = [(args.search, None)]
+    items, seen, passes_log = [], set(), []
+    for search, extra_filter in passes:
+        label = search or (f"tag {extra_filter}" if extra_filter else f"bahasa {args.language}" if args.language else "semua")
+        if len(passes) > 1:
+            print(f"pencarian {label!r} ...", file=sys.stderr)
+        emit({"type": "pass", "label": label})
+        log = {"label": label, "ids": []}
+        passes_log.append(log)
+
+        def on_page(page, log=log):
+            for item in page[: args.scan - len(log["ids"])]:
+                log["ids"].append(item["id"])
+                if item["id"] not in seen:
+                    seen.add(item["id"])
+                    if not coding or is_coding(item):
+                        items.append(item)
+            emit({"type": "page", "label": log["label"], "count": len(log["ids"]), "scanned": len(seen)})
+
+        crawl(fetcher, args, search, extra_filter, on_page)
+        # Kandidat sementara setelah setiap pencarian, supaya jaring di browser tumbuh bertahap.
+        emit_candidates("pencarian", select(items, args, args.top))
+
+    # Preset coding membaca card untuk dua kali jumlah --top, supaya dataset yang skornya naik
+    # karena sinyal di card tetap punya kesempatan masuk.
+    candidates = select(items, args, args.top * (2 if coding and not args.no_cards else 1))
+    emit_candidates("card", candidates)
+
+    card_order = []
+    if not args.no_cards:
+        print(f"membaca {len(candidates)} dataset card ...", file=sys.stderr)
+    for c in candidates:
+        if not args.no_cards:
+            check_card(fetcher, c, coding)
+            card_order.append(c["id"])
+        if coding:
+            coding_notes(c)
+            c["score"] = coding_score(c)
+        if not args.no_cards:
+            emit({"type": "card", "id": c["id"], "candidate": c})
+    if coding:
+        candidates.sort(key=lambda c: -c["score"])
+        candidates = candidates[: args.top]
+
+    report = write_report(candidates, args, len(seen), out, passes_log, card_order)
+    emit_candidates("final", candidates)
+    files = {ext: str(out.with_suffix("." + ext)) for ext in ("md", "json", "html")}
+    emit({"type": "done", "scanned": len(seen), "generated_at": report["generated_at"], "files": files})
+
+    counts = {s: sum(c["license_status"] == s for c in candidates) for s in STATUSES}
+    print(f"\n{len(candidates)} kandidat dari {len(seen)} dataset yang dipindai")
+    for status, n in counts.items():
+        if n:
+            print(f"  {status:14s}: {n}")
+    print(f"laporan: {files['md']} dan {files['json']}")
+    print(f"visualisasi jaring: buka {files['html']} di browser")
+
+
+class LiveServer:
+    """Server lokal untuk --live: halaman visualisasi di `/` dan aliran kejadian crawl (Server-Sent Events) di `/events`.
+
+    Server hanya mendengarkan 127.0.0.1, jadi tidak bisa dibuka dari perangkat lain di jaringan yang sama.
+    Semua kejadian disimpan, sehingga tab yang dibuka belakangan atau tersambung ulang tetap menerima urutan lengkap.
+    """
+
+    def __init__(self, port):
+        self.events = []
+        self.cond = threading.Condition()
+        self.connected = threading.Event()
+        html = VIZ_TEMPLATE.read_text(encoding="utf-8")
+        assert html.count(VIZ_PLACEHOLDER) == 1, "penanda data di crawler_viz.html tidak ditemukan"
+        self.page = html.replace(VIZ_PLACEHOLDER, '<script id="crawl-data" type="application/json">{"live": true}</script>').encode()
+        self.httpd = ThreadingHTTPServer(("127.0.0.1", port), self._handler())
+        self.httpd.daemon_threads = True
+        self.url = f"http://127.0.0.1:{self.httpd.server_address[1]}/"
+
+    def emit(self, event):
+        with self.cond:
+            self.events.append(event)
+            self.cond.notify_all()
+
+    def _handler(self):
+        server = self
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+
+            def do_GET(self):
+                path = self.path.split("?", 1)[0]
+                if path == "/":
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Cache-Control", "no-store")
+                    self.send_header("Content-Length", str(len(server.page)))
+                    self.end_headers()
+                    self.wfile.write(server.page)
+                elif path == "/events":
+                    self.stream()
+                else:
+                    self.send_error(404)
+
+            def stream(self):
+                last = self.headers.get("Last-Event-ID", "")
+                index = int(last) + 1 if last.isdigit() else 0
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                server.connected.set()
+                try:
+                    while True:
+                        with server.cond:
+                            server.cond.wait_for(lambda: len(server.events) > index, timeout=15)
+                            batch = server.events[index:]
+                        if not batch:
+                            self.wfile.write(b": masih jalan\n\n")  # komentar SSE agar koneksi tidak dianggap mati
+                        for event in batch:
+                            self.wfile.write(f"id: {index}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n".encode())
+                            index += 1
+                        self.wfile.flush()
+                        if batch and batch[-1]["type"] in ("done", "error"):
+                            return
+                except (BrokenPipeError, ConnectionResetError):
+                    return
+
+        return Handler
+
+
+def run_live(args):
+    try:
+        server = LiveServer(args.port)
+    except OSError as e:
+        sys.exit(f"tidak bisa membuka port {args.port} ({e}); coba --port lain")
+    threading.Thread(target=server.httpd.serve_forever, daemon=True).start()
+    print(f"visualisasi live: {server.url}")
+    if not args.no_browser:
+        webbrowser.open(server.url)
+    # Tunggu halaman tersambung supaya crawl ditonton dari awal (paling lama 15 detik).
+    server.connected.wait(timeout=15)
+    failed = False
+    try:
+        run(args, server.emit)
+    except (Exception, SystemExit) as e:
+        failed = True
+        message = str(e.code if isinstance(e, SystemExit) else e) or type(e).__name__
+        server.emit({"type": "error", "message": message})
+        print(f"crawl gagal: {message}", file=sys.stderr)
+    print(f"\nhalaman tetap bisa dibuka di {server.url}; tekan Ctrl+C untuk berhenti")
+    try:
+        while True:
+            time.sleep(3600)
+    except KeyboardInterrupt:
+        server.httpd.shutdown()
+    if failed:
+        sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--preset", default="umum", choices=["umum", "coding"],
@@ -411,69 +610,17 @@ def main():
     parser.add_argument("--only-permissive", action="store_true", help="hanya tampilkan lisensi permisif")
     parser.add_argument("--no-cards", action="store_true", help="jangan baca dataset card (lebih cepat, catatan risiko lebih sedikit)")
     parser.add_argument("--delay", type=float, default=1.0, help="jeda minimal antar-request dalam detik")
-    parser.add_argument("--out", help="awalan nama file laporan (.md dan .json)")
+    parser.add_argument("--out", help="awalan nama file laporan (.md, .json, dan .html)")
+    parser.add_argument("--live", action="store_true", help="tonton crawl secara langsung di browser lewat server lokal")
+    parser.add_argument("--port", type=int, default=8765, help="port server lokal untuk --live")
+    parser.add_argument("--no-browser", action="store_true", help="dengan --live: jangan buka browser otomatis")
     args = parser.parse_args()
-    coding = args.preset == "coding"
     if args.language is None:
-        args.language = "" if coding else "id"
-    out = Path(args.out or ROOT / ("runs/kandidat_coding" if coding else "runs/kandidat_dataset"))
-
-    fetcher = Fetcher(make_session(), args.delay)
-    print("membaca katalog Hugging Face ...", file=sys.stderr)
-    if coding and not args.search:
-        # Beberapa pencarian digabung; dataset yang muncul di lebih dari satu pencarian dihitung sekali.
-        passes = [(term, None) for term in CODING_SEARCHES] + [(None, "code")]
+        args.language = "" if args.preset == "coding" else "id"
+    if args.live:
+        run_live(args)
     else:
-        passes = [(args.search, None)]
-    items, seen, passes_log = [], set(), []
-    for search, extra_filter in passes:
-        label = search or (f"tag {extra_filter}" if extra_filter else f"bahasa {args.language}" if args.language else "semua")
-        if len(passes) > 1:
-            print(f"pencarian {label!r} ...", file=sys.stderr)
-        found = crawl(fetcher, args, search, extra_filter)
-        passes_log.append({"label": label, "ids": [item["id"] for item in found]})
-        for item in found:
-            if item["id"] not in seen:
-                seen.add(item["id"])
-                items.append(item)
-    if coding:
-        items = [item for item in items if is_coding(item)]
-
-    candidates = [summarize(item) for item in items if not item.get("disabled") and not item.get("private")]
-    candidates = [c for c in candidates if c["downloads"] >= args.min_downloads]
-    if args.only_permissive:
-        candidates = [c for c in candidates if c["license_status"] == "permisif"]
-    if coding:
-        # Urutan sementara dari metadata saja, lalu card dibaca untuk dua kali jumlah --top supaya
-        # dataset yang skornya naik karena sinyal di card tetap punya kesempatan masuk.
-        for c in candidates:
-            c["score"] = coding_score(c)
-        candidates.sort(key=lambda c: -c["score"])
-        candidates = candidates[: args.top * (1 if args.no_cards else 2)]
-    else:
-        candidates = candidates[: args.top]
-
-    card_order = []
-    if not args.no_cards:
-        print(f"membaca {len(candidates)} dataset card ...", file=sys.stderr)
-        for c in candidates:
-            check_card(fetcher, c, coding)
-            card_order.append(c["id"])
-    if coding:
-        for c in candidates:
-            c["score"] = coding_score(c)
-            coding_notes(c)
-        candidates.sort(key=lambda c: -c["score"])
-        candidates = candidates[: args.top]
-
-    write_report(candidates, args, len(seen), out, passes_log, card_order)
-    counts = {s: sum(c["license_status"] == s for c in candidates) for s in STATUSES}
-    print(f"\n{len(candidates)} kandidat dari {len(seen)} dataset yang dipindai")
-    for status, n in counts.items():
-        if n:
-            print(f"  {status:14s}: {n}")
-    print(f"laporan: {out.with_suffix('.md')} dan {out.with_suffix('.json')}")
-    print(f"visualisasi jaring: buka {out.with_suffix('.html')} di browser")
+        run(args)
 
 
 if __name__ == "__main__":

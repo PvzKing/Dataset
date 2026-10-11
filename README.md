@@ -153,6 +153,21 @@ File `.html` di samping laporan memutar ulang jalannya crawl sebagai laba-laba y
   - Tersedia tombol jeda, ulangi, dan lewati animasi, serta pengatur kecepatan.
 - **Aksesibilitas:** tabel di bawah jaring berisi semua kandidat dan bisa dipakai dengan keyboard. Jika sistem meminta animasi dikurangi (`prefers-reduced-motion`), jaring langsung ditampilkan dalam keadaan akhir.
 
+**Mode live (di laptop).** Dengan `--live`, kamu bisa menonton laba-labanya merayap selama crawl berjalan:
+
+```bash
+python scripts/find_datasets.py --preset coding --live
+```
+
+- **Cara kerja:** script menjalankan server kecil di `http://127.0.0.1:8765` dan membuka browser. Setiap halaman katalog yang terbaca, setiap kandidat baru, dan setiap dataset card yang dibaca dikirim ke halaman lewat Server-Sent Events.
+- **Yang terlihat:** jaring tumbuh per kata kunci pencarian. Dataset yang tergeser dari daftar teratas memudar dan dilepas dari jaring. Kalau laba-labanya tertinggal dari crawl, langkahnya otomatis dipercepat.
+- **Setelah selesai:** laporan tetap ditulis seperti biasa, dan halaman masih bisa dibuka atau dimuat ulang sampai kamu menekan Ctrl+C.
+- **Keamanan:** server hanya mendengarkan `127.0.0.1`, jadi tidak bisa dibuka dari perangkat lain di jaringan.
+- **Opsi:**
+  - `--port` mengganti port kalau 8765 sudah dipakai.
+  - `--no-browser` mencegah browser terbuka otomatis.
+- **Batasan:** mode ini butuh browser di mesin yang sama dengan crawler, jadi tidak jalan di Colab. Untuk Colab, pakai file `.html` hasil crawl biasa.
+
 Templatenya ada di `scripts/crawler_viz.html`. Kalau dibuka langsung, template itu menampilkan data contoh yang ditandai jelas. Semua teks dari Hugging Face dipasang dengan `textContent` atau digambar di canvas, jadi isi dataset card tidak bisa menyisipkan HTML.
 
 ### Preset coding
@@ -386,7 +401,7 @@ docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol traini
 CLAUDE.md                             catatan singkat untuk Claude Code di repo ini
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
 scripts/find_datasets.py              crawler penemu kandidat dataset di Hugging Face Hub, dengan penilaian lisensi
-scripts/crawler_viz.html              template visualisasi laba-laba untuk hasil find_datasets.py
+scripts/crawler_viz.html              template visualisasi laba-laba untuk hasil find_datasets.py (putar ulang dan --live)
 scripts/validate.py                   validasi dataset
 scripts/build_bench_support.py        membuat dan memverifikasi kelompok bench-support (HumanEval)
 data/bench-support/                   kelompok dataset bench-support, lisensi, dan catatan perubahannya

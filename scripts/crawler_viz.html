@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Jaring Crawler</title>
+<link rel="icon" href="data:,">
 <!-- Template visualisasi scripts/find_datasets.py. Script mengganti isi #crawl-data dengan hasil crawl.
      Dibuka langsung tanpa data, halaman ini memakai data contoh. -->
 <style>
@@ -57,6 +58,19 @@
   header { padding: 14px 16px 6px; }
   h1 { margin: 0; font-size: 1.25rem; }
   #status { margin: 2px 0 0; color: var(--muted); min-height: 1.5em; }
+  #status.error { color: var(--tanpa-turunan); }
+  .badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    vertical-align: middle;
+    color: var(--bg);
+    background: var(--permisif);
+  }
+  .badge.off { background: var(--muted); }
   .demo {
     margin: 8px 0 0;
     padding: 6px 10px;
@@ -138,7 +152,7 @@
 </head>
 <body>
 <header>
-  <h1>Jaring Crawler</h1>
+  <h1>Jaring Crawler <span class="badge" id="live-badge" hidden>LIVE</span></h1>
   <p id="status" aria-live="polite">Menyiapkan jaring…</p>
   <p class="demo" id="demo" hidden>Ini data contoh. Jalankan <code>python scripts/find_datasets.py</code> untuk melihat hasil crawl yang asli.</p>
 </header>
@@ -202,13 +216,14 @@
   function readData() {
     try {
       const data = JSON.parse(document.getElementById('crawl-data').textContent);
-      if (data && Array.isArray(data.candidates)) return data;
+      if (data && (data.live === true || Array.isArray(data.candidates))) return data;
     } catch (e) { /* jatuh ke data contoh */ }
     return DEMO;
   }
 
   const data = readData();
-  const coding = data.preset === 'coding';
+  const live = data.live === true;
+  let coding = data.preset === 'coding';
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const canvas = document.getElementById('web');
   const ctx = canvas.getContext('2d');
@@ -217,27 +232,33 @@
   const panel = document.getElementById('panel');
   const playBtn = document.getElementById('play');
   const speedInput = document.getElementById('speed');
+  const liveBadge = document.getElementById('live-badge');
   if (data.demo) document.getElementById('demo').hidden = false;
+  if (live) liveBadge.hidden = false;
 
   // ---------- Model jaring ----------
-  const hub = { kind: 'hub', x: 0, y: 0, label: 'katalog' };
-  const datasets = data.candidates.map((c, rank) => ({
-    kind: 'dataset', c, rank, x: 0, y: 0, angle: 0,
-    label: shortName(c.id), visible: false, read: false, appearAt: 0, pulseAt: -1e9, foundBy: [],
-  }));
-  const byId = new Map(datasets.map((d) => [d.c.id, d]));
-  const keywords = (data.passes || []).map((p) => ({
-    kind: 'keyword', label: p.label, ids: (p.ids || []).filter((id) => byId.has(id)), x: 0, y: 0, visible: false,
-  }));
-  keywords.forEach((k, i) => k.ids.forEach((id) => byId.get(id).foundBy.push(i)));
-  // Dataset dikelompokkan menurut kata kunci pertama yang menemukannya, supaya benangnya tidak saling silang.
-  const ring = datasets.slice().sort((a, b) =>
-    ((a.foundBy[0] ?? 1e9) - (b.foundBy[0] ?? 1e9)) || (a.rank - b.rank));
-
+  // Semua perubahan datang sebagai kejadian (event): dari server saat --live, atau disusun ulang dari
+  // laporan JSON saat file .html dibuka. Kejadian mengubah model, lalu menambah langkah animasi.
+  const hub = { kind: 'hub', x: 0, y: 0, tx: 0, ty: 0, label: 'katalog' };
+  let datasets = [];
+  let byId = new Map();
+  let keywords = [];
   let threads = [];
-  let hidden = new Set();
+  let ring = [];
+  const hidden = new Set();
   let selected = null;
   let hover = null;
+  let meta = {};
+  const log = [];
+
+  function resetModel() {
+    datasets = []; byId = new Map(); keywords = []; threads = []; ring = [];
+    selected = null; hover = null;
+    meta = { scanned: data.scanned ?? null, generatedAt: data.generated_at || '', files: null, done: false, error: null, cardsRead: 0 };
+    steps = []; current = null;
+    Object.assign(spider, { from: hub, to: hub, fromNode: hub, t: 1, heading: -Math.PI / 2, moving: false, thread: null });
+    statusEl.classList.remove('error');
+  }
 
   function shortName(id) {
     const name = id.includes('/') ? id.split('/').slice(1).join('/') : id;
@@ -256,7 +277,7 @@
 
   // ---------- Tata letak ----------
   let W = 0, H = 0, R = 0, cx = 0, cy = 0, showLabels = true, spiderSize = 10;
-  function layout() {
+  function resize() {
     const rect = stage.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     W = rect.width; H = rect.height;
@@ -267,18 +288,30 @@
     const labelSpace = showLabels ? Math.min(150, W * 0.2) : 16;
     R = Math.max(70, Math.min(W, H) / 2 - labelSpace);
     spiderSize = Math.max(7, Math.min(13, R * 0.04));
-    hub.x = cx; hub.y = cy;
+    layout(true);
+  }
+
+  // Titik baru langsung ditaruh di tempatnya; titik yang sudah tampil bergeser pelan ke posisi barunya.
+  function place(node, x, y, snap) {
+    node.tx = x; node.ty = y;
+    if (snap || !node.visible) { node.x = x; node.y = y; }
+  }
+
+  function layout(snap) {
+    hub.x = hub.tx = cx; hub.y = hub.ty = cy;
+    // Dataset dikelompokkan menurut kata kunci pertama yang menemukannya, supaya benangnya tidak saling silang.
+    ring = datasets.filter((d) => !d.leaving).sort((a, b) =>
+      ((a.foundBy[0] ?? 1e9) - (b.foundBy[0] ?? 1e9)) || (a.rank - b.rank));
     const n = Math.max(ring.length, 1);
     ring.forEach((d, i) => {
       d.angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
-      d.x = cx + R * Math.cos(d.angle);
-      d.y = cy + R * Math.sin(d.angle);
+      place(d, cx + R * Math.cos(d.angle), cy + R * Math.sin(d.angle), snap);
     });
     // Kata kunci diletakkan di arah kelompok dataset yang pertama kali ditemukannya, lalu
     // didorong menjauh satu sama lain supaya labelnya tidak bertumpuk.
     keywords.forEach((k, i) => {
       const own = ring.filter((d) => d.foundBy[0] === i);
-      const group = own.length ? own : k.ids.map((id) => byId.get(id));
+      const group = own.length ? own : ring.filter((d) => d.foundBy.includes(i));
       let sx = 0, sy = 0;
       group.forEach((d) => { sx += Math.cos(d.angle); sy += Math.sin(d.angle); });
       k.angle = (sx || sy) ? Math.atan2(sy, sx) : -Math.PI / 2 + (2 * Math.PI * i) / Math.max(keywords.length, 1);
@@ -299,14 +332,11 @@
       });
       if (!moved) break;
     }
-    keywords.forEach((k) => {
-      k.x = cx + kr * Math.cos(k.angle);
-      k.y = cy + kr * Math.sin(k.angle);
-    });
+    keywords.forEach((k) => place(k, cx + kr * Math.cos(k.angle), cy + kr * Math.sin(k.angle), snap));
   }
 
   // ---------- Laba-laba ----------
-  const spider = { from: hub, to: hub, t: 1, heading: -Math.PI / 2, phase: 0, moving: false, thread: null };
+  const spider = { from: hub, to: hub, fromNode: hub, t: 1, heading: -Math.PI / 2, phase: 0, moving: false, thread: null };
   function spiderPos() {
     const t = spider.t;
     return { x: spider.from.x + (spider.to.x - spider.from.x) * t, y: spider.from.y + (spider.to.y - spider.from.y) * t };
@@ -349,12 +379,15 @@
     ctx.restore();
   }
 
-  // ---------- Alur animasi ----------
+  // ---------- Langkah animasi ----------
   let steps = [];
   let current = null;
   let paused = false;
-  let finished = false;
   let clock = 0;
+
+  const walk = (to, opts = {}) => steps.push({ type: 'walk', to, ...opts });
+  const call = (fn) => steps.push({ type: 'call', fn });
+  const wait = (ms) => steps.push({ type: 'wait', ms });
 
   function threadBetween(a, b) {
     return threads.find((t) => (t.a === a && t.b === b) || (t.a === b && t.b === a));
@@ -364,56 +397,163 @@
     if (!t) { t = { a, b, progress }; threads.push(t); }
     return t;
   }
-  function setStatus(text) { statusEl.textContent = text; }
-
-  function buildSteps() {
-    const s = [];
-    const walk = (to, opts = {}) => s.push({ type: 'walk', to, ...opts });
-    const call = (fn) => s.push({ type: 'call', fn });
-    const wait = (ms) => s.push({ type: 'wait', ms });
-
-    keywords.forEach((k) => {
-      call(() => setStatus(`Mencari "${k.label}" di katalog Hugging Face…`));
-      walk(hub);
-      walk(k, { spin: true, onArrive: () => { k.visible = true; } });
-      k.ids.forEach((id) => {
-        const d = byId.get(id);
-        if (d.visible) {
-          // Sudah ditemukan pencarian lain: cukup tambahkan benang tanpa merayap ke sana.
-          call(() => { addThread(k, d, 0).grow = true; });
-          return;
-        }
-        walk(d, { spin: true, onArrive: () => discover(d) });
-        walk(k);
-      });
+  // Benang tambahan untuk dataset yang ditemukan lebih dari satu pencarian.
+  function ensureThreads(d) {
+    if (!d.visible || d.leaving) return;
+    d.foundBy.forEach((i) => {
+      const k = keywords[i];
+      if (k && k.visible && !threadBetween(k, d)) addThread(k, d, 0).grow = true;
     });
-    const order = (data.card_order || []).map((id) => byId.get(id)).filter(Boolean);
-    if (order.length) {
-      call(() => setStatus(`Membaca ${order.length} dataset card dan menilai risikonya…`));
-      order.forEach((d) => {
-        walk(d, { onArrive: () => readCard(d) });
-        wait(90);
-      });
+  }
+  function ensureAllThreads() { datasets.forEach(ensureThreads); }
+  // Pesan gagal tidak boleh tertimpa status animasi yang masih antre.
+  function setStatus(text) { if (!meta.error) statusEl.textContent = text; }
+
+  function keywordFor(label) {
+    let k = keywords.find((x) => x.label === label);
+    if (!k) {
+      k = { kind: 'keyword', label, ids: [], x: hub.x, y: hub.y, tx: hub.x, ty: hub.y, angle: 0, visible: false };
+      keywords.push(k);
+      layout(false);
     }
-    call(() => setStatus(summaryText()));
-    walk(hub);
-    call(() => { finished = true; });
-    return s;
+    return k;
   }
 
   function discover(d) {
     if (d.visible) return;
     d.visible = true;
     d.appearAt = clock;
+    ensureThreads(d);
   }
-  function readCard(d) {
+  function readCard(d, candidate) {
+    if (candidate) d.c = candidate;
     d.read = true;
     d.pulseAt = clock;
+    discover(d);
+    meta.cardsRead += 1;
+    if (live && !meta.done) setStatus(`Membaca dataset card: ${meta.cardsRead} sudah dibaca…`);
+    refreshLists();
+    if (selected === d) renderPanel();
+  }
+
+  function applyCandidates(ev) {
+    const incoming = ev.candidates || [];
+    const ids = new Set(incoming.map((c) => c.id));
+    const fresh = [];
+    incoming.forEach((c, rank) => {
+      let d = byId.get(c.id);
+      if (!d) {
+        d = { kind: 'dataset', c, rank, x: hub.x, y: hub.y, tx: hub.x, ty: hub.y, angle: 0, label: shortName(c.id),
+              visible: false, read: false, appearAt: 0, pulseAt: -1e9, leaving: false, leaveAt: 0, foundBy: [] };
+        datasets.push(d); byId.set(c.id, d); fresh.push(d);
+      }
+      d.leaving = false;
+      // Data dari card yang sudah dibaca lebih lengkap daripada data sementara dari pencarian.
+      if (!d.read || ev.stage === 'final') d.c = c;
+      d.rank = rank;
+    });
+    datasets.forEach((d) => { d.foundBy = []; });
+    (ev.passes || []).forEach((p) => {
+      const k = keywordFor(p.label);
+      const index = keywords.indexOf(k);
+      k.ids = (p.ids || []).filter((id) => ids.has(id));
+      k.ids.forEach((id) => byId.get(id).foundBy.push(index));
+    });
+    datasets.forEach((d) => {
+      d.foundBy.sort((a, b) => a - b);
+      // Dataset yang tergeser dari daftar teratas memudar lalu dilepas dari jaring.
+      if (!ids.has(d.c.id) && !d.leaving) { d.leaving = true; d.leaveAt = clock; }
+    });
+    layout(false);
+
+    // Laba-laba merayap dari kata kunci ke setiap dataset baru, dikelompokkan menurut pencarian terakhir yang menemukannya.
+    const source = (d) => d.foundBy.length ? d.foundBy[d.foundBy.length - 1] : -1;
+    fresh.sort((a, b) => (source(a) - source(b)) || (a.rank - b.rank)).forEach((d) => {
+      const k = keywords[source(d)];
+      if (k) walk(k);
+      walk(d, { spin: true, onArrive: () => discover(d) });
+      if (k) walk(k);
+    });
+    call(ensureAllThreads);
+    refreshLists();
+  }
+
+  function apply(ev) {
+    switch (ev.type) {
+      case 'start':
+        coding = ev.preset === 'coding';
+        setupTable();
+        call(() => setStatus(live ? 'Crawler mulai berjalan…' : 'Memutar ulang jalannya crawl…'));
+        break;
+      case 'pass': {
+        const k = keywordFor(ev.label);
+        call(() => setStatus(`Mencari "${k.label}" di katalog Hugging Face…`));
+        walk(hub);
+        walk(k, { spin: true, onArrive: () => { k.visible = true; ensureAllThreads(); } });
+        break;
+      }
+      case 'page':
+        meta.scanned = ev.scanned;
+        setStatus(`Mencari "${ev.label}": ${ev.count} dataset terbaca, ${ev.scanned} dataset unik sejauh ini…`);
+        if (!selected) renderPanel();
+        break;
+      case 'candidates':
+        applyCandidates(ev);
+        break;
+      case 'card': {
+        const d = byId.get(ev.id);
+        if (!d) break;
+        walk(d, { onArrive: () => readCard(d, ev.candidate) });
+        wait(80);
+        break;
+      }
+      case 'done':
+        meta.scanned = ev.scanned ?? meta.scanned;
+        if (ev.generated_at) meta.generatedAt = ev.generated_at;
+        meta.files = ev.files || null;
+        call(() => { meta.done = true; setStatus(summaryText()); liveBadge.textContent = 'SELESAI'; liveBadge.classList.add('off'); renderPanel(); });
+        walk(hub);
+        break;
+      case 'error':
+        meta.error = ev.message;
+        statusEl.classList.add('error');
+        statusEl.textContent = 'Crawl gagal: ' + ev.message;
+        liveBadge.textContent = 'GAGAL';
+        liveBadge.classList.add('off');
+        break;
+      default:
+        break;
+    }
+  }
+
+  function handle(ev) {
+    log.push(ev);
+    apply(ev);
+  }
+
+  // Laporan JSON (mode putar ulang) diubah menjadi urutan kejadian yang sama dengan mode live.
+  function replayEvents(report) {
+    const events = [{ type: 'start', preset: report.preset }];
+    const passes = report.passes || [];
+    passes.forEach((p, i) => {
+      events.push({ type: 'pass', label: p.label });
+      const sofar = passes.slice(0, i + 1);
+      const ids = new Set(sofar.flatMap((q) => q.ids || []));
+      events.push({ type: 'candidates', stage: 'pencarian', candidates: report.candidates.filter((c) => ids.has(c.id)), passes: sofar });
+    });
+    events.push({ type: 'candidates', stage: 'card', candidates: report.candidates, passes });
+    (report.card_order || []).forEach((id) => {
+      const c = report.candidates.find((x) => x.id === id);
+      if (c) events.push({ type: 'card', id, candidate: c });
+    });
+    events.push({ type: 'done', scanned: report.scanned, generated_at: report.generated_at });
+    return events;
   }
 
   function summaryText() {
-    const counts = STATUSES.map((s) => [s, data.candidates.filter((c) => c.license_status === s).length]).filter(([, n]) => n);
-    return `Selesai: ${data.candidates.length} kandidat dari ${data.scanned ?? '?'} dataset yang dipindai (`
+    const shown = datasets.filter((d) => !d.leaving);
+    const counts = STATUSES.map((s) => [s, shown.filter((d) => d.c.license_status === s).length]).filter(([, n]) => n);
+    return `Selesai: ${shown.length} kandidat dari ${meta.scanned ?? '?'} dataset yang dipindai (`
       + counts.map(([s, n]) => `${n} ${s}`).join(', ') + '). Klik kata di jaring untuk melihat detail.';
   }
 
@@ -421,8 +561,7 @@
     current = steps.shift() || null;
     if (!current) return;
     if (current.type === 'walk') {
-      // Kalau sedang diam di sebuah titik, simpan titiknya (bukan koordinat) supaya tetap benar saat ukuran layar berubah.
-      spider.from = spider.t >= 1 && spider.fromNode ? spider.fromNode : spiderPos();
+      spider.from = spider.fromNode || spiderPos();
       spider.to = current.to;
       spider.t = 0;
       spider.thread = current.spin ? addThread(spider.fromNode || hub, current.to, 0) : null;
@@ -432,80 +571,85 @@
     }
   }
 
+  function finishStep(step) {
+    if (step.type === 'call') { step.fn(); return; }
+    if (step.type !== 'walk') return;
+    if (step.spin) addThread(spider.fromNode || hub, step.to, 1).progress = 1;
+    if (spider.thread) spider.thread.progress = 1;
+    spider.thread = null;
+    spider.from = step.to; spider.to = step.to; spider.fromNode = step.to; spider.t = 1; spider.moving = false;
+    if (step.onArrive) step.onArrive();
+  }
+
+  // Jalankan semua langkah yang tersisa seketika, tanpa animasi.
+  function fastForward() {
+    if (current) { finishStep(current); current = null; }
+    while (steps.length) finishStep(steps.shift());
+    threads.forEach((t) => { t.progress = 1; t.grow = false; });
+    datasets.forEach((d) => { d.x = d.tx; d.y = d.ty; });
+    keywords.forEach((k) => { k.x = k.tx; k.y = k.ty; });
+  }
+
+  function speed() {
+    // Saat live, laba-laba mempercepat langkahnya kalau tertinggal dari kejadian yang masuk.
+    const base = Number(speedInput.value);
+    return live ? base * (1 + Math.min(5, steps.length / 6)) : base;
+  }
+
   function update(dt) {
     clock += dt;
+    const ease = Math.min(1, dt * 5);
+    for (const n of datasets) { n.x += (n.tx - n.x) * ease; n.y += (n.ty - n.y) * ease; }
+    for (const n of keywords) { n.x += (n.tx - n.x) * ease; n.y += (n.ty - n.y) * ease; }
     threads.forEach((t) => { if (t.grow) { t.progress = Math.min(1, t.progress + dt * 2.5); if (t.progress >= 1) t.grow = false; } });
-    if (paused || finished) { spider.moving = false; return; }
+    const gone = datasets.filter((d) => d.leaving && clock - d.leaveAt > 0.6);
+    if (gone.length) {
+      datasets = datasets.filter((d) => !gone.includes(d));
+      gone.forEach((d) => byId.delete(d.c.id));
+      threads = threads.filter((t) => !gone.includes(t.a) && !gone.includes(t.b));
+      if (gone.includes(selected)) { selected = null; renderPanel(); }
+      layout(false);
+      refreshLists();
+    }
+    if (reduceMotion) { if (steps.length || current) fastForward(); return; }
+    if (paused) { spider.moving = false; return; }
     let budget = dt;
     let guard = 0;
-    while (budget > 0 && guard++ < 50) {
+    while (budget > 0 && guard++ < 200) {
       if (!current) { nextStep(); if (!current) { spider.moving = false; return; } }
       if (current.type === 'call') { current.fn(); current = null; continue; }
       if (current.type === 'wait') {
-        current.left -= budget * 1000 * Number(speedInput.value);
+        current.left -= budget * 1000 * speed();
         budget = 0;
         if (current.left <= 0) current = null;
         continue;
       }
-      // walk
       const from = spider.from, to = current.to;
       const dist = Math.hypot(to.x - from.x, to.y - from.y);
-      const speed = 260 * Number(speedInput.value);
-      if (dist < 0.5) { spider.t = 1; } else {
-        spider.t = Math.min(1, spider.t + (speed * budget) / dist);
+      if (dist < 0.5) {
+        spider.t = 1;
+      } else {
+        const v = speed();
+        spider.t = Math.min(1, spider.t + (260 * v * budget) / dist);
         const target = Math.atan2(to.y - from.y, to.x - from.x);
         let diff = target - spider.heading;
         while (diff > Math.PI) diff -= 2 * Math.PI;
         while (diff < -Math.PI) diff += 2 * Math.PI;
         spider.heading += diff * Math.min(1, budget * 12);
-        spider.phase += budget * 18 * Math.sqrt(Number(speedInput.value));
+        spider.phase += budget * 18 * Math.sqrt(v);
         spider.moving = true;
+        budget = 0;
       }
       if (spider.thread) spider.thread.progress = Math.max(spider.thread.progress, spider.t);
-      budget = 0;
-      if (spider.t >= 1) {
-        spider.from = to; spider.fromNode = to;
-        spider.t = 1;
-        spider.moving = false;
-        if (spider.thread) spider.thread.progress = 1;
-        spider.thread = null;
-        if (current.onArrive) current.onArrive();
-        current = null;
-      }
+      if (spider.t >= 1) { const step = current; current = null; finishStep(step); }
     }
-  }
-
-  function skipAll() {
-    steps = [];
-    current = null;
-    keywords.forEach((k) => {
-      k.visible = true;
-      addThread(hub, k, 1).progress = 1;
-      k.ids.forEach((id) => { discover(byId.get(id)); addThread(k, byId.get(id), 1).progress = 1; });
-    });
-    datasets.forEach((d) => { d.visible = true; d.appearAt = -10; if ((data.card_order || []).includes(d.c.id)) d.read = true; });
-    spider.from = hub; spider.to = hub; spider.fromNode = hub; spider.t = 1; spider.moving = false; spider.thread = null;
-    finished = true;
-    setStatus(summaryText());
-  }
-
-  function restart() {
-    threads = [];
-    datasets.forEach((d) => { d.visible = false; d.read = false; d.pulseAt = -1e9; });
-    keywords.forEach((k) => { k.visible = false; });
-    spider.from = hub; spider.to = hub; spider.fromNode = hub; spider.t = 1; spider.heading = -Math.PI / 2;
-    finished = false;
-    current = null;
-    steps = buildSteps();
-    setPaused(false);
-    if (reduceMotion) skipAll();
   }
 
   // ---------- Gambar ----------
   function drawWeb() {
     // Jaring latar: jari-jari di arah setiap dataset dan lingkaran spiral yang sedikit melengkung ke dalam.
-    const n = Math.max(ring.length, 12);
-    const angles = ring.length >= 12 ? ring.map((d) => d.angle) : Array.from({ length: n }, (_, i) => -Math.PI / 2 + (2 * Math.PI * i) / n);
+    const angles = ring.length >= 12 ? ring.map((d) => d.angle)
+      : Array.from({ length: 12 }, (_, i) => -Math.PI / 2 + (2 * Math.PI * i) / 12);
     ctx.strokeStyle = colors.silk;
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -516,9 +660,8 @@
       ctx.beginPath();
       angles.forEach((a, i) => {
         const b = angles[(i + 1) % angles.length] + (i + 1 === angles.length ? 2 * Math.PI : 0);
-        const x1 = cx + r * Math.cos(a), y1 = cy + r * Math.sin(a);
         const mid = (a + b) / 2, sag = r * 0.93;
-        if (i === 0) ctx.moveTo(x1, y1);
+        if (i === 0) ctx.moveTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
         ctx.quadraticCurveTo(cx + sag * Math.cos(mid), cy + sag * Math.sin(mid), cx + r * Math.cos(b), cy + r * Math.sin(b));
       });
       ctx.stroke();
@@ -529,27 +672,25 @@
     if (coding && typeof d.c.score === 'number') return 3.5 + (d.c.score / 100) * 6;
     return 3.5 + Math.min(6, Math.log10((d.c.downloads || 0) + 1));
   }
+  function fade(d) {
+    return d.leaving ? Math.max(0, 1 - (clock - d.leaveAt) / 0.6) : 1;
+  }
 
   function drawThreads() {
     ctx.lineWidth = 1.3;
     threads.forEach((t) => {
       if (t.progress <= 0) return;
-      const dim = t.b.kind === 'dataset' && hidden.has(t.b.c.license_status);
+      const end = t.b.kind === 'dataset' ? t.b : null;
+      const dim = end && hidden.has(end.c.license_status);
       const active = selected && (t.a === selected || t.b === selected);
       ctx.strokeStyle = active ? colors.accent : colors.silkStrong;
-      ctx.globalAlpha = dim ? 0.12 : (active ? 1 : 0.55);
+      ctx.globalAlpha = (dim ? 0.12 : (active ? 1 : 0.55)) * (end ? fade(end) : 1);
       ctx.beginPath();
       ctx.moveTo(t.a.x, t.a.y);
       ctx.lineTo(t.a.x + (t.b.x - t.a.x) * t.progress, t.a.y + (t.b.y - t.a.y) * t.progress);
       ctx.stroke();
     });
     ctx.globalAlpha = 1;
-    // Benang yang sedang dipintal ikut ke posisi laba-laba.
-    if (spider.thread) {
-      const p = spiderPos();
-      ctx.strokeStyle = colors.silkStrong;
-      ctx.beginPath(); ctx.moveTo(spider.thread.a.x, spider.thread.a.y); ctx.lineTo(p.x, p.y); ctx.stroke();
-    }
   }
 
   function drawDatasets() {
@@ -558,9 +699,10 @@
     datasets.forEach((d) => {
       if (!d.visible) return;
       const dim = hidden.has(d.c.license_status);
+      const alpha = (dim ? 0.15 : 1) * fade(d);
       const age = Math.min(1, (clock - d.appearAt) / 0.35);
       const r = nodeRadius(d) * (reduceMotion ? 1 : 0.4 + 0.6 * age);
-      ctx.globalAlpha = dim ? 0.15 : 1;
+      ctx.globalAlpha = alpha;
       ctx.fillStyle = colors[d.c.license_status] || colors.muted;
       ctx.beginPath(); ctx.arc(d.x, d.y, r, 0, Math.PI * 2); ctx.fill();
       if (d.read) {
@@ -573,9 +715,9 @@
       }
       const pulse = (clock - d.pulseAt) / 0.7;
       if (pulse >= 0 && pulse < 1 && !reduceMotion) {
-        ctx.strokeStyle = colors[d.c.license_status]; ctx.lineWidth = 2; ctx.globalAlpha = (1 - pulse) * (dim ? 0.15 : 1);
+        ctx.strokeStyle = colors[d.c.license_status]; ctx.lineWidth = 2; ctx.globalAlpha = (1 - pulse) * alpha;
         ctx.beginPath(); ctx.arc(d.x, d.y, r + 4 + pulse * 16, 0, Math.PI * 2); ctx.stroke();
-        ctx.globalAlpha = dim ? 0.15 : 1;
+        ctx.globalAlpha = alpha;
       }
       if (d === selected || d === hover) {
         ctx.strokeStyle = colors.accent; ctx.lineWidth = 2;
@@ -585,8 +727,9 @@
       if (showLabels && !(dim && d !== selected)) {
         ctx.save();
         ctx.translate(d.x, d.y);
-        const left = Math.cos(d.angle) < 0;
-        ctx.rotate(left ? d.angle + Math.PI : d.angle);
+        const angle = Math.atan2(d.y - cy, d.x - cx);
+        const left = Math.cos(angle) < 0;
+        ctx.rotate(left ? angle + Math.PI : angle);
         ctx.textAlign = left ? 'right' : 'left';
         ctx.fillStyle = d === selected || d === hover ? colors.accent : colors.text;
         const text = coding && typeof d.c.score === 'number' && d.read ? `${d.label} · ${d.c.score}` : d.label;
@@ -597,7 +740,7 @@
     });
   }
 
-  function pill(x, y, text, strong) {
+  function pill(node, text, strong) {
     ctx.font = '600 12px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -606,27 +749,29 @@
     ctx.strokeStyle = strong ? colors.accent : colors.muted;
     ctx.lineWidth = strong ? 2 : 1;
     ctx.beginPath();
-    if (ctx.roundRect) ctx.roundRect(x - w / 2, y - h / 2, w, h, 11); else ctx.rect(x - w / 2, y - h / 2, w, h);
+    if (ctx.roundRect) ctx.roundRect(node.x - w / 2, node.y - h / 2, w, h, 11); else ctx.rect(node.x - w / 2, node.y - h / 2, w, h);
     ctx.fill(); ctx.stroke();
     ctx.fillStyle = colors.text;
-    ctx.fillText(text, x, y + 0.5);
-    return { w, h };
+    ctx.fillText(text, node.x, node.y + 0.5);
+    node.w = w; node.h = h;
   }
 
   function drawKeywords() {
-    keywords.forEach((k) => {
-      if (!k.visible) return;
-      const size = pill(k.x, k.y, `"${k.label}"`, k === selected || k === hover);
-      k.w = size.w; k.h = size.h;
-    });
-    const size = pill(hub.x, hub.y, hub.label, hub === selected || hub === hover);
-    hub.w = size.w; hub.h = size.h;
+    keywords.forEach((k) => { if (k.visible) pill(k, `"${k.label}"`, k === selected || k === hover); });
+    pill(hub, hub.label, hub === selected || hub === hover);
   }
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
     drawWeb();
     drawThreads();
+    // Benang yang sedang dipintal ikut ke posisi laba-laba.
+    if (spider.thread) {
+      const p = spiderPos();
+      ctx.strokeStyle = colors.silkStrong;
+      ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.moveTo(spider.thread.a.x, spider.thread.a.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+    }
     drawDatasets();
     drawKeywords();
     const p = spiderPos();
@@ -647,9 +792,9 @@
     for (const k of [hub, ...keywords]) {
       if ((k === hub || k.visible) && k.w && Math.abs(x - k.x) <= k.w / 2 && Math.abs(y - k.y) <= k.h / 2) return k;
     }
+    const usable = datasets.filter((d) => d.visible && !d.leaving && !hidden.has(d.c.license_status));
     let best = null, bestDist = 18;
-    datasets.forEach((d) => {
-      if (!d.visible || hidden.has(d.c.license_status)) return;
+    usable.forEach((d) => {
       const dist = Math.hypot(x - d.x, y - d.y);
       if (dist < bestDist) { best = d; bestDist = dist; }
     });
@@ -658,9 +803,8 @@
     const angle = Math.atan2(y - cy, x - cx), dist = Math.hypot(x - cx, y - cy);
     if (dist > R && dist < R + 160) {
       let bestDiff = 8 / dist;
-      datasets.forEach((d) => {
-        if (!d.visible || hidden.has(d.c.license_status)) return;
-        let diff = Math.abs(angle - d.angle) % (2 * Math.PI);
+      usable.forEach((d) => {
+        let diff = Math.abs(angle - Math.atan2(d.y - cy, d.x - cx)) % (2 * Math.PI);
         diff = Math.min(diff, 2 * Math.PI - diff);
         if (diff < bestDiff) { best = d; bestDiff = diff; }
       });
@@ -687,11 +831,9 @@
   function select(node) {
     selected = node;
     renderPanel();
-    // Setelah animasi selesai, laba-laba merayap ke kata yang dipilih.
-    if (finished && !reduceMotion && node !== spider.fromNode) {
-      finished = false;
-      steps = [{ type: 'walk', to: node }, { type: 'call', fn: () => { finished = true; } }];
-      current = null;
+    // Kalau laba-laba sedang tidak punya tugas, ia merayap ke kata yang dipilih.
+    if (!steps.length && !current && !reduceMotion && node !== spider.fromNode) {
+      walk(node);
       setPaused(false);
     }
   }
@@ -715,9 +857,12 @@
     if (!node || node === hub) {
       panel.append(el('h2', coding ? 'Crawl dataset coding' : 'Crawl dataset'));
       const dl = el('dl');
-      [['Dibuat', data.generated_at], ['Dipindai', String(data.scanned ?? '-')], ['Kandidat', String(data.candidates.length)],
+      const state = meta.error ? 'gagal' : meta.done ? 'selesai' : live ? 'berjalan' : 'diputar ulang';
+      const shown = datasets.filter((d) => !d.leaving).length;
+      [['Status', state], ['Dibuat', meta.generatedAt || '-'], ['Dipindai', String(meta.scanned ?? '-')], ['Kandidat', String(shown)],
        ['Pencarian', keywords.map((k) => k.label).join(', ') || '-']].forEach(([k, v]) => dl.append(el('dt', k), el('dd', v)));
       panel.append(dl);
+      if (meta.files) panel.append(...list('Laporan disimpan di', Object.values(meta.files)));
       panel.append(el('p', 'Laba-laba memintal benang dari setiap kata kunci ke dataset yang ditemukannya, lalu membaca dataset card satu per satu. '
         + 'Warna titik menunjukkan status lisensi, besarnya menunjukkan ' + (coding ? 'skor kualitas' : 'jumlah unduhan')
         + ', cincin berarti card sudah dibaca, dan titik kuning berarti ada catatan risiko.', { className: 'muted' }));
@@ -728,8 +873,10 @@
       panel.append(el('p', `${node.ids.length} kandidat ditemukan lewat pencarian ini.`, { className: 'muted' }));
       const ul = el('ul');
       node.ids.forEach((id) => {
+        const d = byId.get(id);
+        if (!d) return;
         const li = el('li');
-        li.append(el('button', byId.get(id).label, { type: 'button', onclick: () => select(byId.get(id)) }));
+        li.append(el('button', d.label, { type: 'button', onclick: () => { discover(d); select(d); } }));
         ul.append(li);
       });
       panel.append(ul);
@@ -737,14 +884,13 @@
     }
     const c = node.c;
     panel.append(el('h2', c.id));
-    const link = el('a', 'Buka di Hugging Face', {
+    panel.append(el('a', 'Buka di Hugging Face', {
       href: 'https://huggingface.co/datasets/' + c.id.split('/').map(encodeURIComponent).join('/'),
       target: '_blank', rel: 'noopener noreferrer',
-    });
-    panel.append(link);
+    }));
     const dl = el('dl');
     const rows = [];
-    if (coding && typeof c.score === 'number') rows.push(['Skor', `${c.score} / 100`]);
+    if (coding && typeof c.score === 'number') rows.push(['Skor', `${c.score} / 100${node.read ? '' : ' (sementara)'}`]);
     rows.push(['Lisensi', (c.licenses || []).join(', ') || 'tidak dicantumkan'], ['Status', c.license_status],
       ['Unduhan', (c.downloads || 0).toLocaleString('id-ID')], ['Ukuran', c.size || '-'], ['Bentuk', c.shape || '-'],
       ['Ditemukan', node.foundBy.map((i) => `"${keywords[i].label}"`).join(', ') || '-']);
@@ -760,7 +906,7 @@
     });
     panel.append(dl);
     panel.append(...list('Sinyal kualitas', c.signals), ...list('Catatan risiko', c.notes));
-    if (!node.read && (data.card_order || []).includes(c.id)) panel.append(el('p', 'Dataset card belum dibaca laba-laba.', { className: 'muted' }));
+    if (!node.read) panel.append(el('p', 'Dataset card belum dibaca laba-laba.', { className: 'muted' }));
   }
 
   function setPaused(value) {
@@ -768,56 +914,89 @@
     playBtn.textContent = paused ? 'Putar' : 'Jeda';
     playBtn.setAttribute('aria-pressed', String(!paused));
   }
+
+  function restart() {
+    resetModel();
+    log.slice().forEach(apply);
+    layout(true);
+    setPaused(false);
+    renderPanel();
+    refreshLists();
+  }
+
   playBtn.addEventListener('click', () => setPaused(!paused));
   document.getElementById('restart').addEventListener('click', restart);
-  document.getElementById('skip').addEventListener('click', skipAll);
-
-  // Legenda sekaligus filter status lisensi.
-  const legend = document.getElementById('legend');
-  STATUSES.forEach((s) => {
-    const n = data.candidates.filter((c) => c.license_status === s).length;
-    if (!n) return;
-    const chip = el('button', null, { type: 'button', className: 'chip' });
-    chip.setAttribute('aria-pressed', 'true');
-    const dot = el('span', null, { className: 'dot' });
-    chip.append(dot, el('span', `${s} (${n})`));
-    chip.addEventListener('click', () => {
-      if (hidden.has(s)) hidden.delete(s); else hidden.add(s);
-      chip.setAttribute('aria-pressed', String(!hidden.has(s)));
-    });
-    legend.append(chip);
+  document.getElementById('skip').addEventListener('click', () => {
+    fastForward();
+    if (meta.done) setStatus(summaryText());
   });
-  function paintLegend() {
-    legend.querySelectorAll('.chip').forEach((chip) => {
-      const s = chip.textContent.replace(/ \(\d+\)$/, '');
-      chip.querySelector('.dot').style.background = colors[s];
+
+  // ---------- Legenda dan tabel ----------
+  const legend = document.getElementById('legend');
+  const tbody = document.getElementById('rows');
+  const scoreHead = document.getElementById('score-head');
+  function setupTable() { scoreHead.hidden = !coding; }
+
+  function refreshLists() {
+    const shown = datasets.filter((d) => !d.leaving).sort((a, b) => a.rank - b.rank);
+    // Legenda sekaligus filter status lisensi.
+    legend.replaceChildren();
+    STATUSES.forEach((s) => {
+      const n = shown.filter((d) => d.c.license_status === s).length;
+      if (!n) return;
+      const chip = el('button', null, { type: 'button', className: 'chip' });
+      chip.setAttribute('aria-pressed', String(!hidden.has(s)));
+      const dot = el('span', null, { className: 'dot' });
+      dot.style.background = colors[s];
+      chip.append(dot, el('span', `${s} (${n})`));
+      chip.addEventListener('click', () => {
+        if (hidden.has(s)) hidden.delete(s); else hidden.add(s);
+        chip.setAttribute('aria-pressed', String(!hidden.has(s)));
+      });
+      legend.append(chip);
+    });
+    // Tabel sebagai alternatif yang bisa dipakai dengan keyboard dan pembaca layar.
+    document.getElementById('list-title').textContent = `Daftar kandidat (${shown.length})`;
+    tbody.replaceChildren();
+    shown.forEach((d, i) => {
+      const tr = el('tr');
+      const name = el('td');
+      name.append(el('button', d.c.id, { type: 'button', onclick: () => { discover(d); select(d); stage.scrollIntoView({ block: 'nearest' }); } }));
+      tr.append(el('td', String(i + 1)), name);
+      if (coding) tr.append(el('td', typeof d.c.score === 'number' ? String(d.c.score) : '-'));
+      tr.append(el('td', d.c.license_status), el('td', (d.c.downloads || 0).toLocaleString('id-ID')), el('td', (d.c.notes || []).join('; ') || '-'));
+      tbody.append(tr);
     });
   }
 
-  // Tabel sebagai alternatif yang bisa dipakai dengan keyboard dan pembaca layar.
-  document.getElementById('list-title').textContent = `Daftar kandidat (${data.candidates.length})`;
-  if (!coding) document.getElementById('score-head').remove();
-  const tbody = document.getElementById('rows');
-  datasets.forEach((d, i) => {
-    const tr = el('tr');
-    const btn = el('button', d.c.id, { type: 'button', onclick: () => { discover(d); select(d); stage.scrollIntoView({ block: 'nearest' }); } });
-    const name = el('td'); name.append(btn);
-    tr.append(el('td', String(i + 1)), name);
-    if (coding) tr.append(el('td', typeof d.c.score === 'number' ? String(d.c.score) : '-'));
-    tr.append(el('td', d.c.license_status), el('td', (d.c.downloads || 0).toLocaleString('id-ID')), el('td', (d.c.notes || []).join('; ') || '-'));
-    tbody.append(tr);
-  });
-
+  // ---------- Mulai ----------
   const scheme = window.matchMedia('(prefers-color-scheme: light)');
-  const onScheme = () => { readColors(); paintLegend(); renderPanel(); };
+  const onScheme = () => { readColors(); refreshLists(); renderPanel(); };
   if (scheme.addEventListener) scheme.addEventListener('change', onScheme);
-  window.addEventListener('resize', layout);
+  window.addEventListener('resize', resize);
 
   readColors();
-  paintLegend();
-  layout();
+  resize();
+  resetModel();
+  setupTable();
   renderPanel();
-  restart();
+
+  if (live) {
+    setStatus('Menghubungkan ke crawler…');
+    const source = new EventSource('events');
+    source.onmessage = (message) => {
+      let ev;
+      try { ev = JSON.parse(message.data); } catch (e) { return; }
+      handle(ev);
+      if (ev.type === 'done' || ev.type === 'error') source.close();
+    };
+    source.onerror = () => {
+      if (!meta.done && !meta.error) setStatus('Koneksi ke crawler terputus, mencoba menyambung lagi…');
+    };
+  } else {
+    replayEvents(data).forEach(handle);
+    layout(true);
+  }
   requestAnimationFrame(frame);
 })();
 </script>
