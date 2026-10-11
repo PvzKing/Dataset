@@ -326,8 +326,8 @@ CLAUDE.md                             catatan singkat untuk Claude Code di repo 
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
 scripts/validate.py                   validasi dataset
 scripts/build_bench_support.py        membuat dan memverifikasi kelompok bench-support (HumanEval)
-scripts/eval_humaneval.py             uji skor HumanEval dan HumanEval+ dengan harness resmi EvalPlus
 data/bench-support/                   kelompok dataset bench-support, lisensi, dan catatan perubahannya
+humaneval-bench-script/               script uji skor HumanEval dan HumanEval+ (harness resmi EvalPlus)
 examples/web/*.html                   26 website dari sampel web, siap dibuka di browser
 tests/test_web.mjs                    tes otomatis website dengan Playwright
 tests/interactions.mjs                skenario interaksi per website

@@ -18,9 +18,9 @@ Cara memakai di Google Colab (GPU T4 cukup):
 
     Sel 1:  !pip install --upgrade unsloth "evalplus @ git+https://github.com/evalplus/evalplus@26d6d00bb1fd0fa37f39c99d5290da67891d1c5e"
     Sel 2:  from google.colab import drive; drive.mount("/content/drive")
-            BR = "https://raw.githubusercontent.com/PvzKing/Dataset/main/scripts"
-            !wget -q -O /content/eval_humaneval.py {BR}/eval_humaneval.py
-            !wget -q -O /content/chat_gradio.py {BR}/chat_gradio.py
+            REPO = "https://raw.githubusercontent.com/PvzKing/Dataset/main"
+            !wget -q -O /content/eval_humaneval.py {REPO}/humaneval-bench-script/eval_humaneval.py
+            !wget -q -O /content/chat_gradio.py {REPO}/scripts/chat_gradio.py
     Sel 3:  %run /content/eval_humaneval.py
 
 Opsi bisa diganti lewat argumen, misalnya:
@@ -35,7 +35,8 @@ EvalPlus dipasang dari commit master, bukan dari PyPI: versi 0.3.1 di PyPI selal
 gagal, bahkan untuk solusi resminya, karena pemeriksa khususnya melompati pencatatan tes yang lolos. Script ini berhenti
 jika versi yang terpasang masih membawa bug itu.
 
-Model dimuat dengan kelas Engine dari chat_gradio.py (diunduh otomatis jika belum ada).
+Model dimuat dengan kelas Engine dari chat_gradio.py: dicari di folder script ini, lalu di scripts/ repo ini, dan
+diunduh otomatis jika tidak ada.
 """
 import argparse
 import json
@@ -157,7 +158,9 @@ class Generator:
         self.args = args
         if args.demo:
             return
-        sys.path.insert(0, str(HERE))
+        for folder in (HERE.parent / "scripts", HERE):  # HERE terakhir disisipkan, jadi dicari lebih dulu
+            if str(folder) not in sys.path:
+                sys.path.insert(0, str(folder))
         try:
             import chat_gradio as cg
         except ImportError:
