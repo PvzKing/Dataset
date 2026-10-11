@@ -12,7 +12,8 @@ Pemakaian (butuh akses internet ke huggingface.co):
     python scripts/find_datasets.py --preset coding   # dataset coding (semua bahasa), diurutkan menurut skor kualitas
 
 Laporan ditulis ke runs/kandidat_dataset.* (atau runs/kandidat_coding.* untuk preset coding) dalam
-format .md dan .json. Isi variabel lingkungan HF_TOKEN (opsional) untuk batas request yang lebih longgar.
+format .md, .json, dan .html. File .html adalah visualisasi laba-laba yang memutar ulang jalannya
+crawl. Isi variabel lingkungan HF_TOKEN (opsional) untuk batas request yang lebih longgar.
 """
 import argparse
 import json
@@ -27,6 +28,8 @@ from pathlib import Path
 import requests
 
 ROOT = Path(__file__).resolve().parent.parent
+VIZ_TEMPLATE = Path(__file__).resolve().parent / "crawler_viz.html"
+VIZ_PLACEHOLDER = '<script id="crawl-data" type="application/json">null</script>'
 API = "https://huggingface.co/api/datasets"
 CARD_URL = "https://huggingface.co/datasets/{id}/raw/main/README.md"
 USER_AGENT = "Dataset-ID-finder/1.0 (+https://github.com/PvzKing/Dataset)"
@@ -309,15 +312,29 @@ def md_cell(text):
     return str(text).replace("|", "\\|").replace("\n", " ")
 
 
-def write_report(candidates, args, scanned, out):
+def write_viz(report, out):
+    """Tulis visualisasi jaring: template HTML yang diisi hasil crawl. JSON di-escape supaya `</script>` di data tidak menutup tag."""
+    payload = json.dumps(report, ensure_ascii=False).replace("</", "<\\/")
+    html = VIZ_TEMPLATE.read_text(encoding="utf-8")
+    assert html.count(VIZ_PLACEHOLDER) == 1, "penanda data di crawler_viz.html tidak ditemukan"
+    html = html.replace(VIZ_PLACEHOLDER, f'<script id="crawl-data" type="application/json">{payload}</script>')
+    out.with_suffix(".html").write_text(html, encoding="utf-8")
+
+
+def write_report(candidates, args, scanned, out, passes, card_order):
     out.parent.mkdir(parents=True, exist_ok=True)
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     query = {k: v for k, v in vars(args).items() if k not in ("out", "delay")}
-    out.with_suffix(".json").write_text(
-        json.dumps({"generated_at": now, "query": query, "scanned": scanned, "candidates": candidates},
-                   ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+    # Urutan perayapan disimpan supaya visualisasi bisa memutar ulang jalannya crawl.
+    shown = {c["id"] for c in candidates}
+    report = {
+        "generated_at": now, "preset": args.preset, "query": query, "scanned": scanned,
+        "passes": [{"label": p["label"], "ids": [i for i in p["ids"] if i in shown]} for p in passes],
+        "card_order": [i for i in card_order if i in shown],
+        "candidates": candidates,
+    }
+    out.with_suffix(".json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    write_viz(report, out)
 
     coding = args.preset == "coding"
     lines = [
@@ -408,11 +425,14 @@ def main():
         passes = [(term, None) for term in CODING_SEARCHES] + [(None, "code")]
     else:
         passes = [(args.search, None)]
-    items, seen = [], set()
+    items, seen, passes_log = [], set(), []
     for search, extra_filter in passes:
+        label = search or (f"tag {extra_filter}" if extra_filter else f"bahasa {args.language}" if args.language else "semua")
         if len(passes) > 1:
-            print(f"pencarian {search or 'tag ' + extra_filter!r} ...", file=sys.stderr)
-        for item in crawl(fetcher, args, search, extra_filter):
+            print(f"pencarian {label!r} ...", file=sys.stderr)
+        found = crawl(fetcher, args, search, extra_filter)
+        passes_log.append({"label": label, "ids": [item["id"] for item in found]})
+        for item in found:
             if item["id"] not in seen:
                 seen.add(item["id"])
                 items.append(item)
@@ -433,10 +453,12 @@ def main():
     else:
         candidates = candidates[: args.top]
 
+    card_order = []
     if not args.no_cards:
         print(f"membaca {len(candidates)} dataset card ...", file=sys.stderr)
         for c in candidates:
             check_card(fetcher, c, coding)
+            card_order.append(c["id"])
     if coding:
         for c in candidates:
             c["score"] = coding_score(c)
@@ -444,13 +466,14 @@ def main():
         candidates.sort(key=lambda c: -c["score"])
         candidates = candidates[: args.top]
 
-    write_report(candidates, args, len(seen), out)
+    write_report(candidates, args, len(seen), out, passes_log, card_order)
     counts = {s: sum(c["license_status"] == s for c in candidates) for s in STATUSES}
     print(f"\n{len(candidates)} kandidat dari {len(seen)} dataset yang dipindai")
     for status, n in counts.items():
         if n:
             print(f"  {status:14s}: {n}")
     print(f"laporan: {out.with_suffix('.md')} dan {out.with_suffix('.json')}")
+    print(f"visualisasi jaring: buka {out.with_suffix('.html')} di browser")
 
 
 if __name__ == "__main__":

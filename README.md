@@ -130,7 +130,7 @@ python scripts/find_datasets.py --search instruct --task text-generation
 python scripts/find_datasets.py --only-permissive --min-downloads 100
 ```
 
-Laporan ditulis ke `runs/kandidat_dataset.md` dan `.json` (tidak di-commit). Setiap kandidat diberi:
+Laporan ditulis ke `runs/kandidat_dataset.md`, `.json`, dan `.html` (tidak di-commit). Setiap kandidat diberi:
 
 - **Status lisensi:** permisif, share-alike, bersyarat, nonkomersial, tanpa turunan, atau cek manual. Jika ada beberapa lisensi, yang dipakai adalah yang paling ketat. Dataset tanpa lisensi masuk "cek manual" karena ciptaan tetap dilindungi hak cipta walaupun tidak mencantumkan lisensi (UU No. 28 Tahun 2014).
 - **Bentuk data:** percakapan, instruksi, tanya-jawab, atau teks lainnya, dibaca dari nama kolom di metadata.
@@ -139,6 +139,21 @@ Laporan ditulis ke `runs/kandidat_dataset.md` dan `.json` (tidak di-commit). Set
   - Sumber media sosial atau ulasan pengguna. Cek data pribadi menurut UU No. 27 Tahun 2022 tentang PDP, juga syarat layanan platform asalnya.
   - Dataset gated, yang mengharuskan menyetujui syarat pemilik sebelum mengunduh.
   - Dataset card terlalu singkat sehingga asal-usul datanya tidak jelas.
+
+### Visualisasi jaring
+
+File `.html` di samping laporan memutar ulang jalannya crawl sebagai laba-laba yang merayap di jaring. Buka file itu langsung di browser, tanpa server dan tanpa internet.
+
+- **Fase mencari:** laba-laba berangkat dari "katalog" ke setiap kata kunci pencarian, lalu memintal benang ke setiap dataset yang ditemukan. Dataset yang ditemukan lebih dari satu pencarian mendapat benang tambahan.
+- **Fase membaca card:** laba-laba mendatangi dataset satu per satu sesuai urutan dataset card dibaca. Titik yang sudah dibaca diberi cincin, dan titik kuning kecil menandakan ada catatan risiko.
+- **Arti titik:** warna menunjukkan status lisensi. Besarnya menunjukkan skor kualitas (preset coding) atau jumlah unduhan.
+- **Interaksi:**
+  - Klik kata di jaring untuk melihat detail di panel samping. Setelah animasi selesai, laba-laba merayap ke titik yang dipilih.
+  - Legenda sekaligus berfungsi sebagai filter status lisensi.
+  - Tersedia tombol jeda, ulangi, dan lewati animasi, serta pengatur kecepatan.
+- **Aksesibilitas:** tabel di bawah jaring berisi semua kandidat dan bisa dipakai dengan keyboard. Jika sistem meminta animasi dikurangi (`prefers-reduced-motion`), jaring langsung ditampilkan dalam keadaan akhir.
+
+Templatenya ada di `scripts/crawler_viz.html`. Kalau dibuka langsung, template itu menampilkan data contoh yang ditandai jelas. Semua teks dari Hugging Face dipasang dengan `textContent` atau digambar di canvas, jadi isi dataset card tidak bisa menyisipkan HTML.
 
 ### Preset coding
 
@@ -371,6 +386,7 @@ docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol traini
 CLAUDE.md                             catatan singkat untuk Claude Code di repo ini
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
 scripts/find_datasets.py              crawler penemu kandidat dataset di Hugging Face Hub, dengan penilaian lisensi
+scripts/crawler_viz.html              template visualisasi laba-laba untuk hasil find_datasets.py
 scripts/validate.py                   validasi dataset
 scripts/build_bench_support.py        membuat dan memverifikasi kelompok bench-support (HumanEval)
 data/bench-support/                   kelompok dataset bench-support, lisensi, dan catatan perubahannya
