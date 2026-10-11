@@ -268,7 +268,7 @@ Sampel perbaikan bug diuji dengan `node test_debug.mjs`. Untuk setiap sampel, te
 
 ## Agen coding (`scripts/agent_gradio.py`)
 
-`scripts/agent_gradio.py` adalah tampilan Gradio bergaya Claude Code untuk model hasil fine-tuning (bawaan: adapter v3). Model tidak hanya menjawab, tetapi bekerja dalam loop:
+`scripts/agent_gradio.py` adalah tampilan Gradio bergaya Claude Code untuk model hasil fine-tuning (bawaan: adapter terbaru `qwen3.5-4b-bench-4bit-lanjut`, atau v3 jika belum ada). Model tidak hanya menjawab, tetapi bekerja dalam loop:
 
 1. **Write.** Model menulis `index.html`. Jika jawaban terpotong di batas token, agen menyambungnya otomatis dari titik terakhir (prefill), bukan mengulang dari awal.
 2. **Bash.** Halaman dibuka di Chromium headless pada lebar 1280px dan 375px, lalu setiap tombol diklik. Error JavaScript, `console.error`, dan scroll horizontal dicatat beserta lokasinya, misalnya `index.html:190:43`.
@@ -326,6 +326,7 @@ CLAUDE.md                             catatan singkat untuk Claude Code di repo 
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
 scripts/validate.py                   validasi dataset
 scripts/build_bench_support.py        membuat dan memverifikasi kelompok bench-support (HumanEval)
+scripts/eval_humaneval.py             uji skor HumanEval dan HumanEval+ dengan harness resmi EvalPlus
 data/bench-support/                   kelompok dataset bench-support, lisensi, dan catatan perubahannya
 examples/web/*.html                   26 website dari sampel web, siap dibuka di browser
 tests/test_web.mjs                    tes otomatis website dengan Playwright
