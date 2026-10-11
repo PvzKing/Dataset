@@ -120,6 +120,28 @@ Hal-hal yang dilakukan script:
 - **Model dasar** Qwen3.5-4B dan Qwen2.5-Coder-7B-Instruct berlisensi Apache 2.0. Adapter atau model gabungan hasil fine-tuning boleh didistribusikan dan dipakai secara komersial, dengan syarat menyertakan salinan lisensi, mempertahankan pemberitahuan hak cipta, dan menandai bahwa model telah diubah (Pasal 4 Apache License 2.0). Tidak semua model Qwen berlisensi Apache 2.0: misalnya Qwen2.5-Coder-3B memakai lisensi riset non-komersial. Periksa lisensi setiap model sebelum mengganti model dasar.
 - Periksa kartu dataset (dataset card) masing-masing sumber untuk lisensi terbaru sebelum mendistribusikan dataset campuran atau model hasil training.
 
+## Mencari dataset lain (`scripts/find_datasets.py`)
+
+Crawler ini mencari kandidat dataset berbahasa Indonesia di katalog Hugging Face Hub, lalu menilai lisensi dan risikonya. Script hanya membaca metadata dan dataset card lewat API resmi. Isi dataset tidak diunduh dan halaman web tidak di-scrape. Hasilnya daftar untuk direview manusia, bukan data yang langsung dipakai.
+
+```bash
+python scripts/find_datasets.py                                         # 50 kandidat teratas menurut jumlah unduhan
+python scripts/find_datasets.py --search instruct --task text-generation
+python scripts/find_datasets.py --only-permissive --min-downloads 100
+```
+
+Laporan ditulis ke `runs/kandidat_dataset.md` dan `.json` (tidak di-commit). Setiap kandidat diberi:
+
+- **Status lisensi:** permisif, share-alike, bersyarat, nonkomersial, tanpa turunan, atau cek manual. Jika ada beberapa lisensi, yang dipakai adalah yang paling ketat. Dataset tanpa lisensi masuk "cek manual" karena ciptaan tetap dilindungi hak cipta walaupun tidak mencantumkan lisensi (UU No. 28 Tahun 2014).
+- **Bentuk data:** percakapan, instruksi, tanya-jawab, atau teks lainnya, dibaca dari nama kolom di metadata.
+- **Catatan risiko dari dataset card:**
+  - Kemungkinan berisi output model lain (GPT, Claude, Gemini, Alpaca). Cek syarat penggunaan penyedia modelnya.
+  - Sumber media sosial atau ulasan pengguna. Cek data pribadi menurut UU No. 27 Tahun 2022 tentang PDP, juga syarat layanan platform asalnya.
+  - Dataset gated, yang mengharuskan menyetujui syarat pemilik sebelum mengunduh.
+  - Dataset card terlalu singkat sehingga asal-usul datanya tidak jelas.
+
+Crawler bersikap sopan terhadap server: memakai User-Agent yang menyebut identitasnya, memberi jeda minimal 1 detik antar-request (`--delay`), dan mematuhi `Retry-After` saat dibatasi (HTTP 429). Isi `HF_TOKEN` untuk batas request yang lebih longgar. Status lisensi diambil dari metadata yang diisi pemilik dataset dan bisa keliru, jadi tetap baca dataset card sebelum memakai kandidat.
+
 ## Kelompok `bench-support` (HumanEval)
 
 Folder `data/bench-support/` berisi sampel latihan dari benchmark kode, terpisah dari dataset `own`. Saat ini isinya 164 soal HumanEval dengan format prompt instruct EvalPlus. Solusinya diambil dari HumanEval+, kecuali satu soal yang ditulis ulang.
@@ -324,6 +346,7 @@ docs/PANDUAN_TRAINING.md              panduan training lengkap untuk pengguna
 docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol training di Colab
 CLAUDE.md                             catatan singkat untuk Claude Code di repo ini
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
+scripts/find_datasets.py              crawler penemu kandidat dataset di Hugging Face Hub, dengan penilaian lisensi
 scripts/validate.py                   validasi dataset
 scripts/build_bench_support.py        membuat dan memverifikasi kelompok bench-support (HumanEval)
 data/bench-support/                   kelompok dataset bench-support, lisensi, dan catatan perubahannya
