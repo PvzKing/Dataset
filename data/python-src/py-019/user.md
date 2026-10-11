@@ -1,0 +1,1 @@
+Buatkan aplikasi buku tamu sederhana dengan Flask dan SQLite: satu halaman berisi form nama dan pesan serta daftar pesan terbaru, plus API JSON-nya. Pastikan pesan tidak bisa disusupi script (XSS) dan input divalidasi. Sertakan tes.

@@ -1,0 +1,3 @@
+{"id": "py-011", "category": "py_debug", "turns": ["user.md", "assistant.md"],
+ "before_turn": {"0": {"rapor.py": "bug/rapor.py"}, "1": {"rapor.py": "rapor.py"}},
+ "patches": [{"turn": 1, "from": "bug/rapor.py", "to": "rapor.py"}]}

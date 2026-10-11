@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Galeri Foto</title>
+<link rel="icon" href="data:,">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #111827; color: #f3f4f6; line-height: 1.5; }
+  header, main { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+  header { padding-top: 28px; }
+  h1 { margin: 0; font-size: 1.7rem; }
+  header p { margin: 4px 0 20px; color: #9ca3af; }
+  .grid { list-style: none; margin: 0 0 40px; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr)); }
+  .thumb { display: block; width: 100%; padding: 0; border: 0; border-radius: 10px; overflow: hidden; background: #1f2937; color: inherit; font: inherit; cursor: zoom-in; text-align: left; }
+  .thumb svg { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; transition: transform .25s; }
+  .thumb:hover svg, .thumb:focus-visible svg { transform: scale(1.05); }
+  .thumb:focus-visible { outline: 3px solid #60a5fa; outline-offset: 2px; }
+  .thumb span { display: block; padding: 8px 10px; font-size: .9rem; }
+  dialog { width: min(900px, calc(100% - 24px)); max-width: none; max-height: calc(100% - 24px); padding: 0; border: 0; border-radius: 12px; background: #0b1220; color: #f3f4f6; overflow: auto; }
+  dialog::backdrop { background: rgba(0, 0, 0, .85); }
+  .lb-gambar svg { display: block; width: 100%; height: auto; max-height: 70vh; }
+  .lb-info { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 10px 14px 0; margin: 0; }
+  .lb-posisi { color: #9ca3af; }
+  .lb-kontrol { display: flex; gap: 8px; padding: 12px 14px 14px; flex-wrap: wrap; }
+  .lb-kontrol button { flex: 1 1 0; min-width: 0; padding: 10px 8px; font: inherit; border: 0; border-radius: 8px; background: #374151; color: #fff; cursor: pointer; white-space: nowrap; }
+  .lb-kontrol button:hover { background: #4b5563; }
+  .lb-kontrol #tombol-tutup { background: #b91c1c; }
+  .lb-kontrol #tombol-tutup:hover { background: #991b1b; }
+  @media (max-width: 420px) { .lb-kontrol button { font-size: .85rem; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Galeri Foto Alam</h1>
+  <p>Klik foto untuk melihat ukuran besar. Semua gambar adalah ilustrasi SVG buatan sendiri.</p>
+</header>
+<main>
+  <ul class="grid" id="galeri"></ul>
+</main>
+
+<dialog id="lightbox" aria-labelledby="lb-judul">
+  <div class="lb-gambar" id="lb-gambar"></div>
+  <p class="lb-info"><strong id="lb-judul"></strong><span class="lb-posisi" id="lb-posisi"></span></p>
+  <div class="lb-kontrol">
+    <button type="button" id="tombol-sebelumnya"><span aria-hidden="true">‹</span> Sebelumnya</button>
+    <button type="button" id="tombol-tutup"><span aria-hidden="true">✕</span> Tutup</button>
+    <button type="button" id="tombol-berikutnya">Berikutnya <span aria-hidden="true">›</span></button>
+  </div>
+</dialog>
+
+<script>
+  const BENTUK = {
+    gunung: ['M0 220 L70 150 L120 190 L200 85 L270 170 L330 120 L400 185 V300 H0Z', 'M0 262 L90 205 L170 250 L260 212 L400 255 V300 H0Z'],
+    bukit: ['M0 215 Q100 150 200 200 T400 185 V300 H0Z', 'M0 262 Q120 212 230 250 T400 238 V300 H0Z'],
+    kota: ['M0 300 V180 H40 V140 H90 V200 H120 V120 H170 V170 H210 V95 H250 V190 H290 V150 H340 V205 H400 V300Z', 'M0 300 V235 H60 V215 H130 V245 H190 V225 H260 V250 H330 V230 H400 V300Z'],
+    bukitPasir: ['M0 230 Q90 180 180 215 Q280 255 400 200 V300 H0Z', 'M0 275 Q140 225 260 262 Q330 285 400 258 V300 H0Z']
+  };
+  const FOTO = [
+    { judul: 'Senja di Pantai', langit: ['#f97316', '#fde68a'], bulat: ['#fff7d6', 300, 185, 36], bentuk: 'bukit', warna: ['#9a3412', '#7c2d12'], air: '#1e40af' },
+    { judul: 'Puncak Berkabut', langit: ['#93c5fd', '#e0f2fe'], bulat: ['#fefce8', 90, 70, 26], bentuk: 'gunung', warna: ['#64748b', '#334155'] },
+    { judul: 'Malam Berbintang', langit: ['#0f172a', '#312e81'], bulat: ['#f8fafc', 320, 70, 24], bentuk: 'bukit', warna: ['#1e1b4b', '#0b0a24'], bintang: true },
+    { judul: 'Sawah Hijau', langit: ['#7dd3fc', '#f0fdf4'], bulat: ['#fde047', 80, 80, 30], bentuk: 'bukit', warna: ['#4ade80', '#15803d'] },
+    { judul: 'Kota di Malam Hari', langit: ['#4c1d95', '#db2777'], bulat: ['#fbcfe8', 330, 60, 20], bentuk: 'kota', warna: ['#1e1b4b', '#0f0a1e'], bintang: true },
+    { judul: 'Gurun Pasir', langit: ['#fbbf24', '#fef3c7'], bulat: ['#fffbeb', 200, 90, 40], bentuk: 'bukitPasir', warna: ['#d97706', '#b45309'] },
+    { judul: 'Danau Pagi', langit: ['#f9a8d4', '#bae6fd'], bulat: ['#fff1f2', 120, 140, 28], bentuk: 'gunung', warna: ['#7c3aed', '#4c1d95'], air: '#38bdf8' },
+    { judul: 'Hutan Pinus', langit: ['#99f6e4', '#ecfeff'], bulat: ['#fef9c3', 330, 75, 26], bentuk: 'gunung', warna: ['#166534', '#052e16'] },
+    { judul: 'Aurora Utara', langit: ['#022c22', '#10b981'], bulat: ['#ecfdf5', 60, 60, 18], bentuk: 'bukitPasir', warna: ['#064e3b', '#022c22'], bintang: true }
+  ];
+  const BINTANG = [[30, 40], [70, 90], [120, 30], [160, 75], [210, 25], [250, 60], [280, 110], [370, 30], [380, 120], [20, 130], [140, 120], [230, 130]];
+  let nomorId = 0;
+
+  function gambar(f, judul) {
+    const id = 'gradasi-' + (++nomorId);
+    const [w, cx, cy, r] = f.bulat;
+    const atribut = judul ? 'role="img" aria-label="' + f.judul + '"' : 'aria-hidden="true" focusable="false"';
+    const bintang = f.bintang ? BINTANG.map(([x, y]) => '<circle cx="' + x + '" cy="' + y + '" r="1.6" fill="#fff" opacity=".85"/>').join('') : '';
+    const air = f.air ? '<rect y="262" width="400" height="38" fill="' + f.air + '" opacity=".9"/><path d="M40 275 h60 M180 285 h80 M300 272 h50" stroke="#fff" stroke-width="2" opacity=".5"/>' : '';
+    return '<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" ' + atribut + '>' +
+      '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + f.langit[0] + '"/><stop offset="1" stop-color="' + f.langit[1] + '"/></linearGradient></defs>' +
+      '<rect width="400" height="300" fill="url(#' + id + ')"/>' + bintang +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + w + '"/>' +
+      '<path d="' + BENTUK[f.bentuk][0] + '" fill="' + f.warna[0] + '"/>' +
+      '<path d="' + BENTUK[f.bentuk][1] + '" fill="' + f.warna[1] + '"/>' + air + '</svg>';
+  }
+
+  const galeri = document.getElementById('galeri');
+  const dialog = document.getElementById('lightbox');
+  const lbGambar = document.getElementById('lb-gambar');
+  const lbJudul = document.getElementById('lb-judul');
+  const lbPosisi = document.getElementById('lb-posisi');
+  let indeks = 0;
+
+  FOTO.forEach((f, i) => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'thumb';
+    btn.innerHTML = gambar(f, false) + '<span></span>';
+    btn.querySelector('span').textContent = f.judul;
+    btn.addEventListener('click', () => buka(i));
+    li.appendChild(btn);
+    galeri.appendChild(li);
+  });
+
+  function tampilkan(i) {
+    indeks = (i + FOTO.length) % FOTO.length;
+    lbGambar.innerHTML = gambar(FOTO[indeks], true);
+    lbJudul.textContent = FOTO[indeks].judul;
+    lbPosisi.textContent = 'Foto ' + (indeks + 1) + ' dari ' + FOTO.length;
+  }
+  function buka(i) {
+    tampilkan(i);
+    if (!dialog.open) dialog.showModal();
+    document.getElementById('tombol-tutup').focus();
+  }
+  function tutup() { if (dialog.open) dialog.close(); }
+
+  document.getElementById('tombol-sebelumnya').addEventListener('click', () => tampilkan(indeks - 1));
+  document.getElementById('tombol-berikutnya').addEventListener('click', () => tampilkan(indeks + 1));
+  document.getElementById('tombol-tutup').addEventListener('click', tutup);
+  dialog.addEventListener('click', (e) => { if (e.target === dialog) tutup(); });
+  dialog.addEventListener('close', () => galeri.querySelectorAll('.thumb')[indeks].focus());
+  document.addEventListener('keydown', (e) => {
+    if (!dialog.open) return;
+    if (e.key === 'Escape') { e.preventDefault(); tutup(); }
+    else if (e.key === 'ArrowLeft') tampilkan(indeks - 1);
+    else if (e.key === 'ArrowRight') tampilkan(indeks + 1);
+  });
+</script>
+</body>
+</html>

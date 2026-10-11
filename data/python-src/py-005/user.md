@@ -1,0 +1,1 @@
+Tolong buatkan fungsi Python `pecahan_minimal(jumlah, pecahan)` untuk mesin kasir: hasilnya kombinasi uang dengan jumlah lembar/keping paling sedikit untuk nominal tertentu. Daftar pecahan bisa diatur, tidak harus pecahan Rupiah standar. Kalau nominalnya tidak bisa dibentuk, kembalikan None.

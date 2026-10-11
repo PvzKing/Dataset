@@ -1,0 +1,1 @@
+Buatkan program Python tanpa library eksternal untuk menulis nominal rupiah dalam angka dan huruf (terbilang) seperti di kwitansi dan akta, misalnya Rp1.250.000,50 menjadi "satu juta dua ratus lima puluh ribu rupiah lima puluh sen". Input bisa berupa angka atau teks format Indonesia. Tangani kasus tepinya dan sertakan tes.

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jam Dunia</title>
+<link rel="icon" href="data:,">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: linear-gradient(160deg, #0c4a6e, #082f49); color: #f0f9ff; line-height: 1.5; min-height: 100vh; }
+  main { max-width: 960px; margin: 0 auto; padding: 28px 16px 40px; }
+  h1 { margin: 0; font-size: 1.6rem; }
+  .sub { margin: 4px 0 20px; color: #bae6fd; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); }
+  .kartu { background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .15); border-radius: 14px; padding: 16px 18px; }
+  .kartu h2 { margin: 0; font-size: 1.15rem; }
+  .kota { margin: 0; color: #bae6fd; font-size: .9rem; }
+  .jam { display: block; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; font-size: 2.4rem; font-weight: 700; margin: 6px 0 2px; }
+  .tanggal { margin: 0; }
+  .detail { margin: 6px 0 0; font-size: .85rem; color: #e0f2fe; display: flex; flex-wrap: wrap; gap: 6px; }
+  .lencana { background: rgba(255, 255, 255, .14); border-radius: 999px; padding: 1px 9px; }
+  .lencana.dst { background: #f59e0b; color: #1c1917; }
+  footer { margin-top: 20px; font-size: .85rem; color: #bae6fd; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Jam Dunia</h1>
+  <p class="sub">Waktu saat ini di beberapa kota (format 24 jam, diperbarui setiap detik).</p>
+  <div class="grid" id="daftar-jam"></div>
+  <footer>Zona waktu dan daylight saving time (waktu musim panas) dihitung otomatis dari basis data zona waktu IANA di peramban.</footer>
+</main>
+<script>
+  const ZONA = [
+    { nama: 'WIB', kota: 'Jakarta — Waktu Indonesia Barat', tz: 'Asia/Jakarta' },
+    { nama: 'WITA', kota: 'Makassar — Waktu Indonesia Tengah', tz: 'Asia/Makassar' },
+    { nama: 'WIT', kota: 'Jayapura — Waktu Indonesia Timur', tz: 'Asia/Jayapura' },
+    { nama: 'Tokyo', kota: 'Jepang — Waktu Standar Jepang (JST)', tz: 'Asia/Tokyo' },
+    { nama: 'London', kota: 'Inggris Raya', tz: 'Europe/London', singkatan: ['GMT', 'BST'] },
+    { nama: 'New York', kota: 'Amerika Serikat — Pantai Timur', tz: 'America/New_York', singkatan: ['EST', 'EDT'] }
+  ];
+  const wadah = document.getElementById('daftar-jam');
+
+  ZONA.forEach((z) => {
+    z.bagian = new Intl.DateTimeFormat('en-US', {
+      timeZone: z.tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+    z.formatTanggal = new Intl.DateTimeFormat('id-ID', { timeZone: z.tz, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const kartu = document.createElement('article');
+    kartu.className = 'kartu';
+    kartu.innerHTML = '<h2></h2><p class="kota"></p><time class="jam">--:--:--</time><p class="tanggal"></p><p class="detail"><span class="lencana offset"></span><span class="lencana selisih"></span><span class="lencana musim"></span></p>';
+    kartu.querySelector('h2').textContent = z.nama;
+    kartu.querySelector('.kota').textContent = z.kota;
+    z.el = {
+      jam: kartu.querySelector('.jam'), tanggal: kartu.querySelector('.tanggal'), offset: kartu.querySelector('.offset'),
+      selisih: kartu.querySelector('.selisih'), musim: kartu.querySelector('.musim')
+    };
+    if (!z.singkatan) z.el.musim.remove();
+    wadah.appendChild(kartu);
+  });
+
+  function ambilBagian(z, tanggal) {
+    const p = {};
+    z.bagian.formatToParts(tanggal).forEach((x) => { p[x.type] = x.value; });
+    return p;
+  }
+  // Selisih zona terhadap UTC (menit) pada saat tertentu, termasuk efek DST.
+  function offsetMenit(z, tanggal) {
+    const p = ambilBagian(z, tanggal);
+    const sebagaiUTC = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second);
+    return Math.round((sebagaiUTC - Math.floor(tanggal.getTime() / 1000) * 1000) / 60000);
+  }
+  const dua = (n) => String(n).padStart(2, '0');
+  function teksOffset(m) {
+    const tanda = m < 0 ? '-' : '+';
+    const a = Math.abs(m);
+    return 'UTC' + tanda + Math.floor(a / 60) + (a % 60 ? ':' + dua(a % 60) : '');
+  }
+  function teksSelisih(m) {
+    if (m === 0) return 'Sama dengan WIB';
+    const jam = Math.abs(m) / 60;
+    return 'WIB ' + (m > 0 ? '+' : '-') + String(jam).replace('.', ',') + ' jam';
+  }
+
+  function perbarui() {
+    const sekarang = new Date();
+    const tahun = sekarang.getUTCFullYear();
+    const offsetWIB = offsetMenit(ZONA[0], sekarang);
+    ZONA.forEach((z) => {
+      const p = ambilBagian(z, sekarang);
+      const off = offsetMenit(z, sekarang);
+      const jam = dua(+p.hour % 24) + ':' + p.minute + ':' + p.second;
+      z.el.jam.textContent = jam;
+      z.el.jam.dateTime = p.year + '-' + p.month + '-' + p.day + 'T' + jam + (off < 0 ? '-' : '+') + dua(Math.floor(Math.abs(off) / 60)) + ':' + dua(Math.abs(off) % 60);
+      z.el.tanggal.textContent = z.formatTanggal.format(sekarang);
+      z.el.offset.textContent = teksOffset(off);
+      z.el.selisih.textContent = teksSelisih(off - offsetWIB);
+      if (z.singkatan) {
+        const standar = Math.min(offsetMenit(z, new Date(Date.UTC(tahun, 0, 1, 12))), offsetMenit(z, new Date(Date.UTC(tahun, 6, 1, 12))));
+        const dst = off > standar;
+        z.el.musim.textContent = dst ? z.singkatan[1] + ' · waktu musim panas (DST)' : z.singkatan[0] + ' · waktu standar';
+        z.el.musim.classList.toggle('dst', dst);
+      }
+    });
+  }
+
+  function jadwalkan() {
+    perbarui();
+    setTimeout(jadwalkan, 1000 - (Date.now() % 1000) + 10);
+  }
+  jadwalkan();
+</script>
+</body>
+</html>

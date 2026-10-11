@@ -1,0 +1,1 @@
+Saya punya data dependensi paket berbentuk dict, misalnya `{"app": ["web", "db"], "web": ["util"], "db": ["util"]}`. Buatkan fungsi `urutan_instalasi(dependensi)` yang mengembalikan urutan instalasi supaya setiap paket dipasang setelah semua dependensinya. Kalau ada dependensi melingkar, beri tahu paket mana saja yang melingkar.

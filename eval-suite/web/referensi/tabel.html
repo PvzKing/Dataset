@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Mahasiswa</title>
+<link rel="icon" href="data:,">
+<style>
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #f1f5f9; color: #0f172a; line-height: 1.5; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 40px; }
+  h1 { margin: 0; font-size: 1.5rem; }
+  .sub { margin: 2px 0 16px; color: #475569; font-size: .9rem; }
+  .cari label { display: block; font-weight: 600; margin-bottom: 4px; }
+  .cari input { width: 100%; max-width: 420px; font: inherit; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; }
+  .tabel-wadah { overflow-x: auto; margin-top: 14px; background: #fff; border-radius: 10px; border: 1px solid #e2e8f0; }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  th { background: #e2e8f0; padding: 0; }
+  th button { width: 100%; display: flex; gap: 4px; align-items: center; justify-content: space-between; font: inherit; font-weight: 700; color: inherit; background: none; border: 0; padding: 9px 10px; cursor: pointer; text-align: left; }
+  th button:hover { background: #cbd5e1; }
+  th button:focus-visible { outline: 3px solid #3b82f6; outline-offset: -3px; }
+  .ikon { color: #64748b; font-size: .8rem; }
+  td.angka, th.angka button { text-align: right; justify-content: flex-end; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  .kosong { padding: 16px; margin: 0; color: #475569; }
+  .bawah { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-top: 12px; }
+  .info { margin: 0; color: #475569; font-size: .9rem; }
+  .halaman { display: flex; flex-wrap: wrap; gap: 6px; }
+  .halaman button { font: inherit; min-width: 40px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; cursor: pointer; }
+  .halaman button[aria-current="page"] { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .halaman button:disabled { opacity: .45; cursor: not-allowed; }
+  @media (max-width: 480px) { table { font-size: .82rem; } td, th button { padding: 8px 6px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Data Mahasiswa</h1>
+  <p class="sub">Data contoh (fiktif) 30 mahasiswa. Klik judul kolom untuk mengurutkan.</p>
+  <div class="cari">
+    <label for="cari">Cari mahasiswa</label>
+    <input id="cari" type="search" placeholder="Cari NIM, nama, program studi, atau IPK" autocomplete="off">
+  </div>
+  <div class="tabel-wadah">
+    <table aria-label="Daftar mahasiswa">
+      <thead>
+        <tr>
+          <th scope="col" aria-sort="none"><button type="button" data-kolom="0">NIM <span class="ikon" aria-hidden="true">↕</span></button></th>
+          <th scope="col" aria-sort="none"><button type="button" data-kolom="1">Nama <span class="ikon" aria-hidden="true">↕</span></button></th>
+          <th scope="col" aria-sort="none"><button type="button" data-kolom="2">Program Studi <span class="ikon" aria-hidden="true">↕</span></button></th>
+          <th scope="col" aria-sort="none" class="angka"><button type="button" data-kolom="3">IPK <span class="ikon" aria-hidden="true">↕</span></button></th>
+        </tr>
+      </thead>
+      <tbody id="isi-tabel"></tbody>
+    </table>
+    <p class="kosong" id="kosong" hidden>Tidak ada mahasiswa yang cocok dengan pencarian.</p>
+  </div>
+  <div class="bawah">
+    <p class="info" id="info" aria-live="polite"></p>
+    <nav class="halaman" id="halaman" aria-label="Halaman tabel"></nav>
+  </div>
+</main>
+<script>
+  const DATA = [
+    ['211210001', 'Lukman Hakim', 'Sistem Informasi', 3.31], ['211210002', 'Tri Wahyuni', 'Sistem Informasi', 3.90],
+    ['212110001', 'Fitri Handayani', 'Teknik Elektro', 3.40], ['214110001', 'Nur Aisyah', 'Ilmu Komunikasi', 3.09],
+    ['215110001', 'Rina Marlina', 'Psikologi', 3.95], ['221210001', 'Bagus Prakoso', 'Sistem Informasi', 3.66],
+    ['222110001', 'Siti Rahmawati', 'Teknik Elektro', 2.81], ['222110002', 'Dimas Saputra', 'Teknik Elektro', 3.79],
+    ['223110001', 'Wahyu Kurniawan', 'Manajemen', 2.73], ['223110002', 'Ahmad Fauzi', 'Manajemen', 3.54],
+    ['223210001', 'Maya Salsabila', 'Akuntansi', 2.80], ['224110001', 'Eko Prasetyo', 'Ilmu Komunikasi', 3.56],
+    ['225110001', 'Kartika Sari', 'Psikologi', 3.24], ['225110002', 'Rizky Firmansyah', 'Psikologi', 2.71],
+    ['226110001', 'Gilang Ramadhan', 'Hukum', 3.01], ['226110002', 'Taufik Hidayat', 'Hukum', 2.65],
+    ['226110003', 'Citra Dewi', 'Hukum', 3.59], ['226110004', 'Joko Susilo', 'Hukum', 3.36],
+    ['231110001', 'Dewi Anggraini', 'Informatika', 3.78], ['231110002', 'Intan Permata', 'Informatika', 3.57],
+    ['231210001', 'Yusuf Maulana', 'Sistem Informasi', 3.03], ['231210002', 'Hana Pertiwi', 'Sistem Informasi', 2.68],
+    ['231210003', 'Sigit Nugroho', 'Sistem Informasi', 3.28], ['231210004', 'Putri Maharani', 'Sistem Informasi', 3.39],
+    ['232110001', 'Vina Oktaviani', 'Teknik Elektro', 3.68], ['232110002', 'Ayu Lestari', 'Teknik Elektro', 2.94],
+    ['233210001', 'Indra Wijaya', 'Akuntansi', 3.17], ['234110001', 'Umar Said', 'Ilmu Komunikasi', 3.22],
+    ['236110001', 'Nanda Pratama', 'Hukum', 3.70], ['236110002', 'Oki Setiawan', 'Hukum', 3.52]
+  ];
+  const PER_HALAMAN = 10;
+  const tbody = document.getElementById('isi-tabel');
+  const cari = document.getElementById('cari');
+  const nav = document.getElementById('halaman');
+  const tombolKolom = Array.from(document.querySelectorAll('th button'));
+  let kolomUrut = null, naik = true, halaman = 1;
+
+  function bandingkan(a, b) {
+    const x = a[kolomUrut], y = b[kolomUrut];
+    const hasil = typeof x === 'number' ? x - y : x.localeCompare(y, 'id', { sensitivity: 'base' });
+    return (naik ? hasil : -hasil) || a[0].localeCompare(b[0]);
+  }
+
+  function dataTampil() {
+    const kata = cari.value.trim().toLowerCase();
+    let hasil = DATA.filter((r) => !kata || [r[0], r[1], r[2], r[3].toFixed(2)].some((v) => v.toLowerCase().includes(kata)));
+    if (kolomUrut !== null) hasil = hasil.slice().sort(bandingkan);
+    return hasil;
+  }
+
+  function tombol(teks, aksi, opsi = {}) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = teks;
+    if (opsi.aktif) b.setAttribute('aria-current', 'page');
+    b.disabled = !!opsi.mati;
+    b.addEventListener('click', aksi);
+    return b;
+  }
+
+  function render() {
+    const data = dataTampil();
+    const jumlahHalaman = Math.max(1, Math.ceil(data.length / PER_HALAMAN));
+    halaman = Math.min(Math.max(1, halaman), jumlahHalaman);
+    const awal = (halaman - 1) * PER_HALAMAN;
+    const potong = data.slice(awal, awal + PER_HALAMAN);
+
+    tbody.innerHTML = '';
+    potong.forEach((r) => {
+      const tr = document.createElement('tr');
+      [r[0], r[1], r[2], r[3].toFixed(2)].forEach((v, i) => {
+        const td = document.createElement('td');
+        td.textContent = v;
+        if (i === 3) td.className = 'angka';
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    document.getElementById('kosong').hidden = data.length > 0;
+    document.getElementById('info').textContent = data.length
+      ? 'Menampilkan ' + (awal + 1) + '–' + (awal + potong.length) + ' dari ' + data.length + ' mahasiswa · Halaman ' + halaman + ' dari ' + jumlahHalaman
+      : 'Menampilkan 0 dari 0 mahasiswa';
+
+    nav.innerHTML = '';
+    nav.appendChild(tombol('Sebelumnya', () => { halaman -= 1; render(); }, { mati: halaman === 1 }));
+    for (let i = 1; i <= jumlahHalaman; i++) {
+      nav.appendChild(tombol(String(i), () => { halaman = i; render(); }, { aktif: i === halaman }));
+    }
+    nav.appendChild(tombol('Berikutnya', () => { halaman += 1; render(); }, { mati: halaman === jumlahHalaman || data.length === 0 }));
+
+    tombolKolom.forEach((b) => {
+      const k = Number(b.dataset.kolom);
+      const aktif = k === kolomUrut;
+      b.parentElement.setAttribute('aria-sort', aktif ? (naik ? 'ascending' : 'descending') : 'none');
+      b.querySelector('.ikon').textContent = aktif ? (naik ? '▲' : '▼') : '↕';
+    });
+  }
+
+  tombolKolom.forEach((b) => b.addEventListener('click', () => {
+    const k = Number(b.dataset.kolom);
+    naik = kolomUrut === k ? !naik : true;
+    kolomUrut = k;
+    halaman = 1;
+    render();
+  }));
+  cari.addEventListener('input', () => { halaman = 1; render(); });
+  render();
+</script>
+</body>
+</html>

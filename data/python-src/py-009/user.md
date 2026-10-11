@@ -1,0 +1,1 @@
+Buatkan aplikasi to-do sederhana di terminal pakai Python: bisa tambah, lihat daftar, tandai selesai, dan hapus. Datanya disimpan ke file JSON. Penting: data tidak boleh rusak walaupun program mati atau laptop mati listrik di tengah proses menyimpan.

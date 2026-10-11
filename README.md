@@ -8,10 +8,11 @@ Dataset instruksi berbahasa Indonesia untuk fine-tuning **Qwen3.5-4B** dalam mod
 |---|---|---|---|
 | Website one-shot (`web_oneshot`) | 26 | ±4.500 | landing page, portfolio, dashboard, toko online, game (termasuk game 3D WebGL), kalkulator, sistem kasir, form, undangan, dan lainnya |
 | Perbaikan bug website (`web_debug`) | 12 | ±3.650 | XSS, urutan operasi, timer di tab latar, `localStorage` rusak, overflow di HP, acak tidak aman, dan lainnya |
-| Teknologi & pemrograman | 23 | ±830 | program Python lengkap dengan tes (terbilang rupiah), algoritma, struktur data, database, keamanan, sistem terdistribusi, Git, testing, AI |
+| Python terverifikasi (`py_*`, `tech-023`) | 21 | ±2.000 | fungsi dengan kasus tepi, program lengkap dengan tes, debug dari traceback, olah data CSV/log, menulis tes, multi-giliran (Python 3.8, kebutuhan berubah), review keamanan, Python untuk web (Flask, generator HTML) |
+| Teknologi & pemrograman | 22 | ±700 | algoritma, struktur data, database, keamanan, sistem terdistribusi, Git, testing, AI |
 | Matematika & logika | 11 | ±800 | kalkulus, pembuktian, probabilitas, statistik, aljabar, teka-teki logika |
 | Sains | 10 | ±850 | fisika, biologi, kimia, ilmu bumi |
-| **Total** | **82** | | ±199 ribu token, sampel terpanjang ±6.200 token |
+| **Total** | **102** | | ±238 ribu token, sampel terpanjang ±6.200 token |
 
 Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 
@@ -80,15 +81,34 @@ Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 
 Contoh kode Python di sampel teknologi juga sudah dijalankan, sehingga output yang tertulis di jawaban sesuai dengan hasil eksekusi sebenarnya.
 
-Sampel program Python lengkap (`tech-023`, terbilang rupiah) memetakan aturan dan kasus tepi sebelum menulis kode, lalu menyertakan tes dan bagian **Cek kebutuhan** seperti sampel web. Kodenya identik dengan `examples/python/terbilang.py`. Selain lolos tesnya sendiri (`python examples/python/terbilang.py --tes`), hasilnya dicocokkan dengan implementasi rujukan terpisah untuk sekitar 1 juta angka.
+### Sampel Python terverifikasi
+
+Sampel Python (`py-001`–`py-020` dan `tech-023`) tidak ditulis langsung di `train.jsonl`. Sumbernya ada di `data/python-src/<id>/`: teks tiap giliran, file kode, dan file data. `scripts/build_python_samples.py` lalu membangun sampelnya:
+
+- **Kode** di jawaban diambil dari file sumbernya.
+- **Output** diisi dari hasil menjalankan perintah sungguhan, termasuk traceback, hasil tes, dan untuk sampel kompatibilitas, Python 3.8.
+- **Patch `SEARCH/REPLACE`** di sampel debug dibuktikan menghasilkan file perbaikan.
+
+Jadi output yang tertulis di jawaban tidak mungkin dikarang. Gaya jawabannya mengikuti pelajaran dari uji HumanEval:
+- aturan dan kasus tepi dipetakan sebelum menulis kode;
+- kode ditutup dengan tes atau hasil menjalankan;
+- program yang lebih besar ditutup dengan **Cek kebutuhan**.
+
+Sampel Flask dan generator HTML juga diuji di Chromium. Rencana lengkapnya ada di [`docs/RENCANA_PYTHON.md`](docs/RENCANA_PYTHON.md).
+
+```bash
+python scripts/build_python_samples.py           # bangun ulang sampel Python ke data/train.jsonl (butuh Flask dan uv untuk Python 3.8)
+python scripts/build_python_samples.py --check   # pastikan train.jsonl sama dengan hasil eksekusi ulang
+python scripts/decontaminate.py                  # pastikan tidak ada tumpang tindih dengan soal uji
+```
 
 ## Mencampur dengan dataset umum
 
-Melatih model hanya dengan 82 sampel berisiko membuat model "terlalu fokus", misalnya selalu menjawab dengan file HTML walaupun pertanyaannya bukan soal website. Selain itu, kemampuan umumnya bisa menurun. Karena itu, config training memakai data campuran yang dibuat oleh `scripts/mix_general.py`:
+Melatih model hanya dengan 102 sampel berisiko membuat model "terlalu fokus", misalnya selalu menjawab dengan file HTML walaupun pertanyaannya bukan soal website. Selain itu, kemampuan umumnya bisa menurun. Karena itu, config training memakai data campuran yang dibuat oleh `scripts/mix_general.py`:
 
 | Sumber | Jumlah bawaan | Isi |
 |---|---|---|
-| Dataset ini (`data/train.jsonl`) | 82 | semua sampel, tanpa dikurangi |
+| Dataset ini (`data/train.jsonl`) | 102 | semua sampel, tanpa dikurangi |
 | [`CohereForAI/aya_dataset`](https://huggingface.co/datasets/CohereForAI/aya_dataset), bagian bahasa Indonesia | 600 | tanya-jawab umum yang ditulis manusia |
 | [`ise-uiuc/Magicoder-Evol-Instruct-110K`](https://huggingface.co/datasets/ise-uiuc/Magicoder-Evol-Instruct-110K) | 200 | instruksi pemrograman (bahasa Inggris) |
 | [`HuggingFaceH4/ultrachat_200k`](https://huggingface.co/datasets/HuggingFaceH4/ultrachat_200k), split `train_sft` | 100 | percakapan umum multi-turn (bahasa Inggris) |
@@ -144,14 +164,14 @@ Dua hal yang perlu diingat:
 
 ## Pilihan data: `own` atau `mix`
 
-- **`own`**: hanya `data/train.jsonl`, 82 sampel, 3 epoch, ±600 ribu token diproses.
+- **`own`**: hanya `data/train.jsonl`, 102 sampel, 3 epoch, ±710 ribu token diproses.
 - **`mix`**: dataset ini ditambah ±900 sampel umum dari `scripts/mix_general.py`, 2 epoch, ±1 juta token dilatih.
 
 Mulailah dengan **`own`**, lalu beralih ke `mix` jika hasilnya menunjukkan gejala lupa kemampuan umum.
 
 - **Alasan memulai dengan `own`:**
-  - Qwen3.5-4B sudah dilatih dengan data umum dalam jumlah sangat besar. 82 sampel dengan LoRA rank 16 hanya mengubah sedikit bobot, jadi risiko model melupakan kemampuan umumnya kecil.
-  - Sekitar 80% token di dataset ini adalah sampel website, baik one-shot maupun perbaikan bug. Itu memang kemampuan utama yang ingin diajarkan.
+  - Qwen3.5-4B sudah dilatih dengan data umum dalam jumlah sangat besar. 102 sampel dengan LoRA rank 16 hanya mengubah sedikit bobot, jadi risiko model melupakan kemampuan umumnya kecil.
+  - Sekitar 70% token di dataset ini adalah sampel website, baik one-shot maupun perbaikan bug, dan 18% sampel Python terverifikasi. Keduanya memang kemampuan utama yang ingin diajarkan.
   - Training di T4 butuh ±30–90 menit, tidak berjam-jam, jadi cepat untuk iterasi.
 - **Kapan beralih ke `mix`.** Jika setelah training dengan `own` muncul salah satu gejala berikut:
   - Setiap pertanyaan dijawab dengan HTML.
@@ -187,7 +207,7 @@ Script ini memakai [Unsloth](https://github.com/unslothai/unsloth):
 
 Perkiraan waktu training Qwen3.5-4B, belum termasuk instalasi dan unduh model (±10–15 menit):
 
-| GPU | `own` (±600 ribu token) | `mix` (±1 juta token) |
+| GPU | `own` (±710 ribu token) | `mix` (±1 juta token) |
 |---|---|---|
 | T4 gratis (QLoRA 4-bit, float32, konteks 6144) | ±45–50 menit (v3 dengan 78 sampel terukur 42,7 menit) | ±1,5–3 jam |
 | L4 (bf16) | ±10–20 menit | ±40–80 menit |
@@ -244,7 +264,7 @@ Script ini memeriksa struktur JSON, urutan role, ID dan prompt duplikat, kelengk
 
 ## Catatan penting
 
-- **Ukuran dataset kecil.** Fine-tuning dengan 82 sampel terutama membentuk gaya dan format jawaban, misalnya kebiasaan menghasilkan satu file HTML lengkap dengan penjelasan berbahasa Indonesia. Pengetahuan baru tidak banyak bertambah. Karena itu, config bawaan memakai data campuran dengan dataset umum (lihat bagian *Mencampur dengan dataset umum*).
+- **Ukuran dataset kecil.** Fine-tuning dengan 102 sampel terutama membentuk gaya dan format jawaban, misalnya kebiasaan menghasilkan satu file HTML lengkap dengan penjelasan berbahasa Indonesia. Pengetahuan baru tidak banyak bertambah. Karena itu, config bawaan memakai data campuran dengan dataset umum (lihat bagian *Mencampur dengan dataset umum*).
 - **Hindari overfitting.** Pantau training loss. Dengan data sekecil ini, terlalu banyak epoch membuat model sekadar menghafal jawaban.
 
 ## Melihat dan menguji website
@@ -305,9 +325,9 @@ Batasan yang perlu diketahui:
 
 ## Menambah sampel
 
-1. Tambahkan satu baris JSON ke `data/train.jsonl` dengan `id` unik.
+1. Tambahkan satu baris JSON ke `data/train.jsonl` dengan `id` unik. Untuk sampel Python, buat folder di `data/python-src/` lalu jalankan `python scripts/build_python_samples.py`.
 2. Untuk sampel web, uji dulu HTML-nya di browser, lalu letakkan di dalam tepat satu blok ```` ```html ````.
-3. Jalankan `python scripts/validate.py`.
+3. Jalankan `python scripts/validate.py` dan `python scripts/decontaminate.py`.
 
 ## Struktur repo
 
@@ -324,15 +344,19 @@ scripts/agent_gradio.py               agen coding bergaya Claude Code: tulis →
 scripts/build_notebook.py             membangun notebooks/train_colab.ipynb dari script dan runbook
 docs/PANDUAN_TRAINING.md              panduan training lengkap untuk pengguna
 docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol training di Colab
-docs/RENCANA_PYTHON.md                rencana adapter v4: jago Python tanpa kehilangan kemampuan web
+docs/RENCANA_PYTHON.md                rencana adapter v4: jago Python sekaligus jago membuat website
+docs/PROSEDUR_V4.md                   prosedur Colab: ukur v3, latih v4-pilot, papan skor
 CLAUDE.md                             catatan singkat untuk Claude Code di repo ini
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
 scripts/validate.py                   validasi dataset
 scripts/build_bench_support.py        membuat dan memverifikasi kelompok bench-support (HumanEval)
+scripts/build_python_samples.py       membangun sampel Python dari data/python-src/ dengan output hasil eksekusi
+scripts/decontaminate.py              cek tumpang tindih 13-gram data latihan dengan HumanEval+, MBPP+, IndoPy, Web-eval
+data/python-src/                      sumber sampel Python: teks giliran, kode, dan data
 data/bench-support/                   kelompok dataset bench-support, lisensi, dan catatan perubahannya
-humaneval-bench-script/               script uji skor HumanEval dan HumanEval+ (harness resmi EvalPlus)
+humaneval-bench-script/               script uji skor HumanEval+ dan MBPP+ (harness resmi EvalPlus, uji McNemar)
+eval-suite/                           IndoPy (60 soal Python berbahasa Indonesia), Web-eval (10 website), papan skor
 examples/web/*.html                   26 website dari sampel web, siap dibuka di browser
-examples/python/terbilang.py          program dari sampel tech-023, jalankan tesnya dengan --tes
 tests/test_web.mjs                    tes otomatis website dengan Playwright
 tests/interactions.mjs                skenario interaksi per website
 tests/test_debug.mjs                  tes sampel perbaikan bug (web_debug)

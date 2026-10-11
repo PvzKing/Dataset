@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Game Memori Emoji</title>
+<link rel="icon" href="data:,">
+<style>
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #fdf4ff; color: #3b0764; line-height: 1.5; }
+  main { max-width: 480px; margin: 0 auto; padding: 24px 16px 40px; }
+  h1 { margin: 0 0 4px; font-size: 1.6rem; }
+  .petunjuk { margin: 0 0 14px; color: #6b21a8; }
+  .skor { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 14px; }
+  .skor p { margin: 0; background: #fff; border: 1px solid #e9d5ff; border-radius: 8px; padding: 4px 10px; font-variant-numeric: tabular-nums; }
+  #main-lagi { margin-left: auto; font: inherit; font-weight: 700; background: #9333ea; color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+  #main-lagi:hover { background: #7e22ce; }
+  .papan { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .kartu { aspect-ratio: 1; min-width: 0; font-size: clamp(1.6rem, 9vw, 2.6rem); border: 0; border-radius: 12px; cursor: pointer; background: linear-gradient(135deg, #a855f7, #6366f1); color: #fff; font-weight: 700; transition: transform .2s, background .2s; }
+  .kartu:hover { transform: translateY(-2px); }
+  .kartu:focus-visible { outline: 3px solid #f472b6; outline-offset: 2px; }
+  .kartu.terbuka { background: #fff; color: inherit; box-shadow: inset 0 0 0 2px #c084fc; animation: balik .25s; }
+  .kartu.cocok { background: #dcfce7; box-shadow: inset 0 0 0 2px #22c55e; cursor: default; }
+  @keyframes balik { from { transform: rotateY(90deg); } to { transform: rotateY(0); } }
+  .menang { margin-top: 16px; background: #dcfce7; border: 1px solid #86efac; color: #14532d; border-radius: 12px; padding: 14px 16px; }
+  .menang h2 { margin: 0 0 4px; font-size: 1.2rem; }
+  .menang p { margin: 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Game Memori Emoji</h1>
+  <p class="petunjuk">Buka dua kartu sekaligus dan temukan semua 8 pasangan emoji.</p>
+  <div class="skor">
+    <p>Langkah: <strong id="langkah">0</strong></p>
+    <p>Waktu: <strong id="waktu">00:00</strong></p>
+    <p>Pasangan: <strong id="pasangan">0</strong>/8</p>
+    <button type="button" id="main-lagi">Main lagi</button>
+  </div>
+  <div class="papan" id="papan" role="group" aria-label="Papan kartu 4 x 4"></div>
+  <div class="menang" id="menang" role="status" hidden>
+    <h2>🎉 Selamat, kamu menang!</h2>
+    <p id="pesan-menang"></p>
+  </div>
+</main>
+<script>
+  const EMOJI = ['🍎', '🍌', '🍇', '🍉', '🍓', '🍍', '🥥', '🥝'];
+  const papan = document.getElementById('papan');
+  const elLangkah = document.getElementById('langkah');
+  const elWaktu = document.getElementById('waktu');
+  const elPasangan = document.getElementById('pasangan');
+  const elMenang = document.getElementById('menang');
+  let kartu = [], terbuka = [], langkah = 0, pasangan = 0, detik = 0, timer = null, tundaTutup = null;
+
+  const formatWaktu = (s) => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+
+  function acak(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function tampilkan(k) {
+    const n = k.indeks + 1;
+    k.el.textContent = k.status === 'tertutup' ? '?' : k.emoji;
+    k.el.className = 'kartu' + (k.status === 'terbuka' ? ' terbuka' : k.status === 'cocok' ? ' terbuka cocok' : '');
+    k.el.setAttribute('aria-label', 'Kartu ' + n + (k.status === 'tertutup' ? ', tertutup' : ', ' + k.emoji + (k.status === 'cocok' ? ', sudah cocok' : '')));
+  }
+
+  function tutupTerbuka() {
+    clearTimeout(tundaTutup);
+    tundaTutup = null;
+    terbuka.forEach((k) => { k.status = 'tertutup'; tampilkan(k); });
+    terbuka = [];
+  }
+
+  function mulaiTimer() {
+    if (timer) return;
+    timer = setInterval(() => { detik += 1; elWaktu.textContent = formatWaktu(detik); }, 1000);
+  }
+
+  function klik(k) {
+    if (k.status !== 'tertutup') return;
+    if (terbuka.length === 2) tutupTerbuka(); // pasangan salah sebelumnya langsung ditutup
+    mulaiTimer();
+    k.status = 'terbuka';
+    tampilkan(k);
+    terbuka.push(k);
+    if (terbuka.length < 2) return;
+
+    langkah += 1;
+    elLangkah.textContent = langkah;
+    const [a, b] = terbuka;
+    if (a.emoji === b.emoji) {
+      a.status = b.status = 'cocok';
+      tampilkan(a); tampilkan(b);
+      terbuka = [];
+      pasangan += 1;
+      elPasangan.textContent = pasangan;
+      if (pasangan === EMOJI.length) menang();
+    } else {
+      tundaTutup = setTimeout(tutupTerbuka, 900);
+    }
+  }
+
+  function menang() {
+    clearInterval(timer);
+    timer = null;
+    document.getElementById('pesan-menang').textContent =
+      'Semua ' + EMOJI.length + ' pasangan ditemukan dalam ' + langkah + ' langkah dengan waktu ' + formatWaktu(detik) + '.';
+    elMenang.hidden = false;
+  }
+
+  function mulaiBaru() {
+    clearInterval(timer);
+    clearTimeout(tundaTutup);
+    timer = null; tundaTutup = null;
+    terbuka = []; langkah = 0; pasangan = 0; detik = 0;
+    elLangkah.textContent = '0';
+    elPasangan.textContent = '0';
+    elWaktu.textContent = formatWaktu(0);
+    elMenang.hidden = true;
+    papan.innerHTML = '';
+    kartu = acak([...EMOJI, ...EMOJI]).map((emoji, indeks) => {
+      const el = document.createElement('button');
+      el.type = 'button';
+      const k = { emoji, indeks, el, status: 'tertutup' };
+      el.addEventListener('click', () => klik(k));
+      tampilkan(k);
+      papan.appendChild(el);
+      return k;
+    });
+  }
+
+  document.getElementById('main-lagi').addEventListener('click', mulaiBaru);
+  mulaiBaru();
+</script>
+</body>
+</html>

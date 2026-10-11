@@ -1,0 +1,1 @@
+Laptop saya penuh. Buatkan script Python untuk mencari file duplikat (isinya sama persis walaupun namanya beda) di sebuah folder beserta subfoldernya. Tampilkan kelompok file duplikat dan berapa ruang yang bisa dihemat. Jangan hapus apa-apa, cukup laporan. Foldernya bisa berisi puluhan ribu file, termasuk video besar.

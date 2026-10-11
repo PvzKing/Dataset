@@ -1,0 +1,1 @@
+Write a Python script that reads an nginx access log (default combined format) and reports: number of requests per status code, the top 5 client IPs, and the share of 5xx errors per hour. The log can be several GB and some lines are malformed.

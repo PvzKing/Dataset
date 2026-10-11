@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catatan Pengeluaran Harian</title>
+<link rel="icon" href="data:,">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #f4f6f3; color: #1c2a1f; line-height: 1.5; }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.5rem; margin: 0 0 16px; }
+  h2 { font-size: 1.1rem; margin: 0 0 12px; }
+  section { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 6px rgba(0, 0, 0, .07); }
+  form { display: grid; gap: 10px; }
+  label { font-weight: 600; font-size: .9rem; display: block; margin-bottom: 2px; }
+  input, select { width: 100%; font: inherit; padding: 9px 10px; border: 1px solid #c5cfc7; border-radius: 8px; background: #fff; color: inherit; }
+  button { font: inherit; cursor: pointer; border-radius: 8px; border: 0; }
+  .tambah { background: #15803d; color: #fff; padding: 10px 16px; font-weight: 600; }
+  .tambah:hover { background: #166534; }
+  .galat { color: #b91c1c; margin: 0; min-height: 1.2em; font-size: .9rem; }
+  .total { font-size: 2rem; font-weight: 700; color: #15803d; margin: 0; overflow-wrap: anywhere; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #e5ebe6; }
+  .item:last-child { border-bottom: 0; }
+  .item .isi { flex: 1; min-width: 0; }
+  .item .ket { font-weight: 600; overflow-wrap: anywhere; }
+  .item .meta { font-size: .85rem; color: #5b6b5f; }
+  .item .nominal { font-weight: 600; white-space: nowrap; }
+  .hapus { background: #fee2e2; color: #991b1b; padding: 6px 10px; font-size: .85rem; }
+  .hapus:hover { background: #fecaca; }
+  .ringkas li { padding: 6px 0; }
+  .ringkas .baris { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .bar { height: 6px; background: #e5ebe6; border-radius: 3px; margin-top: 4px; overflow: hidden; }
+  .bar span { display: block; height: 100%; background: #22c55e; }
+  .kosong { color: #5b6b5f; margin: 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Catatan Pengeluaran Harian</h1>
+
+  <section aria-labelledby="judul-form">
+    <h2 id="judul-form">Tambah pengeluaran</h2>
+    <form id="form">
+      <div>
+        <label for="keterangan">Keterangan</label>
+        <input id="keterangan" name="keterangan" type="text" maxlength="100" required placeholder="Contoh: Makan siang">
+      </div>
+      <div>
+        <label for="kategori">Kategori</label>
+        <select id="kategori" name="kategori" required>
+          <option>Makanan</option>
+          <option>Transportasi</option>
+          <option>Belanja</option>
+          <option>Tagihan</option>
+          <option>Hiburan</option>
+          <option>Kesehatan</option>
+          <option>Pendidikan</option>
+          <option>Lainnya</option>
+        </select>
+      </div>
+      <div>
+        <label for="nominal">Nominal (Rp)</label>
+        <input id="nominal" name="nominal" type="number" min="1" step="1" inputmode="numeric" required placeholder="Contoh: 25000">
+      </div>
+      <p class="galat" id="galat" role="alert"></p>
+      <button type="submit" class="tambah">Tambah</button>
+    </form>
+  </section>
+
+  <section aria-labelledby="judul-total">
+    <h2 id="judul-total">Total pengeluaran</h2>
+    <p class="total" id="total">Rp 0</p>
+  </section>
+
+  <section aria-labelledby="judul-ringkasan">
+    <h2 id="judul-ringkasan">Ringkasan per kategori</h2>
+    <ul class="ringkas" id="ringkasan"></ul>
+    <p class="kosong" id="ringkasan-kosong">Belum ada data.</p>
+  </section>
+
+  <section aria-labelledby="judul-daftar">
+    <h2 id="judul-daftar">Daftar pengeluaran</h2>
+    <ul id="daftar"></ul>
+    <p class="kosong" id="daftar-kosong">Belum ada pengeluaran yang dicatat.</p>
+  </section>
+</main>
+<script>
+  const KUNCI = 'catatan-pengeluaran-harian';
+  const form = document.getElementById('form');
+  const elGalat = document.getElementById('galat');
+  const elDaftar = document.getElementById('daftar');
+  const elRingkasan = document.getElementById('ringkasan');
+  let data = muat();
+
+  function muat() {
+    try {
+      const isi = JSON.parse(localStorage.getItem(KUNCI) || '[]');
+      return Array.isArray(isi) ? isi.filter((x) => x && typeof x.id === 'string' && typeof x.keterangan === 'string'
+        && typeof x.kategori === 'string' && Number.isFinite(x.nominal)) : [];
+    } catch (e) { return []; }
+  }
+  function simpan() {
+    try { localStorage.setItem(KUNCI, JSON.stringify(data)); } catch (e) { /* penyimpanan tidak tersedia */ }
+  }
+  const rupiah = (n) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+  const tanggal = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  function el(tag, kelas, teks) {
+    const e = document.createElement(tag);
+    if (kelas) e.className = kelas;
+    if (teks !== undefined) e.textContent = teks;
+    return e;
+  }
+
+  function render() {
+    elDaftar.innerHTML = '';
+    data.slice().reverse().forEach((x) => {
+      const li = el('li', 'item');
+      const isi = el('div', 'isi');
+      const w = new Date(x.waktu);
+      isi.append(el('div', 'ket', x.keterangan), el('div', 'meta', x.kategori + (isNaN(w) ? '' : ' · ' + tanggal.format(w))));
+      const btn = el('button', 'hapus', 'Hapus');
+      btn.type = 'button';
+      btn.dataset.id = x.id;
+      btn.setAttribute('aria-label', 'Hapus ' + x.keterangan);
+      li.append(isi, el('span', 'nominal', rupiah(x.nominal)), btn);
+      elDaftar.append(li);
+    });
+    document.getElementById('daftar-kosong').hidden = data.length > 0;
+
+    const total = data.reduce((s, x) => s + x.nominal, 0);
+    document.getElementById('total').textContent = rupiah(total);
+
+    const per = {};
+    data.forEach((x) => { per[x.kategori] = (per[x.kategori] || 0) + x.nominal; });
+    elRingkasan.innerHTML = '';
+    Object.entries(per).sort((a, b) => b[1] - a[1]).forEach(([kat, jml]) => {
+      const persen = total ? Math.round((jml / total) * 100) : 0;
+      const li = el('li');
+      const baris = el('div', 'baris');
+      baris.append(el('span', '', kat), el('strong', '', rupiah(jml) + ' (' + persen + '%)'));
+      const bar = el('div', 'bar');
+      const isiBar = el('span');
+      isiBar.style.width = persen + '%';
+      bar.append(isiBar);
+      li.append(baris, bar);
+      elRingkasan.append(li);
+    });
+    document.getElementById('ringkasan-kosong').hidden = data.length > 0;
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const keterangan = form.keterangan.value.trim();
+    const nominal = Number(form.nominal.value);
+    if (!keterangan) { elGalat.textContent = 'Keterangan wajib diisi.'; form.keterangan.focus(); return; }
+    if (!Number.isFinite(nominal) || nominal <= 0) { elGalat.textContent = 'Nominal harus lebih dari 0.'; form.nominal.focus(); return; }
+    elGalat.textContent = '';
+    data.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), keterangan, kategori: form.kategori.value, nominal: Math.round(nominal), waktu: new Date().toISOString() });
+    simpan();
+    render();
+    form.keterangan.value = '';
+    form.nominal.value = '';
+    form.keterangan.focus();
+  });
+
+  elDaftar.addEventListener('click', (e) => {
+    const btn = e.target.closest('button.hapus');
+    if (!btn) return;
+    data = data.filter((x) => x.id !== btn.dataset.id);
+    simpan();
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>
