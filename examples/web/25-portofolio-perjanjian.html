@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portofolio Dimas Aryaputra</title>
+  <style>
+    /* Tata letak: satu kolom dokumen perjanjian, pasal demi pasal, ditutup kotak tanda tangan bermeterai. */
+    :root {
+      --paper: #f3f4f1; --sheet: #fbfbf9; --ink: #18203a; --muted: #5d6478; --rule: #d6d8d2;
+      --stamp: #4a3fb5; --stamp-soft: #4a3fb51a;
+      --display: Didot, "Bodoni MT", "Bodoni 72", Georgia, serif;
+      --body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --mono: ui-monospace, "SF Mono", Consolas, monospace;
+    }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+      --paper: #0f1320; --sheet: #161b2b; --ink: #e6e8ef; --muted: #9aa1b5; --rule: #2a3147;
+      --stamp: #9d93ff; --stamp-soft: #9d93ff22; color-scheme: dark } }
+    :root[data-theme="dark"] {
+      --paper: #0f1320; --sheet: #161b2b; --ink: #e6e8ef; --muted: #9aa1b5; --rule: #2a3147;
+      --stamp: #9d93ff; --stamp-soft: #9d93ff22; color-scheme: dark }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.65 var(--body); padding-inline: 16px; }
+    .sheet { max-width: 760px; margin: 0 auto; padding-block: 1.5rem 3rem; display: grid; gap: 3rem; }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;
+      font: 500 .78rem var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+      border-bottom: 1px solid var(--rule); padding-block: .75rem; }
+    button { font: inherit; color: inherit; cursor: pointer; }
+    .ghost { background: none; border: 1px solid var(--rule); border-radius: 4px; padding: .3rem .7rem; }
+    :focus-visible { outline: 2px solid var(--stamp); outline-offset: 3px; }
+    .eyebrow { font: 500 .78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--stamp); }
+    h1 { font: italic 500 clamp(2.6rem, 9vw, 4.6rem)/1.02 var(--display); margin: .4rem 0 1rem; text-wrap: balance; }
+    h2 { font: 500 1.7rem/1.2 var(--display); margin: 0; text-wrap: balance; }
+    .pasal { font: 500 .8rem var(--mono); color: var(--muted); letter-spacing: .08em; }
+    section { display: grid; gap: 1rem; }
+    .lead { font-size: 1.12rem; max-width: 60ch; margin: 0; }
+    .opening { color: var(--muted); max-width: 62ch; margin: 0; }
+    .parties { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+    .party { background: var(--sheet); border: 1px solid var(--rule); padding: 1.1rem 1.2rem; }
+    .party h3, .work h3 { font: 600 1rem var(--body); margin: 0 0 .3rem; }
+    .party p { margin: 0; color: var(--muted); }
+    ol.ayat { margin: 0; padding-left: 2.4rem; display: grid; gap: .6rem; max-width: 62ch; }
+    ol.ayat li::marker { content: "(" counter(list-item) ")  "; font: .85rem var(--mono); color: var(--stamp); }
+    .filters { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .filters button { background: none; border: 1px solid var(--rule); border-radius: 999px; padding: .25rem .8rem; font-size: .85rem; }
+    .filters button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+    .works { display: grid; gap: 0; border-top: 1px solid var(--rule); }
+    .work { display: grid; grid-template-columns: 5rem 1fr; gap: .25rem 1.2rem; padding-block: 1.1rem; border-bottom: 1px solid var(--rule); }
+    .work time { font: .85rem var(--mono); color: var(--muted); padding-top: .15rem; }
+    .work p { margin: 0; color: var(--muted); grid-column: 2; }
+    .tags { grid-column: 2; display: flex; flex-wrap: wrap; gap: .4rem; font: .75rem var(--mono); color: var(--stamp); }
+    .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
+    .steps li { border-top: 2px solid var(--ink); padding-top: .6rem; }
+    .steps b { display: block; font: 500 .8rem var(--mono); color: var(--stamp); }
+    .steps span { color: var(--muted); font-size: .92rem; }
+    .sign { background: var(--sheet); border: 1px solid var(--rule); padding: 1.2rem; display: grid; gap: 1rem; }
+    .pads { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
+    .pad { display: grid; gap: .4rem; font-size: .85rem; color: var(--muted); }
+    .pad .line { position: relative; height: 140px; border-bottom: 1px solid var(--ink); }
+    canvas { width: 100%; height: 100%; touch-action: none; cursor: crosshair; display: block; }
+    .mine { font: italic 500 2.4rem var(--display); color: var(--ink); position: absolute; bottom: .4rem; left: .4rem; }
+    .meterai { position: absolute; right: .3rem; top: .4rem; width: 92px; padding: .35rem; border: 1.5px dashed var(--stamp);
+      font: 500 .62rem/1.3 var(--mono); color: var(--stamp); text-align: center; transform: rotate(-4deg); }
+    .stamp { position: absolute; left: 30%; top: 20%; padding: .3rem .8rem; border: 3px double var(--stamp); color: var(--stamp);
+      font: 500 1.1rem var(--mono); letter-spacing: .2em; transform: rotate(-12deg) scale(1); background: var(--stamp-soft);
+      transition: transform .25s ease-out, opacity .25s; pointer-events: none; }
+    .stamp.off { opacity: 0; transform: rotate(-12deg) scale(1.6); }
+    .actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+    .primary { background: var(--stamp); color: var(--sheet); border: 0; border-radius: 4px; padding: .55rem 1rem; font-weight: 600; }
+    .primary:disabled { opacity: .45; cursor: not-allowed; }
+    .contact { display: grid; gap: .3rem; border-left: 3px solid var(--stamp); padding-left: 1rem; }
+    .contact code { font: 1rem var(--mono); user-select: all; }
+    #status { min-height: 1.3em; margin: 0; font-size: .85rem; color: var(--stamp); }
+    footer { font: .78rem var(--mono); color: var(--muted); border-top: 1px solid var(--rule); padding-top: 1rem; }
+    @media (max-width: 480px) { .work { grid-template-columns: 1fr; } .work p, .tags { grid-column: 1; } }
+    @media (prefers-reduced-motion: reduce) { .stamp { transition: none; } }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <header>
+      <span>No. 001/PORTO/<span id="month"></span></span>
+      <button class="ghost" type="button" id="theme" aria-label="Ganti tema terang/gelap">Tema</button>
+    </header>
+
+    <section aria-labelledby="name">
+      <span class="eyebrow">Perjanjian kerja sama</span>
+      <h1 id="name">Dimas Aryaputra</h1>
+      <p class="lead">Pengembang web untuk kantor hukum dan lembaga bantuan hukum. Saya membuat situs dan alat kerja yang rapi, cepat, dan patuh aturan data pribadi.</p>
+      <p class="opening">Pada hari ini, <span id="today"></span>, kami yang bertanda tangan di bawah ini sepakat membaca portofolio ini sampai pasal terakhir.</p>
+    </section>
+
+    <section aria-labelledby="p1">
+      <span class="pasal">PASAL 1</span>
+      <h2 id="p1">Para pihak</h2>
+      <div class="parties">
+        <div class="party">
+          <h3>Pihak Pertama</h3>
+          <p>Dimas Aryaputra, pengembang <i>front-end</i> dan <i>full-stack</i> di Yogyakarta. Tujuh tahun membangun situs untuk sektor hukum, pendidikan, dan UMKM.</p>
+        </div>
+        <div class="party">
+          <h3>Pihak Kedua</h3>
+          <p>Anda: advokat, kantor hukum, LBH, atau siapa pun yang butuh situs yang dapat dipercaya klien sejak klik pertama.</p>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="p2">
+      <span class="pasal">PASAL 2</span>
+      <h2 id="p2">Ruang lingkup pekerjaan</h2>
+      <ol class="ayat">
+        <li>Situs kantor hukum yang informatif dan tidak menjanjikan hasil perkara, sesuai Kode Etik Advokat Indonesia.</li>
+        <li>Formulir konsultasi dengan persetujuan yang jelas dan penyimpanan data minimal, mengikuti UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi.</li>
+        <li>Alat kerja internal: pengingat tenggat, kalkulator, dan pengelola dokumen perkara.</li>
+        <li>Perawatan, pembaruan keamanan, dan pelatihan singkat untuk staf.</li>
+      </ol>
+    </section>
+
+    <section aria-labelledby="p3">
+      <span class="pasal">PASAL 3</span>
+      <h2 id="p3">Karya terdahulu</h2>
+      <div class="filters" role="group" aria-label="Saring karya">
+        <button type="button" data-filter="semua" aria-pressed="true">Semua</button>
+        <button type="button" data-filter="situs" aria-pressed="false">Situs</button>
+        <button type="button" data-filter="alat" aria-pressed="false">Alat kerja</button>
+      </div>
+      <div class="works" id="works"></div>
+    </section>
+
+    <section aria-labelledby="p4">
+      <span class="pasal">PASAL 4</span>
+      <h2 id="p4">Tahapan kerja</h2>
+      <ol class="steps">
+        <li><b>Minggu 0</b>Konsultasi<br><span>Ngobrol 30 menit tanpa biaya untuk memetakan kebutuhan.</span></li>
+        <li><b>Minggu 1</b>Proposal<br><span>Ruang lingkup tertulis dengan harga tetap, tanpa biaya tersembunyi.</span></li>
+        <li><b>Minggu 2–5</b>Pengerjaan<br><span>Pratinjau setiap minggu. Anda bisa minta revisi kapan saja.</span></li>
+        <li><b>Minggu 6</b>Serah terima<br><span>Kode, akses, dan panduan jadi milik Anda. Garansi perbaikan 30 hari.</span></li>
+      </ol>
+    </section>
+
+    <section aria-labelledby="p5">
+      <span class="pasal">PASAL 5</span>
+      <h2 id="p5">Penutup</h2>
+      <p class="opening">Tanda tangani kolom Pihak Kedua untuk membuka kontak saya. Tanda tangan ini tidak disimpan ke mana pun.</p>
+      <div class="sign">
+        <div class="pads">
+          <div class="pad">Pihak Pertama
+            <div class="line"><span class="mine" aria-hidden="true">Dimas A.</span>
+              <span class="meterai" aria-hidden="true">METERAI<br>TEMPEL<br>10000</span></div>
+          </div>
+          <div class="pad"><label for="pad">Pihak Kedua (tanda tangan di sini)</label>
+            <div class="line"><canvas id="pad" aria-label="Kolom tanda tangan. Gambar dengan mouse atau jari."></canvas>
+              <span class="stamp off" id="stamp" aria-hidden="true">SEPAKAT</span></div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="primary" type="button" id="agree" disabled>Sepakat</button>
+          <button class="ghost" type="button" id="clear">Hapus</button>
+          <button class="ghost" type="button" id="skip">Lewati, tampilkan kontak</button>
+        </div>
+        <div class="contact" id="contact" hidden>
+          <span>Surel</span><code id="mail">dimas@contoh.id</code>
+          <span>WhatsApp</span><code>0812-0000-1234</code>
+          <div class="actions"><button class="ghost" type="button" id="copy">Salin surel</button></div>
+          <p id="status" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+
+    <footer>Contoh portofolio. Nama, proyek, dan kontak di halaman ini fiktif.</footer>
+  </div>
+
+  <script>
+    const WORKS = [
+      { year: 2026, type: 'alat', title: 'Pengingat tenggat perkara', text: 'Kalender sidang dan batas waktu upaya hukum untuk kantor hukum lima advokat, dengan pengingat harian.', tags: ['PWA', 'IndexedDB'] },
+      { year: 2025, type: 'situs', title: 'Situs LBH di Jawa Tengah', text: 'Formulir permohonan bantuan hukum dengan persetujuan data yang eksplisit dan antrean konsultasi.', tags: ['Aksesibel', 'Form'] },
+      { year: 2025, type: 'alat', title: 'Kalkulator pesangon', text: 'Simulasi hak pekerja berdasarkan masa kerja dan alasan PHK, dengan rujukan pasal pada setiap angka.', tags: ['JavaScript', 'Tanpa server'] },
+      { year: 2024, type: 'situs', title: 'Profil kantor notaris', text: 'Situs dwibahasa yang menjelaskan layanan dan dokumen yang perlu disiapkan, tanpa klaim promosi berlebihan.', tags: ['Dwibahasa', 'SEO'] },
+    ];
+    const $ = (id) => document.getElementById(id);
+
+    const now = new Date();
+    $('today').textContent = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    $('month').textContent = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][now.getMonth()] + '/' + now.getFullYear();
+
+    function renderWorks(filter) {
+      $('works').replaceChildren(...WORKS.filter((w) => filter === 'semua' || w.type === filter).map((w) => {
+        const el = document.createElement('article');
+        el.className = 'work';
+        el.innerHTML = '<time></time><h3></h3><p></p><div class="tags"></div>';
+        el.querySelector('time').textContent = w.year;
+        el.querySelector('h3').textContent = w.title;
+        el.querySelector('p').textContent = w.text;
+        el.querySelector('.tags').append(...w.tags.map((t) => Object.assign(document.createElement('span'), { textContent: '#' + t })));
+        return el;
+      }));
+    }
+    document.querySelector('.filters').addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      document.querySelectorAll('.filters button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      renderWorks(b.dataset.filter);
+    });
+    renderWorks('semua');
+
+    $('theme').addEventListener('click', () => {
+      const root = document.documentElement;
+      const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+      root.dataset.theme = dark ? 'light' : 'dark';
+    });
+
+    // Kolom tanda tangan: pointer events untuk mouse, pena, dan layar sentuh.
+    const canvas = $('pad');
+    const ctx = canvas.getContext('2d');
+    let drawing = false, length = 0, fittedWidth = 0;
+    function fit() {
+      const r = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+      fittedWidth = r.width;
+      canvas.width = r.width * dpr; canvas.height = r.height * dpr;
+      ctx.scale(dpr, dpr);
+      ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      length = 0; $('agree').disabled = true;
+    }
+    const point = (e) => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    canvas.addEventListener('pointerdown', (e) => {
+      drawing = true; canvas.setPointerCapture(e.pointerId);
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink');
+      ctx.beginPath(); ctx.moveTo(...point(e));
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!drawing) return;
+      ctx.lineTo(...point(e)); ctx.stroke();
+      length++;
+      $('agree').disabled = length < 15; // coretan terlalu pendek belum dianggap tanda tangan
+    });
+    canvas.addEventListener('pointerup', () => { drawing = false; });
+    // Di HP, bilah alamat yang muncul/hilang memicu resize tanpa mengubah lebar kolom: jangan hapus tanda tangan.
+    addEventListener('resize', () => { if (canvas.getBoundingClientRect().width !== fittedWidth) fit(); });
+    fit();
+
+    function reveal() {
+      $('stamp').classList.remove('off');
+      $('contact').hidden = false;
+      $('agree').disabled = true;
+    }
+    $('agree').addEventListener('click', reveal);
+    $('skip').addEventListener('click', () => { $('contact').hidden = false; });
+    $('clear').addEventListener('click', () => { $('stamp').classList.add('off'); fit(); });
+    $('copy').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText($('mail').textContent);
+        $('status').textContent = 'Surel disalin.';
+      } catch (e) {
+        getSelection().selectAllChildren($('mail'));
+        $('status').textContent = 'Salin manual: surel sudah dipilih.';
+      }
+    });
+  </script>
+</body>
+</html>

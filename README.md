@@ -6,12 +6,12 @@ Dataset instruksi berbahasa Indonesia untuk fine-tuning **Qwen3.5-4B** dalam mod
 
 | Kelompok | Sampel | Rata-rata token | Topik |
 |---|---|---|---|
-| Website one-shot (`web_oneshot`) | 24 | ±4.500 | landing page, portfolio, dashboard, toko online, game, kalkulator, sistem kasir, form, undangan, dan lainnya |
+| Website one-shot (`web_oneshot`) | 25 | ±4.500 | landing page, portfolio, dashboard, toko online, game, kalkulator, sistem kasir, form, undangan, dan lainnya |
 | Perbaikan bug website (`web_debug`) | 12 | ±3.650 | XSS, urutan operasi, timer di tab latar, `localStorage` rusak, overflow di HP, acak tidak aman, dan lainnya |
 | Teknologi & pemrograman | 22 | ±700 | algoritma, struktur data, database, keamanan, sistem terdistribusi, Git, testing, AI |
 | Matematika & logika | 11 | ±800 | kalkulus, pembuktian, probabilitas, statistik, aljabar, teka-teki logika |
 | Sains | 10 | ±850 | fisika, biologi, kimia, ilmu bumi |
-| **Total** | **79** | | ±184 ribu token, sampel terpanjang ±6.200 token |
+| **Total** | **80** | | ±190 ribu token, sampel terpanjang ±6.200 token |
 
 Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 
@@ -43,6 +43,7 @@ Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 | web-022 | Kalkulator patungan | menu dibagi rata, diskon proporsional, pembulatan tanpa selisih |
 | web-023 | Kasir toko kelontong (POS) | stok, kode barang/scanner, kembalian, struk, rekap harian, opsi PPN |
 | web-024 | Kasir kafe | dine-in/take away, PBJT dan service, tunai/QRIS/debit, antrean dapur |
+| web-025 | Portofolio bergaya surat perjanjian | pasal dan ayat, filter karya, tanda tangan di kanvas untuk membuka kontak, mode gelap |
 
 ## Format
 
@@ -80,11 +81,11 @@ Contoh kode Python di sampel teknologi juga sudah dijalankan, sehingga output ya
 
 ## Mencampur dengan dataset umum
 
-Melatih model hanya dengan 79 sampel berisiko membuat model "terlalu fokus", misalnya selalu menjawab dengan file HTML walaupun pertanyaannya bukan soal website. Selain itu, kemampuan umumnya bisa menurun. Karena itu, config training memakai data campuran yang dibuat oleh `scripts/mix_general.py`:
+Melatih model hanya dengan 80 sampel berisiko membuat model "terlalu fokus", misalnya selalu menjawab dengan file HTML walaupun pertanyaannya bukan soal website. Selain itu, kemampuan umumnya bisa menurun. Karena itu, config training memakai data campuran yang dibuat oleh `scripts/mix_general.py`:
 
 | Sumber | Jumlah bawaan | Isi |
 |---|---|---|
-| Dataset ini (`data/train.jsonl`) | 79 | semua sampel, tanpa dikurangi |
+| Dataset ini (`data/train.jsonl`) | 80 | semua sampel, tanpa dikurangi |
 | [`CohereForAI/aya_dataset`](https://huggingface.co/datasets/CohereForAI/aya_dataset), bagian bahasa Indonesia | 600 | tanya-jawab umum yang ditulis manusia |
 | [`ise-uiuc/Magicoder-Evol-Instruct-110K`](https://huggingface.co/datasets/ise-uiuc/Magicoder-Evol-Instruct-110K) | 200 | instruksi pemrograman (bahasa Inggris) |
 | [`HuggingFaceH4/ultrachat_200k`](https://huggingface.co/datasets/HuggingFaceH4/ultrachat_200k), split `train_sft` | 100 | percakapan umum multi-turn (bahasa Inggris) |
@@ -140,13 +141,13 @@ Dua hal yang perlu diingat:
 
 ## Pilihan data: `own` atau `mix`
 
-- **`own`**: hanya `data/train.jsonl`, 79 sampel, 3 epoch, ±540 ribu token diproses.
+- **`own`**: hanya `data/train.jsonl`, 80 sampel, 3 epoch, ±560 ribu token diproses.
 - **`mix`**: dataset ini ditambah ±900 sampel umum dari `scripts/mix_general.py`, 2 epoch, ±1 juta token dilatih.
 
 Mulailah dengan **`own`**, lalu beralih ke `mix` jika hasilnya menunjukkan gejala lupa kemampuan umum.
 
 - **Alasan memulai dengan `own`:**
-  - Qwen3.5-4B sudah dilatih dengan data umum dalam jumlah sangat besar. 79 sampel dengan LoRA rank 16 hanya mengubah sedikit bobot, jadi risiko model melupakan kemampuan umumnya kecil.
+  - Qwen3.5-4B sudah dilatih dengan data umum dalam jumlah sangat besar. 80 sampel dengan LoRA rank 16 hanya mengubah sedikit bobot, jadi risiko model melupakan kemampuan umumnya kecil.
   - Sekitar 80% token di dataset ini adalah sampel website, baik one-shot maupun perbaikan bug. Itu memang kemampuan utama yang ingin diajarkan.
   - Training di T4 butuh ±30–90 menit, tidak berjam-jam, jadi cepat untuk iterasi.
 - **Kapan beralih ke `mix`.** Jika setelah training dengan `own` muncul salah satu gejala berikut:
@@ -183,9 +184,9 @@ Script ini memakai [Unsloth](https://github.com/unslothai/unsloth):
 
 Perkiraan waktu training Qwen3.5-4B, belum termasuk instalasi dan unduh model (±10–15 menit):
 
-| GPU | `own` (±540 ribu token) | `mix` (±1 juta token) |
+| GPU | `own` (±560 ribu token) | `mix` (±1 juta token) |
 |---|---|---|
-| T4 gratis (QLoRA 4-bit, float32, konteks 6144) | ±35 menit (23 menit terukur saat masih 62 sampel) | ±1,5–3 jam |
+| T4 gratis (QLoRA 4-bit, float32, konteks 6144) | ±45–50 menit (v3 dengan 78 sampel terukur 42,7 menit) | ±1,5–3 jam |
 | L4 (bf16) | ±10–20 menit | ±40–80 menit |
 
 Angka T4 untuk `own` diukur langsung di Colab. Angka lainnya masih perkiraan, dan ETA di progress bar menunjukkan waktu yang sebenarnya. Di T4, script otomatis memakai QLoRA 4-bit dan `max_seq_len` 6144, karena 16-bit maupun 4-bit dengan konteks 8192 kehabisan memori di sana. Semua sampel dijaga di bawah batas itu, jadi tidak ada yang terbuang. Colab gratis membatasi lama sesi dan ketersediaan GPU, jadi data `mix` di T4 kemungkinan butuh lebih dari satu sesi.
@@ -240,12 +241,12 @@ Script ini memeriksa struktur JSON, urutan role, ID dan prompt duplikat, kelengk
 
 ## Catatan penting
 
-- **Ukuran dataset kecil.** Fine-tuning dengan 79 sampel terutama membentuk gaya dan format jawaban, misalnya kebiasaan menghasilkan satu file HTML lengkap dengan penjelasan berbahasa Indonesia. Pengetahuan baru tidak banyak bertambah. Karena itu, config bawaan memakai data campuran dengan dataset umum (lihat bagian *Mencampur dengan dataset umum*).
+- **Ukuran dataset kecil.** Fine-tuning dengan 80 sampel terutama membentuk gaya dan format jawaban, misalnya kebiasaan menghasilkan satu file HTML lengkap dengan penjelasan berbahasa Indonesia. Pengetahuan baru tidak banyak bertambah. Karena itu, config bawaan memakai data campuran dengan dataset umum (lihat bagian *Mencampur dengan dataset umum*).
 - **Hindari overfitting.** Pantau training loss. Dengan data sekecil ini, terlalu banyak epoch membuat model sekadar menghafal jawaban.
 
 ## Melihat dan menguji website
 
-Ke-24 website juga tersedia sebagai file terpisah di `examples/web/`, isinya identik dengan yang ada di `data/train.jsonl`. Buka saja file `.html`-nya di browser untuk melihat hasilnya.
+Ke-25 website juga tersedia sebagai file terpisah di `examples/web/`, isinya identik dengan yang ada di `data/train.jsonl`. Buka saja file `.html`-nya di browser untuk melihat hasilnya.
 
 Untuk menjalankan ulang tes otomatis (Chromium, desktop 1280px dan HP 375px):
 
@@ -325,7 +326,7 @@ scripts/mix_general.py                pencampur dengan dataset umum dari Hugging
 scripts/validate.py                   validasi dataset
 scripts/build_bench_support.py        membuat dan memverifikasi kelompok bench-support (HumanEval)
 data/bench-support/                   kelompok dataset bench-support, lisensi, dan catatan perubahannya
-examples/web/*.html                   24 website dari sampel web, siap dibuka di browser
+examples/web/*.html                   25 website dari sampel web, siap dibuka di browser
 tests/test_web.mjs                    tes otomatis website dengan Playwright
 tests/interactions.mjs                skenario interaksi per website
 tests/test_debug.mjs                  tes sampel perbaikan bug (web_debug)
