@@ -124,12 +124,15 @@ Folder `data/bench-support/` berisi sampel latihan dari benchmark kode, terpisah
 
 Setiap solusi diverifikasi oleh `scripts/build_bench_support.py` dengan dua cara: tes resmi HumanEval, dan pemeriksaan silang dengan solusi asli HumanEval pada 111 ribu input tambahan HumanEval+. Lewat pemeriksaan ini ditemukan 15 solusi asli HumanEval yang keliru dan satu soal yang kedua solusi referensinya gagal. Rinciannya ada di `data/bench-support/README.md`.
 
-Pakai dengan `--dataset bench`, yaitu `own` ditambah `bench-support`, total 243 sampel:
+Kelompok ini dilatih **sendiri, tanpa `own`**, sebagai training lanjutan di atas adapter yang sudah dilatih dengan `own` (misalnya v3):
 
 ```bash
-python scripts/train_unsloth.py train --dataset bench
+python scripts/train_unsloth.py train --dataset bench \
+  --init-adapter /content/drive/MyDrive/finetune-id/v3/qwen3.5-4b-own-4bit/lora-adapter
 python scripts/build_bench_support.py      # membuat ulang dan memverifikasi data/bench-support/humaneval.jsonl
 ```
+
+Dengan 164 sampel dan 3 epoch, training di T4 diperkirakan memakan ±19–27 menit. Angka ini dikalibrasi dari run v3 dan dicetak script di baris `perkiraan T4`. Hasilnya disimpan di folder `qwen3.5-4b-bench-4bit-lanjut`, jadi adapter v3 tidak berubah. Website uji tetap dibuat setelah training. Bandingkan website itu dengan hasil v3 untuk memastikan kemampuan membuat website tidak menurun, karena data lanjutan ini hanya berisi soal Python.
 
 Dua hal yang perlu diingat:
 - **Skor HumanEval tidak lagi bersih.** Model yang dilatih dengan kelompok ini sudah melihat soal dan jawabannya.

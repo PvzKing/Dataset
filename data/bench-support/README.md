@@ -1,6 +1,12 @@
 # Kelompok dataset bench-support
 
-Sampel latihan yang diambil dari benchmark kode. Kelompok ini disimpan terpisah dari dataset `own` (`data/train.jsonl`). Saat training, kelompok ini dipakai bersama `own` dengan `--dataset bench`.
+Sampel latihan yang diambil dari benchmark kode. Kelompok ini disimpan terpisah dari dataset `own` (`data/train.jsonl`), dan dilatih sendiri dengan `--dataset bench` sebagai lanjutan adapter hasil `own`:
+
+```bash
+python scripts/train_unsloth.py train --dataset bench --init-adapter <folder lora-adapter v3>
+```
+
+Di T4, training 164 sampel × 3 epoch diperkirakan memakan ±19–27 menit.
 
 | File | Sampel | Token | Sumber |
 |---|---|---|---|
