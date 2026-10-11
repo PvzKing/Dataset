@@ -625,4 +625,38 @@ export default {
     expect((await page.locator('.col').nth(0).textContent()).includes('A-002'), 'A-002 in diproses', out);
     return out;
   },
+  '25-': async (page) => {
+    const out = [];
+    expect(/\d{4}/.test(await page.textContent('#today')), 'opening date filled in', out);
+    expect(await page.locator('.work').count() === 4, '4 works', out);
+    await page.click('[data-filter="alat"]');
+    expect(await page.locator('.work').count() === 2, 'tool filter shows 2', out);
+    expect(await page.isHidden('#contact') && await page.isDisabled('#agree'), 'contact hidden until signed', out);
+    await page.locator('#pad').scrollIntoViewIfNeeded();
+    const box = await page.locator('#pad').boundingBox();
+    await page.mouse.move(box.x + 10, box.y + 80);
+    await page.mouse.down();
+    for (let i = 0; i < 30; i++) await page.mouse.move(box.x + 10 + i * 6, box.y + 80 - Math.sin(i / 3) * 25);
+    await page.mouse.up();
+    // Isi kanvas dibandingkan lewat toDataURL (getImageData berulang memicu peringatan console).
+    const ink = () => page.evaluate(() => document.getElementById('pad').toDataURL());
+    const blank = () => page.evaluate(() => {
+      const c = document.getElementById('pad');
+      return Object.assign(document.createElement('canvas'), { width: c.width, height: c.height }).toDataURL();
+    });
+    const before = await ink();
+    expect(before !== await blank() && await page.isEnabled('#agree'), 'signature drawn and Agree enabled', out);
+    const size = page.viewportSize();
+    await page.setViewportSize({ width: size.width, height: size.height - 120 }); // bilah alamat HP
+    await page.waitForTimeout(150);
+    expect(await ink() === before, 'signature survives a height-only resize', out);
+    await page.click('#agree');
+    expect(await page.isVisible('#contact'), 'contact revealed after signing', out);
+    await page.click('#clear');
+    expect(await ink() === await blank() && await page.isDisabled('#agree'), 'clear wipes the signature', out);
+    const theme = await page.evaluate(() => document.documentElement.dataset.theme || '');
+    await page.click('#theme');
+    expect(theme !== await page.evaluate(() => document.documentElement.dataset.theme), 'theme toggles', out);
+    return out;
+  },
 };
