@@ -345,7 +345,9 @@ scripts/build_notebook.py             membangun notebooks/train_colab.ipynb dari
 docs/PANDUAN_TRAINING.md              panduan training lengkap untuk pengguna
 docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol training di Colab
 docs/RENCANA_PYTHON.md                rencana adapter v4: jago Python sekaligus jago membuat website
-docs/PROSEDUR_V4.md                   prosedur Colab: ukur v3, latih v4-pilot, papan skor
+docs/PROSEDUR_V4.md                   panduan Colab langkah demi langkah: ukur v3, latih v4-pilot, papan skor
+notebooks/v4_pilot_colab.ipynb        panduan yang sama dalam bentuk notebook Colab (dibangun dari PROSEDUR_V4.md)
+scripts/md_to_notebook.py             membangun notebook Colab dari panduan Markdown
 CLAUDE.md                             catatan singkat untuk Claude Code di repo ini
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
 scripts/validate.py                   validasi dataset

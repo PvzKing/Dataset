@@ -251,19 +251,24 @@ def main():
             generator = eh.Generator(args)
         return generator
 
-    tag = eh.run_tag(args)
-    adapter_label = "demo" if args.demo else ("model dasar" if args.adapter == "none" else args.adapter)
-    rows = run_one(eh, args, tag, adapter_label, True, tasks, results_dir, get_generator)
-    if args.vs_base and args.adapter != "none":
-        prefix = args.tag or ("demo" if args.demo else "")
-        base_tag = f"{prefix}-model-dasar" if prefix else "model-dasar"
-        need = {t["task_id"] for t in tasks} - {r["task_id"] for r in eh.read_jsonl(results_dir / base_tag / "jawaban.jsonl")}
-        if need and not args.demo and not get_generator().can_disable_adapter:
-            raise SystemExit("model ini tidak bisa mematikan adapter sementara; jalankan --adapter none terpisah")
-        base_rows = run_one(eh, args, base_tag, f"{args.base_model} (adapter dimatikan)", False, tasks, results_dir,
-                            get_generator)
-        eh.compare(rows, base_rows, tag, base_tag, results_dir, names=(f"IndoPy-{args.split}",),
-                   short=lambda ids: ", ".join(t.rsplit("/", 1)[1] for t in ids) or "-")
+    try:
+        tag = eh.run_tag(args)
+        adapter_label = "demo" if args.demo else ("model dasar" if args.adapter == "none" else args.adapter)
+        rows = run_one(eh, args, tag, adapter_label, True, tasks, results_dir, get_generator)
+        if args.vs_base and args.adapter != "none":
+            prefix = args.tag or ("demo" if args.demo else "")
+            base_tag = f"{prefix}-model-dasar" if prefix else "model-dasar"
+            need = {t["task_id"] for t in tasks} - {r["task_id"] for r in eh.read_jsonl(results_dir / base_tag / "jawaban.jsonl")}
+            if need and not args.demo and not get_generator().can_disable_adapter:
+                raise SystemExit("model ini tidak bisa mematikan adapter sementara; jalankan --adapter none terpisah")
+            base_rows = run_one(eh, args, base_tag, f"{args.base_model} (adapter dimatikan)", False, tasks, results_dir,
+                                get_generator)
+            eh.compare(rows, base_rows, tag, base_tag, results_dir, names=(f"IndoPy-{args.split}",),
+                       short=lambda ids: ", ".join(t.rsplit("/", 1)[1] for t in ids) or "-")
+    finally:
+        if generator is not None:  # lepaskan VRAM supaya uji berikutnya di sesi yang sama punya memori penuh
+            generator.close()
+        eh.free_gpu()
 
 
 if __name__ == "__main__":
