@@ -12,7 +12,8 @@ const filter = process.argv[2] || '';
 const shots = path.join(here, 'screenshots');
 fs.mkdirSync(shots, { recursive: true });
 
-const browser = await chromium.launch();
+// WebGL lewat SwiftShader supaya game 3D (26-) tetap jalan di Chromium headless tanpa GPU.
+const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 let failures = 0;
 
 for (const file of fs.readdirSync(dir).filter((f) => f.endsWith('.html') && f.includes(filter)).sort()) {

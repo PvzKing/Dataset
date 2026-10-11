@@ -659,4 +659,40 @@ export default {
     expect(theme !== await page.evaluate(() => document.documentElement.dataset.theme), 'theme toggles', out);
     return out;
   },
+  '26-': async (page) => {
+    const out = [];
+    expect(await page.evaluate(() => count > 0), 'world mesh built (WebGL works)', out);
+    await page.click('#play');
+    expect(await page.isHidden('#menu'), 'Main hides the menu', out);
+    await page.waitForFunction(() => me.ground, null, { timeout: 4000 });
+    const pos = () => page.evaluate(() => [me.x, me.y, me.z]);
+    const start = await pos();
+    await page.keyboard.down('KeyW'); await page.waitForTimeout(500); await page.keyboard.up('KeyW');
+    const walked = await pos();
+    expect(Math.hypot(walked[0] - start[0], walked[2] - start[2]) > .5, 'W walks forward', out);
+    await page.waitForFunction(() => me.ground, null, { timeout: 2000 });
+    const floor = (await pos())[1];
+    await page.keyboard.down('Space'); // ditahan, karena press() bisa lepas sebelum frame berikutnya
+    await page.waitForFunction((y) => me.y > y + .3, floor, { timeout: 2000 }).catch(() => {});
+    await page.keyboard.up('Space');
+    expect((await pos())[1] > floor + .3, 'Space jumps', out);
+    await page.waitForFunction(() => me.ground, null, { timeout: 3000 });
+    await page.keyboard.press('3');
+    expect(await page.getAttribute('#hotbar button:nth-child(3)', 'aria-pressed') === 'true', 'key 3 selects Batu', out);
+    // Posisi tetap di dunia ber-seed, lalu gali dan pasang tanpa frame di antaranya supaya hasilnya pasti.
+    const [n, dug, placed, inBody] = await page.evaluate(() => {
+      const solid = () => world.reduce((s, v) => s + (v > 0), 0);
+      let y = H - 1;
+      while (!get(32, y, 32)) y--;
+      Object.assign(me, { x: 32.5, y: y + 1, z: 32.5, vy: 0, yaw: .6, pitch: .6 }); // tanah ±2 blok di depan
+      const n = solid();
+      act('break');
+      const dug = solid();
+      act('place');
+      return [n, dug, solid(), hits()];
+    });
+    expect(dug === n - 1, 'break removes one block', out);
+    expect(placed === n && !inBody, 'place adds a block outside the player', out);
+    return out;
+  },
 };

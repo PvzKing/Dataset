@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dunia Kubus</title>
+  <style>
+    :root { --sky: #8ec5ff; --panel: #14161cee; --text: #f2f2ee; --muted: #a9adb8; --accent: #f4c542; color-scheme: dark; }
+    [hidden] { display: none !important; }
+    body { margin: 0; background: var(--sky); color: var(--text); font: 14px/1.5 system-ui, sans-serif; overflow: hidden; user-select: none; }
+    canvas { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; }
+    .cross { position: fixed; left: 50%; top: 50%; translate: -50% -50%; font: 700 26px monospace; text-shadow: 0 0 3px #000; pointer-events: none; }
+    .hotbar { position: fixed; left: 50%; bottom: 12px; translate: -50%; display: flex; gap: 4px; padding: 4px; background: var(--panel); border-radius: 6px; }
+    .slot { width: 40px; height: 40px; padding: 0; border: 2px solid transparent; border-radius: 4px; image-rendering: pixelated; }
+    .slot[aria-pressed="true"] { border-color: var(--accent); }
+    .menu { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; background: #0b0d12cc; }
+    .card { max-width: 400px; display: grid; gap: .8rem; padding: 1.4rem; background: var(--panel); border-radius: 10px; }
+    h1, p { margin: 0; }
+    #intro { color: var(--muted); }
+    button { font: inherit; cursor: pointer; }
+    .play { justify-self: start; padding: .6rem 1.4rem; border: 0; border-radius: 6px; background: var(--accent); color: #1a1a1a; font-weight: 700; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .touch { position: fixed; right: 12px; bottom: 70px; display: grid; gap: 8px; }
+    .touch button { width: 56px; height: 56px; border: 0; border-radius: 50%; background: var(--panel); color: var(--text); font-size: 1.3rem; }
+  </style>
+</head>
+<body>
+  <canvas id="c" aria-label="Dunia kubus 3D"></canvas>
+  <div class="cross" aria-hidden="true">+</div>
+  <div class="hotbar" id="hotbar" role="group" aria-label="Pilih blok"></div>
+  <div class="touch" id="touch" hidden>
+    <button type="button" data-act="jump" aria-label="Lompat">⤒</button>
+    <button type="button" data-act="break" aria-label="Hancurkan blok">⛏</button>
+    <button type="button" data-act="place" aria-label="Pasang blok">▣</button>
+  </div>
+  <div class="menu" id="menu">
+    <div class="card">
+      <h1>Dunia Kubus</h1>
+      <p id="intro">Gali dan bangun di dunia blok.</p>
+      <p><b>PC:</b> WASD jalan, Spasi lompat, klik kiri gali, klik kanan pasang, 1–7/roda pilih blok, Esc jeda.</p>
+      <p><b>HP:</b> geser kiri untuk jalan, kanan untuk melihat; tombol di kanan bawah.</p>
+      <button class="play" type="button" id="play">Main</button>
+    </div>
+  </div>
+
+  <script>
+    const W = 64, H = 32, D = 64, $ = (id) => document.getElementById(id);
+    const canvas = $('c'), gl = canvas.getContext('webgl');
+    if (!gl) {
+      $('intro').textContent = 'Maaf, browser ini tidak mendukung WebGL.';
+      $('play').hidden = true;
+      throw new Error('WebGL');
+    }
+
+    // Blok: 1 rumput, 2 tanah, 3 batu, 4 kayu, 5 daun, 6 pasir, 7 papan.
+    let seed = 7;
+    const rand = () => (seed = seed * 16807 % 2147483647) / 2147483647;
+    const world = new Uint8Array(W * H * D);
+    const idx = (x, y, z) => x + W * (z + D * y);
+    const inside = (x, y, z) => x >= 0 && z >= 0 && y >= 0 && x < W && z < D && y < H;
+    const get = (x, y, z) => inside(x, y, z) ? world[idx(x, y, z)] : y < H ? 3 : 0;
+    const grid = Array.from({ length: 81 }, rand);
+    function noise(x, z) {
+      const xi = Math.floor(x), zi = Math.floor(z), s = (t) => t * t * (3 - 2 * t), fx = s(x - xi), fz = s(z - zi);
+      const g = (a, b) => grid[(a % 9 + 9) % 9 + 9 * ((b % 9 + 9) % 9)];
+      const mix = (a, b, t) => a + (b - a) * t;
+      return mix(mix(g(xi, zi), g(xi + 1, zi), fx), mix(g(xi, zi + 1), g(xi + 1, zi + 1), fx), fz);
+    }
+    for (let x = 0; x < W; x++) for (let z = 0; z < D; z++) {
+      const h = Math.floor(9 + noise(x / 14, z / 14) * 9 + noise(x / 5 + 3, z / 5) * 2);
+      for (let y = 0; y <= h; y++) world[idx(x, y, z)] = y < h - 3 ? 3 : y < h ? 2 : h <= 11 ? 6 : 1;
+    }
+    for (let n = 0; n < 40; n++) { // pohon
+      const x = 3 + Math.floor(rand() * (W - 6)), z = 3 + Math.floor(rand() * (D - 6));
+      let y = H - 1;
+      while (y > 0 && !get(x, y, z)) y--;
+      if (get(x, y, z) !== 1 || y > H - 9) continue;
+      for (let dy = 3; dy <= 6; dy++) for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++)
+        if (Math.max(Math.abs(dx), Math.abs(dz)) <= (dy > 4 ? 1 : 2)) world[idx(x + dx, y + dy, z + dz)] = 5;
+      for (let dy = 1; dy <= 4; dy++) world[idx(x, y + dy, z)] = 4;
+    }
+
+    // Atlas tekstur 8 petak 16x16.
+    const T = 8, atlas = document.createElement('canvas');
+    atlas.width = 16 * T; atlas.height = 16;
+    const ac = atlas.getContext('2d'), img = ac.createImageData(16 * T, 16);
+    const DIRT = [134, 96, 67], GRASS = [86, 160, 60];
+    [
+      () => GRASS, (x, y) => y < 3 + x * 7 % 3 ? GRASS : DIRT, () => DIRT, () => [125, 125, 128],
+      (x) => x % 4 ? [104, 80, 48] : [80, 58, 34],
+      (x, y) => (x * 3 + y * 5) % 7 ? [52, 120, 40] : null, // daun berlubang
+      () => [219, 207, 150], (x, y) => y % 4 === 3 ? [120, 88, 50] : [170, 130, 80],
+    ].forEach((f, t) => { for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      const c = f(x, y), k = .85 + rand() * .3;
+      if (c) img.data.set([c[0] * k, c[1] * k, c[2] * k, 255], (y * 16 * T + t * 16 + x) * 4);
+    } });
+    ac.putImageData(img, 0, 0);
+    const tile = (b, side) => b === 1 ? [0, 2, 1][side] : b; // petak atlas: rumput beda atas, bawah, samping
+
+    const prog = gl.createProgram();
+    for (const [type, src] of [[gl.VERTEX_SHADER, `attribute vec3 p; attribute vec2 uv; attribute float l; uniform mat4 m;
+      varying vec2 v; varying float L, f; void main() { gl_Position = m * vec4(p, 1.); v = uv; L = l; f = gl_Position.w; }`],
+      [gl.FRAGMENT_SHADER, `precision mediump float; uniform sampler2D t; varying vec2 v; varying float L, f;
+      void main() { vec4 c = texture2D(t, v); if (c.a < .5) discard;
+      gl_FragColor = vec4(mix(c.rgb * L, vec3(.56, .77, 1.), clamp((f - 24.) / 30., 0., 1.)), 1.); }`]]) {
+      const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); gl.attachShader(prog, s);
+    }
+    gl.linkProgram(prog); gl.useProgram(prog);
+    gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, atlas);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.enable(gl.DEPTH_TEST);
+    gl.clearColor(.56, .77, 1, 1);
+    const uM = gl.getUniformLocation(prog, 'm');
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    ['p', 'uv', 'l'].forEach((n, i) => {
+      const a = gl.getAttribLocation(prog, n);
+      gl.enableVertexAttribArray(a);
+      gl.vertexAttribPointer(a, [3, 2, 1][i], gl.FLOAT, false, 24, [0, 12, 20][i]);
+    });
+
+    // Sisi kubus: arah, terang, petak, 4 sudut.
+    const FACES = [
+      [0, 1, 0, 1, 0, '011111110010'], [0, -1, 0, .5, 1, '000100101001'], [1, 0, 0, .8, 2, '101100110111'],
+      [-1, 0, 0, .8, 2, '000001011010'], [0, 0, 1, .65, 2, '001101111011'], [0, 0, -1, .65, 2, '100000010110'],
+    ];
+    const UV = [0, 1, 1, 1, 1, 0, 0, 0];
+    let count = 0;
+    function buildMesh() {
+      const out = [];
+      for (let y = 0; y < H; y++) for (let z = 0; z < D; z++) for (let x = 0; x < W; x++) {
+        const b = world[idx(x, y, z)];
+        if (!b) continue;
+        for (const [dx, dy, dz, light, side, c] of FACES) {
+          const n = inside(x + dx, 0, z + dz) ? get(x + dx, y + dy, z + dz) : 0;
+          if (n && n !== 5) continue; // tertutup, lewati
+          for (const i of [0, 1, 2, 0, 2, 3])
+            out.push(x + +c[i * 3], y + +c[i * 3 + 1], z + +c[i * 3 + 2], (tile(b, side) + UV[i * 2]) / T, UV[i * 2 + 1], light);
+        }
+      }
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(out), gl.STATIC_DRAW);
+      count = out.length / 6;
+    }
+    buildMesh();
+
+    const me = { x: W / 2, y: H, z: D / 2, vy: 0, yaw: .6, pitch: .2, ground: false };
+    const eye = () => [me.x, me.y + 1.6, me.z];
+    const dir = () => [Math.sin(me.yaw) * Math.cos(me.pitch), -Math.sin(me.pitch), -Math.cos(me.yaw) * Math.cos(me.pitch)];
+    function matrix() { // proyeksi × rotasi kamera (pitch, yaw) × geser ke mata
+      const t = 1 / Math.tan(.6), n = .05, f = 100, e = eye(), cp = Math.cos(me.pitch), sp = Math.sin(me.pitch), cy = Math.cos(me.yaw), sy = Math.sin(me.yaw);
+      const rot = [[cy, 0, sy], [sp * sy, cp, -sp * cy], [-cp * sy, sp, cp * cy]], k = [t * canvas.height / canvas.width, t, (f + n) / (n - f), -1], m = [];
+      for (let c = 0; c < 4; c++) for (let i = 0; i < 4; i++) {
+        const r = rot[Math.min(i, 2)];
+        m.push(k[i] * (c < 3 ? r[c] : -r.reduce((s, v, j) => s + v * e[j], 0)) + (c === 3 && i === 2 ? 2 * f * n / (n - f) : 0));
+      }
+      return m;
+    }
+    function hits() {
+      for (let x = Math.floor(me.x - .3); x <= Math.floor(me.x + .3); x++)
+        for (let y = Math.floor(me.y); y <= Math.floor(me.y + 1.75); y++)
+          for (let z = Math.floor(me.z - .3); z <= Math.floor(me.z + .3); z++) if (get(x, y, z)) return true;
+      return false;
+    }
+    function move(axis, d) {
+      if (axis === 'y') me.ground = false;
+      me[axis] += d;
+      if (!hits()) return;
+      me[axis] -= d;
+      if (axis === 'y') { me.ground = d < 0; me.vy = 0; if (d < 0) me.y = Math.floor(me.y); }
+    }
+    function target() { // DDA sejauh 6 blok
+      const o = eye(), d = dir(), p = o.map(Math.floor), step = d.map(Math.sign), delta = d.map((v) => Math.abs(1 / v));
+      const tMax = d.map((v, i) => v > 0 ? (p[i] + 1 - o[i]) / v : v < 0 ? (o[i] - p[i]) / -v : Infinity);
+      for (let t = 0, prev = null; t < 6;) {
+        if (get(...p)) return { hit: p, prev };
+        prev = [...p];
+        const a = tMax[0] < tMax[1] ? (tMax[0] < tMax[2] ? 0 : 2) : (tMax[1] < tMax[2] ? 1 : 2);
+        t = tMax[a]; p[a] += step[a]; tMax[a] += delta[a];
+      }
+    }
+    let current = 1;
+    function act(kind) {
+      const t = target();
+      if (!t) return;
+      const [p, b] = kind === 'break' ? [t.hit, 0] : [t.prev, current];
+      if (!p || !inside(...p) || (kind === 'break' && p[1] === 0)) return; // dasar tak bisa digali
+      world[idx(...p)] = b;
+      if (b && hits()) world[idx(...p)] = 0; // bukan di tubuh sendiri
+      buildMesh();
+    }
+
+    const keys = {}, stick = [0, 0], touches = {}, icon = atlas.toDataURL();
+    const touchMode = matchMedia('(pointer: coarse)').matches;
+    $('touch').hidden = !touchMode;
+    ['Rumput', 'Tanah', 'Batu', 'Kayu', 'Daun', 'Pasir', 'Papan'].forEach((name, i) => {
+      const s = Object.assign(document.createElement('button'), { type: 'button', className: 'slot', onclick: () => select(i + 1) });
+      s.style.background = `url(${icon}) ${tile(i + 1, 2) * 100 / (T - 1)}% 0 / 800% 100%`;
+      s.setAttribute('aria-label', name);
+      $('hotbar').append(s);
+    });
+    function select(b) { current = b; [...$('hotbar').children].forEach((s, i) => s.setAttribute('aria-pressed', i + 1 === b)); }
+    select(1);
+    let playing = false;
+    const setPlaying = (on) => { playing = on; $('menu').hidden = on; };
+    $('play').onclick = () => { setPlaying(true); if (!touchMode) canvas.requestPointerLock()?.catch?.(() => {}); };
+    document.addEventListener('pointerlockchange', () => { if (!document.pointerLockElement && !touchMode) setPlaying(false); });
+    addEventListener('keydown', (e) => { keys[e.code] = true; if (e.key >= '1' && e.key <= '7') select(+e.key); });
+    addEventListener('keyup', (e) => { keys[e.code] = false; });
+    const look = (dx, dy) => { me.yaw += dx * .003; me.pitch = Math.max(-1.55, Math.min(1.55, me.pitch + dy * .003)); };
+    addEventListener('mousemove', (e) => { if (document.pointerLockElement) look(e.movementX, e.movementY); });
+    canvas.addEventListener('mousedown', (e) => { if (document.pointerLockElement) act(e.button === 2 ? 'place' : 'break'); });
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    addEventListener('wheel', (e) => { if (playing) select((current + Math.sign(e.deltaY) + 6) % 7 + 1); });
+    // Sentuh: kiri joystick, kanan melihat.
+    canvas.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') touches[e.pointerId] = [e.clientX, e.clientY, e.clientX < innerWidth / 2]; });
+    canvas.addEventListener('pointermove', (e) => {
+      const t = touches[e.pointerId];
+      if (!t) return;
+      if (t[2]) [0, 1].forEach((i) => { stick[i] = Math.max(-1, Math.min(1, ([e.clientX, e.clientY][i] - t[i]) / 50)); });
+      else { look((e.clientX - t[0]) * 1.5, (e.clientY - t[1]) * 1.5); t[0] = e.clientX; t[1] = e.clientY; }
+    });
+    for (const ev of ['pointerup', 'pointercancel']) canvas.addEventListener(ev, (e) => {
+      if (touches[e.pointerId]?.[2]) stick.fill(0);
+      delete touches[e.pointerId];
+    });
+    $('touch').onclick = (e) => {
+      const a = e.target.closest('button')?.dataset.act;
+      if (a === 'jump') keys.jump = true;
+      else if (a) act(a);
+    };
+
+    let last = performance.now();
+    function frame(now) {
+      const dt = Math.min(.05, (now - last) / 1000);
+      last = now;
+      if (playing) {
+        const fx = !!keys.KeyD - !!keys.KeyA + stick[0], fz = !!keys.KeyS - !!keys.KeyW + stick[1];
+        const sp = 4.5 * dt / Math.max(1, Math.hypot(fx, fz)), cy = Math.cos(me.yaw), sy = Math.sin(me.yaw);
+        move('x', (fx * cy - fz * sy) * sp);
+        move('z', (fx * sy + fz * cy) * sp);
+        if ((keys.Space || keys.jump) && me.ground) me.vy = 7.5;
+        keys.jump = false;
+        me.vy = Math.max(-19, me.vy - 22 * dt);
+        move('y', me.vy * dt);
+      }
+      const r = Math.min(2, devicePixelRatio || 1), w = Math.round(innerWidth * r), h = Math.round(innerHeight * r);
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.uniformMatrix4fv(uM, false, matrix());
+      gl.drawArrays(gl.TRIANGLES, 0, count);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>
