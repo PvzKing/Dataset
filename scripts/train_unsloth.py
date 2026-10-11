@@ -50,7 +50,9 @@ os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 CONFIG = {
     "command": "train",             # dipakai jika tidak ada argumen: "train", "prepare", "test", "gguf", atau "info"
     "model": "qwen3.5-4b",          # "qwen3.5-4b" atau "qwen2.5-coder-7b" (pembanding)
-    "dataset": "own",               # "own" = data/train.jsonl (disarankan), "mix" = ditambah dataset umum
+    "dataset": "own",               # "own" = data/train.jsonl (disarankan), "mix" = ditambah dataset umum,
+                                    # "bench" = hanya kelompok bench-support (HumanEval) di data/bench-support/,
+                                    # dipakai bersama --init-adapter untuk melanjutkan adapter hasil own
     "out": "/content/drive/MyDrive/finetune-id",  # folder hasil; di Google Drive supaya aman saat sesi putus
     "data": None,                   # path train.jsonl; None = cari otomatis lalu unduh dari GitHub jika tidak ada
     "init_adapter": None,           # folder lora-adapter untuk training lanjutan; None = mulai dari model dasar
@@ -168,7 +170,46 @@ def sha256_file(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+BENCH_FILES = ["humaneval.jsonl"]  # isi kelompok bench-support di data/bench-support/
+
+
+def bench_files(args):
+    """File bench-support lokal (repo) atau unduhan terbaru dari GitHub, disimpan di folder hasil."""
+    files = []
+    for name in BENCH_FILES:
+        local = HERE.parent / "data" / "bench-support" / name
+        if local.is_file():
+            files.append(local)
+            continue
+        cached = Path(args.out) / "bench-support" / name
+        cached.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            files.append(download(f"{REPO_RAW}/data/bench-support/{name}", cached))
+        except OSError as e:
+            if not cached.is_file():
+                raise
+            print(f"unduhan gagal ({e}), memakai salinan lama {cached}", flush=True)
+            files.append(cached)
+    return files
+
+
+def bench_data(args):
+    """Data untuk --dataset bench."""
+    # Hanya kelompok bench-support (tanpa own), untuk training lanjutan di atas adapter yang sudah dilatih dengan own
+    # (--init-adapter). File-file bench-support digabung ke satu file di folder hasil; ditulis ulang hanya jika
+    # isinya berubah, supaya fingerprint dan resume checkpoint tetap konsisten.
+    parts = bench_files(args)
+    merged = "".join(Path(p).read_text(encoding="utf-8").rstrip("\n") + "\n" for p in parts)
+    out = Path(args.out) / "train_bench.jsonl"
+    if not out.is_file() or out.read_text(encoding="utf-8") != merged:
+        out.write_text(merged, encoding="utf-8")
+    print(f"data bench: {' + '.join(Path(p).name for p in parts)}", flush=True)
+    return out
+
+
 def data_file_for(args):
+    if args.dataset == "bench":
+        return bench_data(args)
     own = find_own_data(args)
     if args.dataset == "own":
         return own
@@ -272,10 +313,18 @@ def summarize(texts, lengths, dropped, args, bf16):
         "trained_tokens": trained_tokens,
         "estimate_min": [round(trained_tokens / hi / 60), round(trained_tokens / lo / 60)],
     }
+    if not bf16:
+        # Kalibrasi dari run v3 di T4 (QLoRA 4-bit, float32): ±237 token/detik setelah langkah pertama, yang butuh
+        # ±6 menit tambahan untuk pemanasan. Rentang atas menambah ±1 detik per sampel untuk sampel pendek.
+        base = 360 + trained_tokens / 237
+        summary["estimate_t4_min"] = [round(base / 60), round((base + len(texts) * args.epochs) / 60)]
     print(f"{len(texts)} sampel dipakai, {len(dropped)} dibuang karena > {args.max_seq_len} token {dropped[:5]}")
     print(f"token per epoch: {sum(lengths):,} | terpanjang: {max(lengths):,} | rata-rata: {sum(lengths) // len(lengths):,}")
     print(f"{args.epochs:g} epoch = {total_steps} step, ±{trained_tokens:,} token dilatih")
     print(f"perkiraan waktu ({lo}–{hi} token/detik): {summary['estimate_min'][0]}–{summary['estimate_min'][1]} menit")
+    if "estimate_t4_min" in summary:
+        print(f"perkiraan T4 (kalibrasi dari run v3): ±{summary['estimate_t4_min'][0]}–{summary['estimate_t4_min'][1]} "
+              "menit", flush=True)
     print("\ncontoh awal teks training:\n" + texts[0][:400] + "\n", flush=True)
     return summary
 
@@ -529,7 +578,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("command", nargs="?", choices=["info", "prepare", "train", "test", "gguf"])
     parser.add_argument("--model", choices=sorted(MODELS))
-    parser.add_argument("--dataset", choices=["own", "mix"])
+    parser.add_argument("--dataset", choices=["own", "mix", "bench"])
     parser.add_argument("--out", help="folder hasil, misalnya di Google Drive")
     parser.add_argument("--data", help="path train.jsonl (bawaan: cari otomatis, lalu unduh dari GitHub)")
     parser.add_argument("--init-adapter", help="folder lora-adapter untuk training lanjutan (hasil ke folder -lanjut)")

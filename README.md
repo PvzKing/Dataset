@@ -118,6 +118,26 @@ Hal-hal yang dilakukan script:
 - **Model dasar** Qwen3.5-4B dan Qwen2.5-Coder-7B-Instruct berlisensi Apache 2.0. Adapter atau model gabungan hasil fine-tuning boleh didistribusikan dan dipakai secara komersial, dengan syarat menyertakan salinan lisensi, mempertahankan pemberitahuan hak cipta, dan menandai bahwa model telah diubah (Pasal 4 Apache License 2.0). Tidak semua model Qwen berlisensi Apache 2.0: misalnya Qwen2.5-Coder-3B memakai lisensi riset non-komersial. Periksa lisensi setiap model sebelum mengganti model dasar.
 - Periksa kartu dataset (dataset card) masing-masing sumber untuk lisensi terbaru sebelum mendistribusikan dataset campuran atau model hasil training.
 
+## Kelompok `bench-support` (HumanEval)
+
+Folder `data/bench-support/` berisi sampel latihan dari benchmark kode, terpisah dari dataset `own`. Saat ini isinya 164 soal HumanEval dengan format prompt instruct EvalPlus. Solusinya diambil dari HumanEval+, kecuali satu soal yang ditulis ulang.
+
+Setiap solusi diverifikasi oleh `scripts/build_bench_support.py` dengan dua cara: tes resmi HumanEval, dan pemeriksaan silang dengan solusi asli HumanEval pada 111 ribu input tambahan HumanEval+. Lewat pemeriksaan ini ditemukan 15 solusi asli HumanEval yang keliru dan satu soal yang kedua solusi referensinya gagal. Rinciannya ada di `data/bench-support/README.md`.
+
+Kelompok ini dilatih **sendiri, tanpa `own`**, sebagai training lanjutan di atas adapter yang sudah dilatih dengan `own` (misalnya v3):
+
+```bash
+python scripts/train_unsloth.py train --dataset bench \
+  --init-adapter /content/drive/MyDrive/finetune-id/v3/qwen3.5-4b-own-4bit/lora-adapter
+python scripts/build_bench_support.py      # membuat ulang dan memverifikasi data/bench-support/humaneval.jsonl
+```
+
+Dengan 164 sampel dan 3 epoch, training di T4 diperkirakan memakan ±19–27 menit. Angka ini dikalibrasi dari run v3 dan dicetak script di baris `perkiraan T4`. Hasilnya disimpan di folder `qwen3.5-4b-bench-4bit-lanjut`, jadi adapter v3 tidak berubah. Website uji tetap dibuat setelah training. Bandingkan website itu dengan hasil v3 untuk memastikan kemampuan membuat website tidak menurun, karena data lanjutan ini hanya berisi soal Python.
+
+Dua hal yang perlu diingat:
+- **Skor HumanEval tidak lagi bersih.** Model yang dilatih dengan kelompok ini sudah melihat soal dan jawabannya.
+- **Lisensi wajib disertakan.** HumanEval berlisensi MIT (OpenAI) dan HumanEval+ berlisensi Apache 2.0 (EvalPlus). Jika data atau model didistribusikan, sertakan kedua teks lisensinya yang ada di folder tersebut.
+
 ## Pilihan data: `own` atau `mix`
 
 - **`own`**: hanya `data/train.jsonl`, 79 sampel, 3 epoch, ±540 ribu token diproses.
@@ -303,6 +323,8 @@ docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol traini
 CLAUDE.md                             catatan singkat untuk Claude Code di repo ini
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
 scripts/validate.py                   validasi dataset
+scripts/build_bench_support.py        membuat dan memverifikasi kelompok bench-support (HumanEval)
+data/bench-support/                   kelompok dataset bench-support, lisensi, dan catatan perubahannya
 examples/web/*.html                   24 website dari sampel web, siap dibuka di browser
 tests/test_web.mjs                    tes otomatis website dengan Playwright
 tests/interactions.mjs                skenario interaksi per website
