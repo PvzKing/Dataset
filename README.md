@@ -324,6 +324,7 @@ scripts/agent_gradio.py               agen coding bergaya Claude Code: tulis →
 scripts/build_notebook.py             membangun notebooks/train_colab.ipynb dari script dan runbook
 docs/PANDUAN_TRAINING.md              panduan training lengkap untuk pengguna
 docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol training di Colab
+docs/RENCANA_PYTHON.md                rencana adapter v4: jago Python tanpa kehilangan kemampuan web
 CLAUDE.md                             catatan singkat untuk Claude Code di repo ini
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
 scripts/validate.py                   validasi dataset
