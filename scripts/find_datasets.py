@@ -1,14 +1,16 @@
 """Crawler penemu dataset: mencari kandidat dataset di Hugging Face Hub dan menilai lisensinya.
 
 Script ini hanya membaca katalog lewat API resmi Hugging Face (daftar dataset dan dataset card),
-tidak mengunduh isi dataset dan tidak men-scrape halaman web. Hasilnya laporan kandidat untuk
-direview manusia sebelum ada data yang dipakai.
+ditambah beberapa baris contoh dari dataset viewer resmi Hugging Face. Dataset tidak diunduh utuh
+dan halaman web tidak di-scrape. Hasilnya laporan kandidat untuk direview manusia sebelum ada data
+yang dipakai.
 
 Pemakaian (butuh akses internet ke huggingface.co):
     python scripts/find_datasets.py
     python scripts/find_datasets.py --search instruct --task text-generation --top 30
     python scripts/find_datasets.py --only-permissive --min-downloads 100
     python scripts/find_datasets.py --no-cards        # lebih cepat, tanpa membaca dataset card
+    python scripts/find_datasets.py --preview 5       # ambil 5 baris contoh per kandidat (0 = tidak mengambil)
     python scripts/find_datasets.py --preset coding   # dataset coding (semua bahasa), diurutkan menurut skor kualitas
     python scripts/find_datasets.py --preset coding --live   # tonton laba-labanya merayap selama crawl berjalan
 
@@ -38,6 +40,10 @@ VIZ_TEMPLATE = Path(__file__).resolve().parent / "crawler_viz.html"
 VIZ_PLACEHOLDER = '<script id="crawl-data" type="application/json">null</script>'
 API = "https://huggingface.co/api/datasets"
 CARD_URL = "https://huggingface.co/datasets/{id}/raw/main/README.md"
+VIEWER_API = "https://datasets-server.huggingface.co"
+# Baris contoh dipotong supaya laporan tetap kecil: teks panjang, list, dan objek bersarang diringkas.
+PREVIEW_CHARS = 1500
+PREVIEW_ITEMS = 12
 USER_AGENT = "Dataset-ID-finder/1.0 (+https://github.com/PvzKing/Dataset)"
 
 # Status lisensi, dari yang paling longgar ke yang paling ketat. Jika satu dataset punya beberapa
@@ -237,6 +243,58 @@ def check_card(fetcher, candidate, coding=False):
         candidate["notes"].append(f"sumber media sosial/ulasan ({', '.join(hits[:4])}): cek data pribadi (UU PDP) dan syarat platform")
     if len(text.strip()) < 300:
         candidate["notes"].append("dataset card sangat singkat: asal-usul data tidak jelas")
+
+
+def shorten(value, depth=0):
+    if isinstance(value, str):
+        return value if len(value) <= PREVIEW_CHARS else value[:PREVIEW_CHARS] + f"… ({len(value) - PREVIEW_CHARS} karakter lagi)"
+    if isinstance(value, list):
+        items = [shorten(v, depth + 1) for v in value[:PREVIEW_ITEMS]]
+        if len(value) > PREVIEW_ITEMS:
+            items.append(f"… {len(value) - PREVIEW_ITEMS} item lagi")
+        return items
+    if isinstance(value, dict):
+        if depth >= 4:
+            return "{…}"
+        return {str(k): shorten(v, depth + 1) for k, v in list(value.items())[:30]}
+    return value
+
+
+def fetch_preview(fetcher, dataset_id, n):
+    """Ambil n baris pertama lewat dataset viewer Hugging Face, tanpa mengunduh dataset.
+
+    Kebanyakan dataset memakai config `default` dan split `train`, jadi itu dicoba dulu (satu request).
+    Kalau tidak ada, daftar split dibaca untuk memilih `train` atau split pertama.
+    """
+    def first_rows(config, split):
+        return fetcher.get(f"{VIEWER_API}/first-rows", params={"dataset": dataset_id, "config": config, "split": split})
+
+    def as_json(resp):
+        try:
+            body = resp.json()
+        except ValueError:
+            return None
+        return body if isinstance(body, dict) else None
+
+    resp = first_rows("default", "train")
+    body = as_json(resp) if resp.status_code == 200 else None
+    if body is None:
+        resp = fetcher.get(f"{VIEWER_API}/splits", params={"dataset": dataset_id})
+        splits = (as_json(resp) or {}).get("splits") if resp.status_code == 200 else None
+        if not splits:
+            return {"error": f"dataset viewer tidak tersedia untuk dataset ini (HTTP {resp.status_code})"}
+        pick = next((x for x in splits if x.get("split") == "train"), splits[0])
+        resp = first_rows(pick.get("config"), pick.get("split"))
+        body = as_json(resp) if resp.status_code == 200 else None
+        if body is None:
+            return {"error": f"baris contoh tidak bisa dibaca (HTTP {resp.status_code})"}
+    rows = [r.get("row", {}) for r in body.get("rows", []) if isinstance(r, dict)][:n]
+    return {
+        "config": body.get("config"),
+        "split": body.get("split"),
+        "columns": [f.get("name") for f in body.get("features", []) if isinstance(f, dict)],
+        "rows": [shorten(row) for row in rows],
+    }
 
 
 def is_coding(item):
@@ -482,6 +540,16 @@ def run(args, emit=lambda event: None):
         candidates.sort(key=lambda c: -c["score"])
         candidates = candidates[: args.top]
 
+    if args.preview > 0:
+        print(f"mengambil {args.preview} baris contoh dari {len(candidates)} dataset ...", file=sys.stderr)
+        for c in candidates:
+            if c["gated"]:
+                # Dataset gated baru boleh dibaca setelah syarat pemiliknya disetujui; jangan diakali.
+                c["preview"] = {"error": "dataset gated: setujui syarat pemiliknya di Hugging Face dulu, isinya tidak diambil"}
+            else:
+                c["preview"] = fetch_preview(fetcher, c["id"], args.preview)
+            emit({"type": "preview", "id": c["id"], "preview": c["preview"]})
+
     report = write_report(candidates, args, len(seen), out, passes_log, card_order)
     emit_candidates("final", candidates)
     files = {ext: str(out.with_suffix("." + ext)) for ext in ("md", "json", "html")}
@@ -609,6 +677,7 @@ def main():
     parser.add_argument("--min-downloads", type=int, default=0)
     parser.add_argument("--only-permissive", action="store_true", help="hanya tampilkan lisensi permisif")
     parser.add_argument("--no-cards", action="store_true", help="jangan baca dataset card (lebih cepat, catatan risiko lebih sedikit)")
+    parser.add_argument("--preview", type=int, default=3, help="jumlah baris contoh per kandidat dari dataset viewer (0 = tidak mengambil)")
     parser.add_argument("--delay", type=float, default=1.0, help="jeda minimal antar-request dalam detik")
     parser.add_argument("--out", help="awalan nama file laporan (.md, .json, dan .html)")
     parser.add_argument("--live", action="store_true", help="tonton crawl secara langsung di browser lewat server lokal")

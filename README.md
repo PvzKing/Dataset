@@ -122,7 +122,9 @@ Hal-hal yang dilakukan script:
 
 ## Mencari dataset lain (`scripts/find_datasets.py`)
 
-Crawler ini mencari kandidat dataset berbahasa Indonesia di katalog Hugging Face Hub, lalu menilai lisensi dan risikonya. Script hanya membaca metadata dan dataset card lewat API resmi. Isi dataset tidak diunduh dan halaman web tidak di-scrape. Hasilnya daftar untuk direview manusia, bukan data yang langsung dipakai.
+Crawler ini mencari kandidat dataset berbahasa Indonesia di katalog Hugging Face Hub, lalu menilai lisensi dan risikonya. Script membaca metadata, dataset card, dan beberapa baris contoh lewat API resmi Hugging Face. Dataset tidak diunduh utuh dan halaman web tidak di-scrape. Hasilnya daftar untuk direview manusia, bukan data yang langsung dipakai.
+
+Panduan langkah demi langkah untuk menjalankannya di laptop (Windows, macOS, Linux) ada di [`docs/PANDUAN_CRAWLER.md`](docs/PANDUAN_CRAWLER.md).
 
 ```bash
 python scripts/find_datasets.py                                         # 50 kandidat teratas menurut jumlah unduhan
@@ -193,6 +195,12 @@ Skor ini perkiraan dari metadata, bukan ukuran mutu pasti. Klaim "diverifikasi" 
 - **Benchmark:** dipakai untuk evaluasi, bukan training. Kalau dilatih, skor evaluasinya tidak bersih, seperti yang sudah dicatat untuk kelompok `bench-support`.
 - **Soal dari situs kompetisi** (LeetCode, Codeforces, dan sejenisnya): teks soal dilindungi hak cipta, dan syarat layanan situsnya umumnya melarang pengambilan otomatis.
 - **Korpus kode mentah dari repo publik:** setiap file punya lisensinya sendiri, termasuk GPL. Program komputer adalah ciptaan yang dilindungi (Pasal 40 ayat (1) huruf s UU No. 28 Tahun 2014). Kode juga bisa memuat email atau API key.
+
+**Isi data.** Untuk setiap kandidat akhir, crawler mengambil beberapa baris pertama (`--preview`, bawaan 3, `0` untuk mematikan) lewat dataset viewer resmi Hugging Face (`datasets-server.huggingface.co`). Biasanya ini cukup satu request per dataset.
+- Teks panjang, list, dan objek bersarang dipotong supaya laporan tetap kecil.
+- Baris contoh tersimpan di laporan `.json`, dan bisa dibuka lewat tombol **Lihat isi data** di visualisasi. Percakapan ditampilkan per giliran.
+- Dataset gated dilewati. Isinya baru boleh dibaca setelah syarat pemiliknya disetujui.
+- Baris contoh bisa memuat data pribadi atau materi berhak cipta, jadi laporan di `runs/` jangan disebarkan.
 
 Crawler bersikap sopan terhadap server: memakai User-Agent yang menyebut identitasnya, memberi jeda minimal 1 detik antar-request (`--delay`), dan mematuhi `Retry-After` saat dibatasi (HTTP 429). Isi `HF_TOKEN` untuk batas request yang lebih longgar. Status lisensi diambil dari metadata yang diisi pemilik dataset dan bisa keliru, jadi tetap baca dataset card sebelum memakai kandidat.
 
@@ -397,6 +405,7 @@ scripts/chat_gradio.py                chatbot Gradio untuk mencoba adapter (stre
 scripts/agent_gradio.py               agen coding bergaya Claude Code: tulis → uji di browser → perbaiki (SEARCH/REPLACE)
 scripts/build_notebook.py             membangun notebooks/train_colab.ipynb dari script dan runbook
 docs/PANDUAN_TRAINING.md              panduan training lengkap untuk pengguna
+docs/PANDUAN_CRAWLER.md               panduan menjalankan crawler dataset di laptop
 docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol training di Colab
 CLAUDE.md                             catatan singkat untuk Claude Code di repo ini
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face

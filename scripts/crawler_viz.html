@@ -144,6 +144,43 @@
   table { border-collapse: collapse; width: 100%; font-size: 0.875rem; }
   th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
   td button { border-radius: 6px; padding: 2px 8px; }
+  dialog {
+    width: min(920px, calc(100% - 32px));
+    max-height: 86vh;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--panel);
+    color: var(--text);
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
+  .dialog-head {
+    position: sticky;
+    top: 0;
+    display: flex;
+    gap: 12px;
+    align-items: start;
+    justify-content: space-between;
+    padding: 14px 16px 10px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+  }
+  .dialog-head h2 { margin: 0; font-size: 1rem; overflow-wrap: anywhere; }
+  .dialog-body { padding: 12px 16px 16px; }
+  .sample { border: 1px solid var(--border); border-radius: 10px; margin: 0 0 12px; overflow: hidden; }
+  .sample h3 { margin: 0; padding: 6px 10px; font-size: 0.8125rem; color: var(--muted); border-bottom: 1px solid var(--border); }
+  .field { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .field:last-child { border-bottom: 0; }
+  .field-name { font-size: 0.75rem; font-weight: 600; color: var(--accent); margin-bottom: 4px; overflow-wrap: anywhere; }
+  .field pre {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font: 0.8125rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .turn { margin: 0 0 6px; padding: 6px 8px; border-radius: 8px; background: var(--bg); }
+  .turn:last-child { margin-bottom: 0; }
+  .role { font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
   @media (max-width: 860px) {
     main { grid-template-columns: minmax(0, 1fr); }
     #stage { height: auto; min-height: 0; aspect-ratio: 1 / 1.05; }
@@ -176,11 +213,22 @@
   <summary id="list-title">Daftar kandidat</summary>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>#</th><th>Dataset</th><th id="score-head">Skor</th><th>Status</th><th>Unduhan</th><th>Catatan</th></tr></thead>
+      <thead><tr><th>#</th><th>Dataset</th><th id="score-head">Skor</th><th>Status</th><th>Unduhan</th><th>Isi</th><th>Catatan</th></tr></thead>
       <tbody id="rows"></tbody>
     </table>
   </div>
 </details>
+
+<dialog id="sample-dialog" aria-labelledby="sample-title">
+  <div class="dialog-head">
+    <div>
+      <h2 id="sample-title">Isi data</h2>
+      <p class="muted" id="sample-meta"></p>
+    </div>
+    <button type="button" id="sample-close">Tutup</button>
+  </div>
+  <div class="dialog-body" id="sample-body"></div>
+</dialog>
 
 <script id="crawl-data" type="application/json">null</script>
 <script>
@@ -202,12 +250,19 @@
     card_order: ['contoh/instruksi-python-teruji', 'contoh/percakapan-kode', 'contoh/teks-ke-sql', 'contoh/latihan-python-nc',
                  'contoh/soal-situs-kompetisi', 'contoh/kode-tanpa-lisensi', 'contoh/korpus-repo-mentah', 'contoh/benchmark-fungsi'],
     candidates: [
-      { id: 'contoh/instruksi-python-teruji', score: 86, licenses: ['apache-2.0'], license_status: 'permisif', downloads: 800, size: '1K<n<10K', shape: 'instruksi', signals: ['diverifikasi dengan tes/eksekusi', 'dideduplikasi'], notes: [] },
-      { id: 'contoh/percakapan-kode', score: 71, licenses: ['mit'], license_status: 'permisif', downloads: 12000, size: '10K<n<100K', shape: 'percakapan', signals: ['dokumentasi lengkap'], notes: ['mungkin berisi output model lain (gpt-4): cek syarat penggunaan penyedia model'] },
+      { id: 'contoh/instruksi-python-teruji', score: 86, licenses: ['apache-2.0'], license_status: 'permisif', downloads: 800, size: '1K<n<10K', shape: 'instruksi', signals: ['diverifikasi dengan tes/eksekusi', 'dideduplikasi'], notes: [],
+        preview: { config: 'default', split: 'train', columns: ['instruction', 'output', 'tests'], rows: [
+          { instruction: '(contoh) Tulis fungsi yang menjumlahkan bilangan genap dalam sebuah list.', output: 'def jumlah_genap(xs):\n    return sum(x for x in xs if x % 2 == 0)', tests: 'assert jumlah_genap([1, 2, 3, 4]) == 6' },
+          { instruction: '(contoh) Balik urutan kata dalam sebuah kalimat.', output: "def balik_kata(s):\n    return ' '.join(s.split()[::-1])", tests: "assert balik_kata('halo dunia') == 'dunia halo'" },
+        ] } },
+      { id: 'contoh/percakapan-kode', score: 71, licenses: ['mit'], license_status: 'permisif', downloads: 12000, size: '10K<n<100K', shape: 'percakapan', signals: ['dokumentasi lengkap'], notes: ['mungkin berisi output model lain (gpt-4): cek syarat penggunaan penyedia model'],
+        preview: { config: 'default', split: 'train', columns: ['messages'], rows: [
+          { messages: [{ role: 'user', content: '(contoh) Apa beda list dan tuple di Python?' }, { role: 'assistant', content: '(contoh) List bisa diubah setelah dibuat, tuple tidak.' }] },
+        ] } },
       { id: 'contoh/teks-ke-sql', score: 58, licenses: ['cc-by-sa-4.0'], license_status: 'share-alike', downloads: 3000, size: '10K<n<100K', shape: 'tanya-jawab', signals: ['dideduplikasi'], notes: [] },
       { id: 'contoh/latihan-python-nc', score: 40, licenses: ['cc-by-nc-4.0'], license_status: 'nonkomersial', downloads: 2500, size: '1K<n<10K', shape: 'instruksi', signals: [], notes: [] },
       { id: 'contoh/soal-situs-kompetisi', score: 33, licenses: [], license_status: 'cek manual', downloads: 4100, size: '1K<n<10K', shape: 'tanya-jawab', signals: [], notes: ['soal dari situs kompetisi (leetcode): teks soal berhak cipta, cek syarat layanan situsnya'] },
-      { id: 'contoh/kode-tanpa-lisensi', score: 31, licenses: [], license_status: 'cek manual', downloads: 600, size: '-', shape: 'percakapan', signals: [], notes: ['dataset card sangat singkat: asal-usul data tidak jelas'] },
+      { id: 'contoh/kode-tanpa-lisensi', score: 31, licenses: [], license_status: 'cek manual', downloads: 600, size: '-', shape: 'percakapan', signals: [], notes: ['dataset card sangat singkat: asal-usul data tidak jelas'], preview: { error: 'dataset viewer tidak tersedia untuk dataset ini (HTTP 404)' } },
       { id: 'contoh/korpus-repo-mentah', score: 29, licenses: ['other'], license_status: 'cek manual', downloads: 50000, size: '1M<n<10M', shape: 'teks/lainnya', signals: ['dideduplikasi'], notes: ['korpus kode mentah dari repo publik: lisensi tiap file berbeda (termasuk GPL)'] },
       { id: 'contoh/benchmark-fungsi', score: 30, licenses: ['mit'], license_status: 'permisif', downloads: 90000, size: 'n<1K', shape: 'instruksi', signals: ['diverifikasi dengan tes/eksekusi'], notes: ['benchmark: pakai untuk evaluasi, bukan training (skor eval jadi tidak bersih)'] },
     ],
@@ -254,7 +309,7 @@
   function resetModel() {
     datasets = []; byId = new Map(); keywords = []; threads = []; ring = [];
     selected = null; hover = null;
-    meta = { scanned: data.scanned ?? null, generatedAt: data.generated_at || '', files: null, done: false, error: null, cardsRead: 0 };
+    meta = { scanned: data.scanned ?? null, generatedAt: data.generated_at || '', files: null, done: false, error: null, cardsRead: 0, previews: 0 };
     steps = []; current = null;
     Object.assign(spider, { from: hub, to: hub, fromNode: hub, t: 1, heading: -Math.PI / 2, moving: false, thread: null });
     statusEl.classList.remove('error');
@@ -436,6 +491,17 @@
     if (selected === d) renderPanel();
   }
 
+  function showPreview(d, preview) {
+    d.preview = preview;
+    d.previewed = true;
+    d.pulseAt = clock;
+    discover(d);
+    meta.previews += 1;
+    if (live && !meta.done) setStatus(`Mengintip isi data: ${meta.previews} dataset…`);
+    refreshLists();
+    if (selected === d) renderPanel();
+  }
+
   function applyCandidates(ev) {
     const incoming = ev.candidates || [];
     const ids = new Set(incoming.map((c) => c.id));
@@ -444,7 +510,7 @@
       let d = byId.get(c.id);
       if (!d) {
         d = { kind: 'dataset', c, rank, x: hub.x, y: hub.y, tx: hub.x, ty: hub.y, angle: 0, label: shortName(c.id),
-              visible: false, read: false, appearAt: 0, pulseAt: -1e9, leaving: false, leaveAt: 0, foundBy: [] };
+              visible: false, read: false, previewed: false, appearAt: 0, pulseAt: -1e9, leaving: false, leaveAt: 0, foundBy: [] };
         datasets.push(d); byId.set(c.id, d); fresh.push(d);
       }
       d.leaving = false;
@@ -507,6 +573,17 @@
         wait(80);
         break;
       }
+      case 'preview': {
+        const d = byId.get(ev.id);
+        if (!d) break;
+        if (!meta.previewQueued) {
+          meta.previewQueued = true;
+          call(() => setStatus('Mengintip isi data setiap kandidat…'));
+        }
+        walk(d, { onArrive: () => showPreview(d, ev.preview) });
+        wait(60);
+        break;
+      }
       case 'done':
         meta.scanned = ev.scanned ?? meta.scanned;
         if (ev.generated_at) meta.generatedAt = ev.generated_at;
@@ -546,6 +623,7 @@
       const c = report.candidates.find((x) => x.id === id);
       if (c) events.push({ type: 'card', id, candidate: c });
     });
+    report.candidates.forEach((c) => { if (c.preview) events.push({ type: 'preview', id: c.id, preview: c.preview }); });
     events.push({ type: 'done', scanned: report.scanned, generated_at: report.generated_at });
     return events;
   }
@@ -713,6 +791,11 @@
           ctx.beginPath(); ctx.arc(d.x + r + 2, d.y - r - 2, 2.6, 0, Math.PI * 2); ctx.fill();
         }
       }
+      if (d.previewed && d.preview && !d.preview.error) {
+        // Lubang kecil di tengah titik: isi datanya sudah diintip dan bisa dilihat.
+        ctx.fillStyle = colors.panel;
+        ctx.beginPath(); ctx.arc(d.x, d.y, Math.max(1.5, r * 0.38), 0, Math.PI * 2); ctx.fill();
+      }
       const pulse = (clock - d.pulseAt) / 0.7;
       if (pulse >= 0 && pulse < 1 && !reduceMotion) {
         ctx.strokeStyle = colors[d.c.license_status]; ctx.lineWidth = 2; ctx.globalAlpha = (1 - pulse) * alpha;
@@ -865,7 +948,7 @@
       if (meta.files) panel.append(...list('Laporan disimpan di', Object.values(meta.files)));
       panel.append(el('p', 'Laba-laba memintal benang dari setiap kata kunci ke dataset yang ditemukannya, lalu membaca dataset card satu per satu. '
         + 'Warna titik menunjukkan status lisensi, besarnya menunjukkan ' + (coding ? 'skor kualitas' : 'jumlah unduhan')
-        + ', cincin berarti card sudah dibaca, dan titik kuning berarti ada catatan risiko.', { className: 'muted' }));
+        + ', cincin berarti card sudah dibaca, titik berlubang berarti isi datanya bisa dilihat, dan titik kuning berarti ada catatan risiko.', { className: 'muted' }));
       return;
     }
     if (node.kind === 'keyword') {
@@ -907,6 +990,16 @@
     panel.append(dl);
     panel.append(...list('Sinyal kualitas', c.signals), ...list('Catatan risiko', c.notes));
     if (!node.read) panel.append(el('p', 'Dataset card belum dibaca laba-laba.', { className: 'muted' }));
+    if (node.previewed && node.preview) {
+      panel.append(el('h3', 'Isi data'));
+      if (node.preview.error) {
+        panel.append(el('p', node.preview.error, { className: 'muted' }));
+      } else {
+        const rows = node.preview.rows || [];
+        panel.append(el('p', `${rows.length} baris contoh dari split "${node.preview.split || '-'}". Kolom: ${(node.preview.columns || []).join(', ') || '-'}.`, { className: 'muted' }));
+        panel.append(el('button', 'Lihat isi data', { type: 'button', onclick: () => openSample(node) }));
+      }
+    }
   }
 
   function setPaused(value) {
@@ -964,9 +1057,61 @@
       name.append(el('button', d.c.id, { type: 'button', onclick: () => { discover(d); select(d); stage.scrollIntoView({ block: 'nearest' }); } }));
       tr.append(el('td', String(i + 1)), name);
       if (coding) tr.append(el('td', typeof d.c.score === 'number' ? String(d.c.score) : '-'));
-      tr.append(el('td', d.c.license_status), el('td', (d.c.downloads || 0).toLocaleString('id-ID')), el('td', (d.c.notes || []).join('; ') || '-'));
+      tr.append(el('td', d.c.license_status), el('td', (d.c.downloads || 0).toLocaleString('id-ID')));
+      const sample = el('td', d.previewed && d.preview ? (d.preview.error ? 'tidak tersedia' : '') : '-');
+      if (d.previewed && d.preview && !d.preview.error) sample.append(el('button', 'Lihat', { type: 'button', onclick: () => openSample(d) }));
+      tr.append(sample, el('td', (d.c.notes || []).join('; ') || '-'));
       tbody.append(tr);
     });
+  }
+
+  // ---------- Penampil isi data ----------
+  const dialog = document.getElementById('sample-dialog');
+  const sampleBody = document.getElementById('sample-body');
+  document.getElementById('sample-close').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+
+  // Percakapan (format messages/ShareGPT) ditampilkan per giliran; nilai lain sebagai teks apa adanya.
+  function isChat(value) {
+    return Array.isArray(value) && value.length > 0 && value.every((t) => t && typeof t === 'object'
+      && (('role' in t && 'content' in t) || ('from' in t && 'value' in t)));
+  }
+  function renderValue(value) {
+    if (isChat(value)) {
+      const wrap = el('div');
+      value.forEach((t) => {
+        const turn = el('div', null, { className: 'turn' });
+        const text = 'content' in t ? t.content : t.value;
+        turn.append(el('div', String(t.role ?? t.from), { className: 'role' }),
+          el('pre', typeof text === 'string' ? text : JSON.stringify(text, null, 2)));
+        wrap.append(turn);
+      });
+      return wrap;
+    }
+    if (typeof value === 'string') return el('pre', value);
+    if (value === null || typeof value !== 'object') return el('pre', String(value));
+    return el('pre', JSON.stringify(value, null, 2));
+  }
+
+  function openSample(d) {
+    const preview = d.preview || {};
+    document.getElementById('sample-title').textContent = `Isi data: ${d.c.id}`;
+    document.getElementById('sample-meta').textContent =
+      `${(preview.rows || []).length} baris pertama, config "${preview.config || '-'}", split "${preview.split || '-'}", dari dataset viewer Hugging Face. Teks panjang dipotong.`;
+    sampleBody.replaceChildren();
+    (preview.rows || []).forEach((row, i) => {
+      const card = el('article', null, { className: 'sample' });
+      card.append(el('h3', `Baris ${i + 1}`));
+      Object.entries(row || {}).forEach(([key, value]) => {
+        const field = el('div', null, { className: 'field' });
+        field.append(el('div', key, { className: 'field-name' }), renderValue(value));
+        card.append(field);
+      });
+      sampleBody.append(card);
+    });
+    sampleBody.append(el('p', 'Contoh ini hanya untuk menilai kualitas. Isinya bisa memuat data pribadi atau materi berhak cipta, '
+      + 'jadi periksa lisensi dan asal-usulnya sebelum dipakai atau disebarkan ulang.', { className: 'muted' }));
+    if (dialog.showModal) dialog.showModal(); else dialog.setAttribute('open', '');
   }
 
   // ---------- Mulai ----------
