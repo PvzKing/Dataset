@@ -1,0 +1,1 @@
+Tulis fungsi Python `normalisasi_hp(nomor: str) -> str` yang mengubah nomor HP Indonesia ke format +62. Input bisa seperti 0812-3456-7890, 62812..., +62 812 ..., kadang ada spasi atau tanda hubung. Kalau bukan nomor HP yang valid, lempar ValueError.

@@ -1,0 +1,1 @@
+Buatkan program Python untuk menghitung angsuran pinjaman dengan metode anuitas dan menampilkan tabel amortisasinya. Inputnya pokok pinjaman, bunga per tahun (persen), dan tenor (bulan). Angsuran dibulatkan ke rupiah, tapi total pokok yang dibayar harus tepat sama dengan jumlah pinjaman. Sertakan tesnya.

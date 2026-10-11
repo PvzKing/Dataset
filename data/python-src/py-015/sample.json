@@ -1,0 +1,3 @@
+{"id": "py-015", "category": "py_tes", "turns": ["user.md", "assistant.md"],
+ "before_turn": {"0": {"denda.py": "bug/denda.py"}},
+ "patches": [{"turn": 1, "from": "bug/denda.py", "to": "denda.py"}]}

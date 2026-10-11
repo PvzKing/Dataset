@@ -1,0 +1,11 @@
+{
+  "toko": "Dapur Bu Rina",
+  "whatsapp": "0812-3456-7890",
+  "produk": [
+    {"nama": "Rendang Sapi 500 g", "harga": 145000, "kategori": "Lauk", "stok": 12},
+    {"nama": "Sambal Bawang \"Pedas Level 5\"", "harga": 35000, "kategori": "Sambal", "stok": 30},
+    {"nama": "Kopi & Teh Celup <isi 20>", "harga": 42500, "kategori": "Minuman", "stok": 20},
+    {"nama": "Ayam Bakar Madu", "harga": 65000, "kategori": "Lauk", "stok": 8},
+    {"nama": "Sambal Matah", "harga": 30000, "kategori": "Sambal", "stok": 0}
+  ]
+}

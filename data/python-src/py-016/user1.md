@@ -1,0 +1,1 @@
+Buatkan fungsi Python `parse_durasi(teks)` yang mengubah teks durasi seperti "1j 30m" atau "2 jam 5 menit 10 detik" menjadi jumlah detik. Satuan: j/jam, m/mnt/menit, d/dtk/detik. Input yang aneh harus ditolak dengan ValueError. Sertakan tes.

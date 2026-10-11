@@ -32,6 +32,7 @@ Waktu generate kira-kira dua kali lipat karena ada dua run. Jawaban model dasar 
 | Opsi | Kegunaan |
 |---|---|
 | `--adapter <folder>` | adapter yang diuji. Bawaan: `/content/drive/MyDrive/finetune-id/qwen3.5-4b-bench-4bit-lanjut/lora-adapter` |
+| `--dataset mbpp` | MBPP+ (378 soal) sebagai ganti HumanEval+. Hasilnya di folder `eval-mbpp` |
 | `--no-vs-base` | adapter saja, tanpa run model dasar |
 | `--adapter none` | model dasar saja |
 | `--tag <nama>` | nama folder hasil. Folder model dasarnya ikut menjadi `<nama>-model-dasar` |
@@ -64,7 +65,7 @@ Contoh keluaran di akhir run:
 | qwen3.5-4b-bench-4bit-lanjut             |     xx.x% |      xx.x% |
 | model-dasar                              |     xx.x% |      xx.x% |
 
-HumanEval: selisih +N soal (+x.x poin persen)
+HumanEval: selisih +N soal (+x.x poin persen), McNemar p = 0.xxx: belum nyata, bisa kebetulan
   hanya lolos dengan adapter (n): ...
   hanya lolos di model dasar, regresi (n): ...
 ```
@@ -74,6 +75,10 @@ Setelah itu dicetak juga tabel semua run di folder hasil.
 ## Catatan
 
 - **EvalPlus dipasang dari commit master.** Versi 0.3.1 di PyPI selalu menilai HumanEval/32 (`find_zero`) gagal, bahkan untuk solusi resminya. Penyebabnya, pemeriksa khusus soal itu melompati pencatatan tes yang lolos. Script berhenti dengan pesan jelas jika versi itu yang terpasang.
-- **Skor adapter bench-lanjut tidak bersih.** Adapter itu dilatih dengan 164 soal HumanEval beserta jawabannya (lihat `data/bench-support/README.md`), jadi selisihnya dengan model dasar terutama mengukur hafalan. Jangan laporkan skor itu sebagai hasil evaluasi yang bersih.
+- **Uji McNemar** dicetak untuk setiap selisih. Uji ini membandingkan dua model pada soal yang sama dan menghitung seberapa mungkin selisih sebesar itu muncul hanya karena kebetulan. Selisih dengan p ≥ 0,05 jangan disimpulkan sebagai naik atau turun.
+- **Skor adapter bench-lanjut tidak bersih.** Adapter itu dilatih dengan 164 soal HumanEval beserta jawabannya (lihat `data/bench-support/README.md`), jadi skornya tidak boleh dilaporkan sebagai hasil evaluasi.
+  - Hasil ujinya justru menunjukkan model **tidak** menghafal: 78,0% / 72,0%, dibanding model dasar 82,3% / 73,8%.
+  - Jawabannya meniru gaya ringkas jawaban latihan, tapi isinya tidak. Selisih −7 soal juga tidak nyata secara statistik (McNemar p = 0,34).
+  - Pelajaran ini menjadi dasar [`docs/RENCANA_PYTHON.md`](../docs/RENCANA_PYTHON.md).
 - **Perbandingan yang bersih adalah v3 dengan model dasar.** v3 belum pernah melihat soal ini, jadi selisihnya menunjukkan efek fine-tuning website terhadap kemampuan Python umum: `%run /content/eval_humaneval.py --adapter /content/drive/MyDrive/finetune-id/v3/qwen3.5-4b-own-4bit/lora-adapter`.
 - **Jika adapter dilatih ulang dengan nama folder yang sama,** hapus folder hasil lamanya atau pakai `--tag` baru. Tanpa itu, jawaban lama yang dipakai.

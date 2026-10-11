@@ -1,0 +1,3 @@
+{"id": "py-017", "category": "py_agentic", "turns": ["user1.md", "assistant1.md", "user2.md", "assistant2.md"],
+ "before_turn": {"1": {"statistik.py": "awal/statistik.py"}, "3": {"statistik.py": "statistik.py"}},
+ "patches": [{"turn": 3, "from": "awal/statistik.py", "to": "statistik.py"}]}

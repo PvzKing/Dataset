@@ -1,0 +1,1 @@
+bikin fungsi python buat ngitung jumlah hari kerja (senin-jumat) di antara dua tanggal, termasuk tanggal awal dan akhirnya, dikurangi hari libur yang dikasih dalam list. rentangnya bisa bertahun-tahun.

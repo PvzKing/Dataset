@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pusat Bantuan DompetKu</title>
+<link rel="icon" href="data:,">
+<style>
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1f2937; background: #f5f7fb; line-height: 1.6; }
+  header { background: linear-gradient(135deg, #0d9488, #0f766e); color: #fff; padding: 36px 16px 28px; }
+  header > div, main { max-width: 760px; margin: 0 auto; }
+  main { padding: 20px 16px 48px; }
+  .merek { font-weight: 800; letter-spacing: .02em; opacity: .9; margin: 0; }
+  h1 { margin: 4px 0 16px; font-size: clamp(1.5rem, 6vw, 2rem); }
+  header label { display: block; font-weight: 600; margin-bottom: 6px; }
+  #cari { width: 100%; font: inherit; padding: 12px 14px; border: 0; border-radius: 10px; }
+  #cari:focus { outline: 3px solid #99f6e4; }
+  .status { color: #4b5563; margin: 0 0 12px; font-size: .9rem; }
+  .faq { list-style: none; margin: 0; padding: 0; }
+  .faq li { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+  .faq h2 { margin: 0; font-size: 1rem; }
+  .faq button { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: left; font: inherit; font-weight: 600; color: inherit; background: none; border: 0; padding: 14px 16px; cursor: pointer; }
+  .faq button:hover { background: #f0fdfa; }
+  .faq button:focus-visible { outline: 3px solid #14b8a6; outline-offset: -3px; }
+  .faq button::after { content: "+"; font-size: 1.4rem; line-height: 1; color: #0d9488; flex-shrink: 0; }
+  .faq button[aria-expanded="true"]::after { content: "−"; }
+  .jawaban { padding: 0 16px 14px; color: #374151; }
+  .jawaban p { margin: 0; }
+  .tidak-ada { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 16px; }
+  .tidak-ada p { margin: 0; }
+  footer { max-width: 760px; margin: 0 auto; padding: 0 16px 32px; font-size: .85rem; color: #6b7280; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <p class="merek">DompetKu</p>
+    <h1>Pusat Bantuan</h1>
+    <label for="cari">Cari pertanyaan</label>
+    <input id="cari" type="search" placeholder="Contoh: isi saldo, lupa PIN, transfer" autocomplete="off" aria-controls="daftar-faq">
+  </div>
+</header>
+<main>
+  <p class="status" id="status" aria-live="polite">Menampilkan 10 pertanyaan.</p>
+  <ul class="faq" id="daftar-faq">
+    <li><h2><button type="button" aria-expanded="false" aria-controls="j1" id="t1">Bagaimana cara mendaftar akun DompetKu?</button></h2>
+      <div class="jawaban" id="j1" role="region" aria-labelledby="t1" hidden><p>Unduh aplikasi DompetKu, ketuk "Daftar", lalu masukkan nomor HP aktif. Masukkan kode OTP yang dikirim lewat SMS, buat PIN 6 digit, dan akun Anda siap dipakai.</p></div></li>
+    <li><h2><button type="button" aria-expanded="false" aria-controls="j2" id="t2">Bagaimana cara mengisi saldo (top up)?</button></h2>
+      <div class="jawaban" id="j2" role="region" aria-labelledby="t2" hidden><p>Pilih menu "Isi Saldo", lalu pilih metode: transfer virtual account bank, minimarket, atau kartu debit. Saldo biasanya masuk dalam hitungan menit setelah pembayaran berhasil.</p></div></li>
+    <li><h2><button type="button" aria-expanded="false" aria-controls="j3" id="t3">Apakah ada biaya untuk transfer ke rekening bank?</button></h2>
+      <div class="jawaban" id="j3" role="region" aria-labelledby="t3" hidden><p>Pengguna terverifikasi mendapat gratis 10 kali transfer ke bank setiap bulan. Setelah kuota habis, dikenakan biaya Rp2.500 per transaksi.</p></div></li>
+    <li><h2><button type="button" aria-expanded="false" aria-controls="j4" id="t4">Saya lupa PIN, apa yang harus dilakukan?</button></h2>
+      <div class="jawaban" id="j4" role="region" aria-labelledby="t4" hidden><p>Di halaman masuk, ketuk "Lupa PIN?". Verifikasi identitas dengan kode OTP dan swafoto, lalu buat PIN baru. Jangan pernah memberikan PIN atau OTP kepada siapa pun.</p></div></li>
+    <li><h2><button type="button" aria-expanded="false" aria-controls="j5" id="t5">Bagaimana cara verifikasi akun (upgrade ke Premium)?</button></h2>
+      <div class="jawaban" id="j5" role="region" aria-labelledby="t5" hidden><p>Buka menu "Profil" &gt; "Verifikasi Akun", foto KTP Anda, lalu ambil swafoto sesuai petunjuk. Proses verifikasi memakan waktu maksimal 1×24 jam.</p></div></li>
+    <li><h2><button type="button" aria-expanded="false" aria-controls="j6" id="t6">Berapa batas maksimal saldo DompetKu?</button></h2>
+      <div class="jawaban" id="j6" role="region" aria-labelledby="t6" hidden><p>Akun Basic dapat menyimpan saldo hingga Rp2 juta, sedangkan akun Premium yang sudah terverifikasi hingga Rp20 juta.</p></div></li>
+    <li><h2><button type="button" aria-expanded="false" aria-controls="j7" id="t7">Transaksi gagal tetapi saldo sudah terpotong, bagaimana?</button></h2>
+      <div class="jawaban" id="j7" role="region" aria-labelledby="t7" hidden><p>Saldo dari transaksi gagal akan dikembalikan otomatis paling lambat 3 hari kerja. Jika belum kembali, laporkan melalui menu "Riwayat" &gt; pilih transaksi &gt; "Laporkan Masalah".</p></div></li>
+    <li><h2><button type="button" aria-expanded="false" aria-controls="j8" id="t8">Bagaimana cara membayar dengan kode QR?</button></h2>
+      <div class="jawaban" id="j8" role="region" aria-labelledby="t8" hidden><p>Ketuk tombol "Bayar" di beranda, arahkan kamera ke kode QR milik penjual, periksa nominal, lalu konfirmasi dengan PIN Anda.</p></div></li>
+    <li><h2><button type="button" aria-expanded="false" aria-controls="j9" id="t9">Apa yang harus dilakukan jika HP saya hilang?</button></h2>
+      <div class="jawaban" id="j9" role="region" aria-labelledby="t9" hidden><p>Segera hubungi layanan pelanggan untuk memblokir akun sementara. Setelah mendapat HP baru, masuk kembali dengan nomor yang sama untuk memulihkan akun dan saldo Anda.</p></div></li>
+    <li><h2><button type="button" aria-expanded="false" aria-controls="j10" id="t10">Bagaimana cara menghubungi layanan pelanggan DompetKu?</button></h2>
+      <div class="jawaban" id="j10" role="region" aria-labelledby="t10" hidden><p>Gunakan menu "Bantuan" &gt; "Chat dengan Kami" di aplikasi (24 jam), atau kirim email ke bantuan@dompetku.example. Kami tidak pernah meminta PIN atau OTP Anda.</p></div></li>
+  </ul>
+  <div class="tidak-ada" id="tidak-ada" role="status" hidden>
+    <p><strong>Tidak ada hasil yang cocok</strong> untuk pencarian "<span id="kata-kunci"></span>".</p>
+    <p>Coba kata kunci lain atau hubungi layanan pelanggan melalui menu Bantuan di aplikasi.</p>
+  </div>
+</main>
+<footer>DompetKu adalah aplikasi fiktif; halaman ini hanya contoh.</footer>
+<script>
+  const daftar = document.getElementById('daftar-faq');
+  const item = Array.from(daftar.children);
+  const cari = document.getElementById('cari');
+  const status = document.getElementById('status');
+  const tidakAda = document.getElementById('tidak-ada');
+  const normal = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+  item.forEach((li) => { li.dataset.teks = normal(li.textContent); });
+
+  daftar.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[aria-controls]');
+    if (!btn) return;
+    const buka = btn.getAttribute('aria-expanded') !== 'true';
+    btn.setAttribute('aria-expanded', String(buka));
+    document.getElementById(btn.getAttribute('aria-controls')).hidden = !buka;
+  });
+
+  function saring() {
+    const kata = normal(cari.value).split(' ').filter(Boolean);
+    let tampil = 0;
+    item.forEach((li) => {
+      const cocok = kata.every((k) => li.dataset.teks.includes(k));
+      li.hidden = !cocok;
+      if (cocok) tampil += 1;
+    });
+    tidakAda.hidden = tampil > 0;
+    document.getElementById('kata-kunci').textContent = cari.value.trim();
+    status.textContent = kata.length === 0 ? 'Menampilkan ' + item.length + ' pertanyaan.'
+      : tampil > 0 ? 'Ditemukan ' + tampil + ' dari ' + item.length + ' pertanyaan.' : '';
+  }
+  cari.addEventListener('input', saring);
+  saring();
+</script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+{"id": "py-016", "category": "py_agentic", "turns": ["user1.md", "assistant1.md", "user2.md", "assistant2.md"],
+ "before_turn": {"1": {"durasi.py": "modern/durasi.py"}, "3": {"durasi.py": "durasi.py"}},
+ "patches": [{"turn": 3, "from": "modern/durasi.py", "to": "durasi.py"}]}

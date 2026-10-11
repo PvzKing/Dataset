@@ -125,8 +125,8 @@ Untuk menampilkan ulang tabel semua run tanpa menjalankan model, jalankan perint
 | Perbandingan | Arti selisihnya | Boleh dilaporkan? |
 |---|---|---|
 | **v3 vs model dasar** | efek fine-tuning website (dataset own) terhadap kemampuan Python umum. Kalau negatif, berarti ada kemampuan yang hilang (*forgetting*) | **Ya**, ini angka yang bersih |
-| **bench-lanjut vs model dasar** | terutama hafalan. Adapter dilatih dengan 164 soal ini beserta jawabannya sampai loss ±0,03 | **Tidak** sebagai skor kemampuan. Boleh disebut dengan label "terkontaminasi" |
-| **bench-lanjut vs v3** | seberapa banyak hafalan menambah skor | hanya sebagai catatan internal |
+| **bench-lanjut vs model dasar** | efek melatih soal ini beserta jawabannya. Hasil uji: adapter meniru gaya jawaban latihan tapi tidak isinya, sehingga skornya tidak naik (78,0% vs 82,3%, McNemar p = 0,34) | **Tidak** sebagai skor kemampuan. Boleh disebut dengan label "terkontaminasi" |
+| **bench-lanjut vs v3** | efek training bench di atas v3 | hanya sebagai catatan internal |
 
 **Hal lain yang perlu diperhatikan:**
 - **HumanEval+ selalu lebih rendah atau sama dengan HumanEval.** Tes tambahannya menangkap solusi yang hanya lolos contoh dasar. Kalau selisih keduanya besar, model sering lupa menangani kasus tepi.
