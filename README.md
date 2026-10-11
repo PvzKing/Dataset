@@ -118,6 +118,23 @@ Hal-hal yang dilakukan script:
 - **Model dasar** Qwen3.5-4B dan Qwen2.5-Coder-7B-Instruct berlisensi Apache 2.0. Adapter atau model gabungan hasil fine-tuning boleh didistribusikan dan dipakai secara komersial, dengan syarat menyertakan salinan lisensi, mempertahankan pemberitahuan hak cipta, dan menandai bahwa model telah diubah (Pasal 4 Apache License 2.0). Tidak semua model Qwen berlisensi Apache 2.0: misalnya Qwen2.5-Coder-3B memakai lisensi riset non-komersial. Periksa lisensi setiap model sebelum mengganti model dasar.
 - Periksa kartu dataset (dataset card) masing-masing sumber untuk lisensi terbaru sebelum mendistribusikan dataset campuran atau model hasil training.
 
+## Kelompok `bench-support` (HumanEval)
+
+Folder `data/bench-support/` berisi sampel latihan dari benchmark kode, terpisah dari dataset `own`. Saat ini isinya 164 soal HumanEval dengan format prompt instruct EvalPlus. Solusinya diambil dari HumanEval+, kecuali satu soal yang ditulis ulang.
+
+Setiap solusi diverifikasi oleh `scripts/build_bench_support.py` dengan dua cara: tes resmi HumanEval, dan pemeriksaan silang dengan solusi asli HumanEval pada 111 ribu input tambahan HumanEval+. Lewat pemeriksaan ini ditemukan 15 solusi asli HumanEval yang keliru dan satu soal yang kedua solusi referensinya gagal. Rinciannya ada di `data/bench-support/README.md`.
+
+Pakai dengan `--dataset bench`, yaitu `own` ditambah `bench-support`, total 243 sampel:
+
+```bash
+python scripts/train_unsloth.py train --dataset bench
+python scripts/build_bench_support.py      # membuat ulang dan memverifikasi data/bench-support/humaneval.jsonl
+```
+
+Dua hal yang perlu diingat:
+- **Skor HumanEval tidak lagi bersih.** Model yang dilatih dengan kelompok ini sudah melihat soal dan jawabannya.
+- **Lisensi wajib disertakan.** HumanEval berlisensi MIT (OpenAI) dan HumanEval+ berlisensi Apache 2.0 (EvalPlus). Jika data atau model didistribusikan, sertakan kedua teks lisensinya yang ada di folder tersebut.
+
 ## Pilihan data: `own` atau `mix`
 
 - **`own`**: hanya `data/train.jsonl`, 79 sampel, 3 epoch, ±540 ribu token diproses.
@@ -303,6 +320,8 @@ docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol traini
 CLAUDE.md                             catatan singkat untuk Claude Code di repo ini
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
 scripts/validate.py                   validasi dataset
+scripts/build_bench_support.py        membuat dan memverifikasi kelompok bench-support (HumanEval)
+data/bench-support/                   kelompok dataset bench-support, lisensi, dan catatan perubahannya
 examples/web/*.html                   24 website dari sampel web, siap dibuka di browser
 tests/test_web.mjs                    tes otomatis website dengan Playwright
 tests/interactions.mjs                skenario interaksi per website
