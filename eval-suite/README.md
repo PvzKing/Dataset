@@ -41,3 +41,6 @@ python eval-suite/papan_skor.py --tag demo --pembanding demo-model-dasar --root 
 - **Ekstraksi kode IndoPy** mengambil blok kode terakhir yang mendefinisikan fungsi yang diminta. Kode demo di tingkat atas dibuang: blok `__main__`, `print`, loop, dan `assert`. Import, konstanta, fungsi pembantu, dan kelas dipertahankan. `evalplus.sanitize` sengaja tidak dipakai, karena ia bisa membuang fungsi pembantu yang sebenarnya dipanggil.
 - **Web-eval longgar soal cara membangun UI tapi ketat soal hasil.** Misalnya pilihan satuan suhu harus berupa `<select>`, tetapi angkanya boleh tampil di teks, `<input>`, atau `<output>`. Jam dunia harus benar walaupun komputer penguji memakai UTC.
 - **10 website terlalu sedikit untuk uji statistik**, jadi G3 dinilai dari jumlah website yang lolos.
+- **Soal bertema hukum, pajak, dan ketenagakerjaan sudah diaudit**, karena aturan yang disebut sebagai hukum harus benar. Soal yang ikut diaudit antara lain upah lembur, zakat, PPN, PPh 21, THR, BPJS Kesehatan, pelat nomor, dan tarif PDAM.
+  - Aturan yang disederhanakan atau rekaan diberi keterangan di prompt-nya, misalnya bahwa tarif PDAM ditetapkan kepala daerah, bahwa THR yang dihitung adalah besaran minimum menurut Permenaker 6/2016, dan bahwa makanan di restoran dikenai PBJT, bukan PPN.
+  - Prompt dan tesnya diperiksa ulang setiap kali soal diubah.
