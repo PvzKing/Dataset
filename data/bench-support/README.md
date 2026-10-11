@@ -42,6 +42,14 @@ Semua langkah dijalankan oleh `scripts/build_bench_support.py`:
 
 File hanya ditulis jika semua soal lolos verifikasi. Menjalankan ulang `python scripts/build_bench_support.py` membuat file yang sama persis.
 
+## Menguji skor
+
+`scripts/eval_humaneval.py` menjalankan 164 soal dengan template chat yang sama, greedy decoding, lalu menilainya dengan harness resmi EvalPlus (tes dasar HumanEval dan tes tambahan HumanEval+). Petunjuk Colab ada di docstring script.
+
+- **Pasang EvalPlus dari commit master.** Versi 0.3.1 di PyPI selalu menilai HumanEval/32 gagal, bahkan untuk solusi resminya. Script berhenti dengan pesan jelas jika versi itu yang terpasang.
+- **Bandingkan beberapa model.** Jalankan juga dengan adapter v3 (`--adapter <folder v3>`) dan model dasar (`--adapter none`). Script mencetak tabel perbandingan semua run.
+- **Skor adapter bench-lanjut tidak bersih**, sesuai peringatan di atas: model sudah melihat soal dan jawabannya. Selisihnya dengan v3 menunjukkan seberapa besar efek hafalan, bukan kenaikan kemampuan.
+
 ## Lisensi dan perubahan
 
 | Komponen | Lisensi | Pemegang hak cipta | Teks lisensi |
