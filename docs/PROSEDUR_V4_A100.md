@@ -2,7 +2,7 @@
 
 <!-- colab-gpu: A100 -->
 
-Panduan ini melatih **v4** dari model dasar Qwen3.5-4B di GPU A100, dengan konteks training 16.384 token. Setelah itu v4, v3, dan model dasar diukur dengan semua uji di [`eval-suite/`](../eval-suite/README.md), lalu dinilai dengan gerbang di [`RENCANA_PYTHON.md`](RENCANA_PYTHON.md). Ikuti berurutan. Setiap sel menjelaskan tujuannya, kode yang harus dijalankan, output yang seharusnya muncul, dan apa yang dilakukan kalau gagal.
+Panduan ini melatih **v4** dari model dasar Qwen3.5-4B di GPU A100, dengan konteks training 16.384 token, lalu melatih ulang **v3-ulang** sebagai pembanding dengan resep yang sama. Panduan ini tidak butuh hasil lama di Google Drive, jadi bisa dimulai dari akun Google yang baru. Setelah itu v4, v3-ulang, dan model dasar diukur dengan semua uji di [`eval-suite/`](../eval-suite/README.md), lalu dinilai dengan gerbang di [`RENCANA_PYTHON.md`](RENCANA_PYTHON.md). Ikuti berurutan. Setiap sel menjelaskan tujuannya, kode yang harus dijalankan, output yang seharusnya muncul, dan apa yang dilakukan kalau gagal.
 
 <!-- hanya-md -->
 ## Cara termudah: panel interaktif
@@ -11,10 +11,10 @@ Buka **[panel interaktif A100](https://colab.research.google.com/github/PvzKing/
 
 | Sel | Fungsi |
 |---|---|
-| 1️⃣ Siapkan | cek GPU (harus A100), pasang paket yang belum ada, hubungkan Google Drive, unduh script terbaru, dan periksa adapter v3. Konteks training dipilih di sini (16384, atau 12288 jika kehabisan VRAM) |
-| 2️⃣ Jalankan | pilihan **Otomatis** menjalankan semua langkah yang belum selesai secara berurutan: latih v4, uji v4, lalu uji v3. Centang `sertakan_indopy_test` untuk penilaian akhir G2. Bisa juga memilih satu langkah saja |
+| 1️⃣ Siapkan | cek GPU (harus A100), pasang paket yang belum ada, hubungkan Google Drive, unduh script terbaru, dan unduh data v3-ulang. Konteks training dipilih di sini (16384, atau 12288 jika kehabisan VRAM) |
+| 2️⃣ Jalankan | pilihan **Otomatis** menjalankan semua langkah yang belum selesai secara berurutan: latih v4, uji v4, latih v3-ulang, lalu uji v3-ulang. Centang `sertakan_indopy_test` untuk penilaian akhir G2. Bisa juga memilih satu langkah saja |
 | 3️⃣ Lihat progres | tabel ✅/▶️/⏳ untuk setiap langkah, dengan perkiraan sisa waktu GPU |
-| 4️⃣ Laporan | papan skor v4 dan v3, website dan soal yang gagal, serta ringkasan training, siap disalin ke chat. Laporan juga disimpan ke Drive (`finetune-id/laporan-v4-a100.txt`) |
+| 4️⃣ Laporan | papan skor v4 dan v3-ulang, website dan soal yang gagal, serta ringkasan training, siap disalin ke chat. Laporan juga disimpan ke Drive (`finetune-id/laporan-v4-a100.txt`) |
 
 Panel menjalankan perintah yang sama persis dengan bagian manual di bawah, dengan tambahan berikut:
 - **Melanjutkan sendiri setelah Colab terputus.** Jalankan sel 1 dan sel 2 lagi. Training dilanjutkan dari checkpoint terakhir, dan jawaban uji yang sudah tersimpan tidak diulang.
@@ -30,13 +30,26 @@ Bagian di bawah ini adalah **cara manual**, sel demi sel. Gunanya untuk memahami
 
 | | v4-pilot (T4) | **v4 (panduan ini, A100)** |
 |---|---|---|
-| Titik awal | model dasar | model dasar. **Bukan** lanjutan adapter v3 (`--init-adapter` tidak dipakai) |
+| Titik awal | model dasar | model dasar. **Bukan** lanjutan adapter lain (`--init-adapter` tidak dipakai) |
 | Presisi training | QLoRA 4-bit, dihitung dalam float32 | **LoRA 16-bit (bf16)**, yaitu cara yang disarankan Unsloth untuk Qwen3.5 |
 | Konteks training (`max_seq_len`) | 6.144 token | **16.384 token** |
 | Batas jawaban website uji (`max_new_tokens`) | 6.000 token | **12.000 token** |
 | Data | `data/train.jsonl` terbaru (102 sampel) | sama |
 | Resep lain | 3 epoch, lr 1e-4, LoRA r16/alpha 32, batch efektif 8, seed 42 | sama |
-| Folder hasil uji | `finetune-id/eval-*` | **`finetune-id/a100/eval-*`**. Model dasar, v3, dan v4 diukur ulang di A100 dengan pengaturan yang sama |
+| Folder hasil uji | `finetune-id/eval-*` | **`finetune-id/a100/eval-*`**. Model dasar, v3-ulang, dan v4 diukur di A100 dengan pengaturan yang sama |
+
+### Pembanding: v3-ulang
+
+Gerbang G3 membandingkan website v4 dengan v3. Adapter v3 lama tidak dipakai, karena tidak ada di akun Google yang baru dan dilatih dengan resep lain (QLoRA 4-bit di T4). Sebagai gantinya, panduan ini melatih **v3-ulang**:
+
+| | v4 | v3-ulang |
+|---|---|---|
+| Data | `data/train.jsonl` terbaru (102 sampel) | `train.jsonl` terakhir sebelum sampel Python ditambahkan: commit `3ed189d`, 79 sampel (web 24, tech 22, debug 12, math 11, sci 10) |
+| Resep | LoRA 16-bit, konteks 16.384, 3 epoch, lr 1e-4, r16, seed 42 | sama persis |
+
+Karena resepnya sama, beda skor keduanya berasal dari **data**, yaitu 23 sampel yang hanya ada di v4: `py-001` sampai `py-020`, `tech-023`, `web-025`, dan `web-026`.
+
+Catatan jujur: data v3 lama tidak tercatat persis. README hanya menyebut 78 sampel. Commit `3ed189d` adalah versi terdekat sebelum sampel Python, jadi v3-ulang **bukan salinan identik** v3 lama. Sebut ia v3-ulang di laporan, bukan v3.
 
 Hasil uji A100 disimpan di folder sendiri karena jawaban model dasar dipakai ulang oleh setiap adapter. Kalau foldernya sama, v4 (16-bit, A100) akan dibandingkan dengan jawaban model dasar lama (4-bit, T4), dan perbandingannya jadi tidak adil.
 
@@ -58,7 +71,7 @@ Semuanya muat dalam **satu sesi A100**. Angka A100 di bawah masih perkiraan, kar
 | B | cek data tanpa training | ±2 menit |
 | C | training v4, lalu 2 website uji | ±15–40 menit, ditambah ±10 menit website uji |
 | D | uji v4: HumanEval+, MBPP+, IndoPy-dev, Web-eval (model dasar ikut dijawab di uji pertama) | ±60–80 menit |
-| E | uji v3 dengan uji yang sama | ±30–40 menit |
+| E | latih v3-ulang, lalu uji dengan uji yang sama | ±35 menit training, ditambah ±30–40 menit uji |
 | F | IndoPy-test untuk penilaian akhir v4 | ±10 menit |
 | G | papan skor dan kirim hasil | ±5 menit |
 
@@ -77,7 +90,7 @@ A100 di Colab memakai **compute unit** (Colab Pro atau Pay As You Go). Sebelum m
 
    | Yang dibutuhkan | Lokasi di Drive | Kalau tidak ada |
    |---|---|---|
-   | adapter v3 | `MyDrive/finetune-id/v3/qwen3.5-4b-own-4bit/lora-adapter` | dibutuhkan sebagai pembanding Web-eval (gerbang G3). Periksa path-nya |
+   | hasil lama | tidak dibutuhkan | folder `MyDrive/finetune-id` dibuat otomatis. Akun Google yang baru tidak masalah |
    | ruang kosong | | sediakan ±3 GB. Adapter 16-bit dan checkpoint-nya lebih besar dari versi 4-bit |
 
 ### A2. Sel 1: cek GPU dan pasang paket
@@ -111,22 +124,26 @@ REPO = "https://raw.githubusercontent.com/PvzKing/Dataset/main"
 
 ROOT = "/content/drive/MyDrive/finetune-id"
 HASIL = f"{ROOT}/a100"                                 # semua hasil uji A100
-V3 = f"{ROOT}/v3/qwen3.5-4b-own-4bit/lora-adapter"
 V4 = f"{ROOT}/v4/qwen3.5-4b-own/lora-adapter"          # dibuat oleh Bagian C
+V3 = f"{ROOT}/v3-ulang/qwen3.5-4b-own/lora-adapter"    # dibuat oleh Bagian E
+DATA_V3 = f"{ROOT}/v3-ulang/train_v3.jsonl"            # data v3-ulang, dipatok ke commit 3ed189d
 KONTEKS = 16384
-LATIH = f"--out {ROOT}/v4 --no-load-in-4bit --max-seq-len {KONTEKS}"   # dipakai semua perintah train_unsloth.py
+LATIH = f"--out {ROOT}/v4 --no-load-in-4bit --max-seq-len {KONTEKS}"   # dipakai semua perintah train_unsloth.py v4
+LATIH_V3 = f"--out {ROOT}/v3-ulang --data {DATA_V3} --no-load-in-4bit --max-seq-len {KONTEKS}"
 UJI = "--no-load-in-4bit"                              # semua model diuji dalam 16-bit
 import subprocess
 GPU = subprocess.run(["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"], capture_output=True, text=True).stdout
 assert "A100" in GPU or "H100" in GPU, f"GPU sekarang: {GPU.strip() or 'tidak ada'}. Pilih A100 (lihat A1)."
-!ls {V3}
+!mkdir -p {ROOT}/v3-ulang
+!test -s {DATA_V3} || wget -q -O {DATA_V3} https://raw.githubusercontent.com/PvzKing/Dataset/3ed189ddcb387fe6609968ccb426c5603d7f5690/data/train.jsonl
+!wc -l {DATA_V3}
 ```
 
 - **Pertama kali**, muncul jendela izin akses Google Drive. Pilih akun yang sama dengan A1.
-- **Output yang benar:** `Mounted at /content/drive`, lalu daftar file adapter v3 yang berisi `adapter_config.json`.
+- **Output yang benar:** `Mounted at /content/drive`, lalu `79 .../v3-ulang/train_v3.jsonl`.
 - **Kalau sel berhenti dengan `GPU sekarang: Tesla T4...`:** runtime-nya bukan A100. Pengaturan di panduan ini tidak muat di T4, jadi sel sengaja dihentikan. Ulangi A1 langkah 3.
-- **Kalau muncul `No such file or directory`:** cari folder `lora-adapter` v3 di panel **Files** di kiri, klik kanan, pilih **Copy path**, lalu ganti nilai `V3`.
-- **`LATIH` harus sama persis di semua perintah `train_unsloth.py`** (training, uji ulang, GGUF), karena folder hasil dan checkpoint ditentukan dari pengaturan itu.
+- **Kalau angkanya bukan 79:** unduhan terpotong. Hapus file itu (`!rm {DATA_V3}`), lalu jalankan sel ini lagi.
+- **`LATIH` dan `LATIH_V3` harus sama persis di semua perintah `train_unsloth.py`** (training, uji ulang, GGUF), karena folder hasil dan checkpoint ditentukan dari pengaturan itu.
 
 ---
 
@@ -140,7 +157,7 @@ Sel ini memuat tokenizer saja, tanpa model, dan menghitung panjang setiap sampel
 
 | Baris yang muncul | Arti |
 |---|---|
-| `folder hasil: /content/drive/MyDrive/finetune-id/v4/qwen3.5-4b-own` | tanpa akhiran `-4bit`, jadi 16-bit. Folder v3 dan v4-pilot tidak tersentuh |
+| `folder hasil: /content/drive/MyDrive/finetune-id/v4/qwen3.5-4b-own` | tanpa akhiran `-4bit`, jadi 16-bit. Folder lain tidak tersentuh |
 | `data valid: 102 sampel dari ...` | **wajib 102.** Angka lain berarti `train.jsonl` lama terpakai (lihat Bagian H) |
 | `sampel terpanjang: ... (6,2xx)` | sampel terpanjang saat ini |
 | `102 sampel dipakai, 0 dibuang karena > 16384 token []` | semua sampel ikut dilatih |
@@ -193,7 +210,7 @@ Output penting, berurutan:
 
 ## Bagian D. Mengukur v4
 
-Setiap uji menjawab soal dengan v4, lalu dengan **model dasar** (adapter dimatikan sementara), kemudian membandingkan keduanya dengan uji McNemar. Jawaban model dasar disimpan di `a100/eval-*/model-dasar`, lalu dipakai ulang oleh v3 di Bagian E.
+Setiap uji menjawab soal dengan v4, lalu dengan **model dasar** (adapter dimatikan sementara), kemudian membandingkan keduanya dengan uji McNemar. Jawaban model dasar disimpan di `a100/eval-*/model-dasar`, lalu dipakai ulang oleh v3-ulang di Bagian E.
 
 **`p < 0,05` berarti selisihnya nyata.** Kalau `p ≥ 0,05`, selisih itu bisa kebetulan, jadi jangan disimpulkan sebagai naik atau turun.
 
@@ -224,16 +241,33 @@ Output-nya berupa progres `[v4-qwen3.5-4b-own] 64/164 soal ...`, skor HumanEval 
 ```
 
 - Website yang dibuat disimpan di `a100/eval-web/v4-qwen3.5-4b-own/situs/`.
-- Batas 12.000 token dipakai juga untuk model dasar dan v3, supaya ketiganya diuji dengan aturan yang sama.
+- Batas 12.000 token dipakai juga untuk model dasar dan v3-ulang, supaya ketiganya diuji dengan aturan yang sama.
 
 **Kalau muncul `CUDA out of memory` di uji mana pun:** turunkan `--batch-size` (misalnya 32 → 16, atau 5 → 2), lalu jalankan perintah yang sama. Jawaban yang sudah tersimpan dilewati.
 
 ---
 
-## Bagian E. Mengukur v3 dengan aturan yang sama
+## Bagian E. Melatih dan mengukur v3-ulang
 
-v3 dilatih dengan QLoRA 4-bit di T4. Di sini adapter itu dipasang di model dasar 16-bit, sama seperti v4. Jawaban model dasar dari Bagian D dipakai ulang, jadi hanya v3 yang dijawab.
+### E1. Latih v3-ulang (±15–35 menit)
 
+```python
+!python /content/train_unsloth.py train {LATIH_V3} --no-test
+```
+
+Output-nya sama seperti C1, dengan dua perbedaan:
+- `folder hasil: .../finetune-id/v3-ulang/qwen3.5-4b-own`;
+- `data valid: 79 sampel` dan `79 sampel dipakai, 0 dibuang`. Angka lain berarti `DATA_V3` salah; lihat A3.
+
+`--no-test` melewati dua website uji setelah training, karena v3-ulang hanya dipakai sebagai pembanding. Kalau sesi terputus, jalankan perintah yang sama lagi.
+
+### E2. Uji v3-ulang
+
+Jawaban model dasar dari Bagian D dipakai ulang, jadi hanya v3-ulang yang dijawab. Jalankan **Web-eval dulu**, karena gerbang G3 membandingkan v4 dengan v3-ulang.
+
+```python
+%run /content/web_eval.py --adapter {V3} --results {HASIL}/eval-web {UJI} --max-seq-len {KONTEKS} --max-new-tokens 12000 --batch-size 5
+```
 ```python
 %run /content/eval_humaneval.py --adapter {V3} --results {HASIL}/eval-humaneval {UJI} --batch-size 32
 ```
@@ -243,11 +277,9 @@ v3 dilatih dengan QLoRA 4-bit di T4. Di sini adapter itu dipasang di model dasar
 ```python
 %run /content/indopy_eval.py --split dev --adapter {V3} --results {HASIL}/eval-indopy-dev {UJI} --batch-size 16
 ```
-```python
-%run /content/web_eval.py --adapter {V3} --results {HASIL}/eval-web {UJI} --max-seq-len {KONTEKS} --max-new-tokens 12000 --batch-size 5
-```
 
-Yang wajib untuk papan skor adalah **Web-eval v3**, karena gerbang G3 membandingkan v4 dengan v3. Tiga uji lainnya berguna untuk melihat apakah v4 lebih baik dari v3 di Python. Kalau compute unit menipis, jalankan Web-eval v3 dulu.
+Tiga uji terakhir menunjukkan apakah 20 sampel Python di v4 benar-benar menambah kemampuan Python dibanding v3-ulang. Kalau compute unit menipis, Web-eval saja sudah cukup untuk papan skor.
+
 
 ---
 
@@ -275,27 +307,28 @@ import json
 from pathlib import Path
 
 H = Path(HASIL)
-RUN = {"dasar": "model-dasar", "v3": "v3-qwen3.5-4b-own-4bit", "v4": "v4-qwen3.5-4b-own"}
+RUN = {"dasar": "model-dasar", "v3-ulang": "v3-ulang-qwen3.5-4b-own", "v4": "v4-qwen3.5-4b-own"}
 print(f"{'uji':<18}" + "".join(f"{k:>8}" for k in RUN))
 for folder in ["eval-humaneval", "eval-mbpp", "eval-indopy-dev", "eval-web", "eval-indopy-test"]:
     print(f"{folder:<18}" + "".join(f"{'selesai' if (H / folder / run / 'ringkasan.json').exists() else '-':>8}"
                                      for run in RUN.values()))
-print("adapter v4:", "sudah ada" if Path(V4, "adapter_config.json").exists() else "belum dilatih")
+for nama, adapter in (("v4", V4), ("v3-ulang", V3)):
+    print(f"adapter {nama}:", "sudah ada" if Path(adapter, "adapter_config.json").exists() else "belum dilatih")
 ```
 
-Di akhir, semua baris harus `selesai`, kecuali `eval-indopy-test` untuk v3. Untuk dasar, baris itu juga terisi kalau Bagian F dijalankan.
+Di akhir, semua baris harus `selesai`, kecuali `eval-indopy-test` untuk v3-ulang. Untuk dasar, baris itu juga terisi kalau Bagian F dijalankan.
 
 ### G2. Papan skor
 
 ```python
-%run /content/papan_skor.py --root {HASIL} --tag v4-qwen3.5-4b-own --pembanding v3-qwen3.5-4b-own-4bit
+%run /content/papan_skor.py --root {HASIL} --tag v4-qwen3.5-4b-own --pembanding v3-ulang-qwen3.5-4b-own
 ```
 
 | Gerbang | Lolos jika |
 |---|---|
 | G1 Python umum | HumanEval+ dan MBPP+ v4 tidak turun nyata dari model dasar, dan selisih gabungannya ≥ −1,5 poin |
 | G2 IndoPy-test | v4 naik nyata dari model dasar (`p < 0,05`) |
-| G3 Website | jumlah website Web-eval v4 yang lolos ≥ v3 |
+| G3 Website | jumlah website Web-eval v4 yang lolos ≥ v3-ulang |
 | G4 Perbaikan bug | belum ada set ujinya. Selalu tercatat belum diukur |
 
 Karena G4 belum ada, `Keputusan: BELUM DITERIMA` masih wajar walaupun G1–G3 lolos. Langkah berikutnya:
@@ -303,14 +336,14 @@ Karena G4 belum ada, `Keputusan: BELUM DITERIMA` masih wajar walaupun G1–G3 lo
 | Hasil | Langkah berikutnya |
 |---|---|
 | G1, G2, G3 lolos | v4 layak dipakai sebagai kandidat. Lanjut ke Fase 3: sampel panjang (yang sekarang bisa dilatih dengan konteks 16.384) dan set uji G4 |
-| G2 gagal | bandingkan IndoPy-dev v4 dan v3. Kirim daftar soal dev yang gagal, **bukan soal test** |
-| G3 gagal | bandingkan alasan kegagalan Web-eval v3 dan v4: regresi baru, atau website yang terpotong |
+| G2 gagal | bandingkan IndoPy-dev v4 dan v3-ulang. Kirim daftar soal dev yang gagal, **bukan soal test** |
+| G3 gagal | bandingkan alasan kegagalan Web-eval v3-ulang dan v4: regresi baru, atau website yang terpotong |
 | G1 gagal | cek soal yang turun di `perbandingan-*.json`. Pertimbangkan swa-distilasi (Fase 4) |
 
-Untuk melihat v3 dibanding model dasar dengan aturan A100 yang sama:
+Untuk melihat v3-ulang dibanding model dasar dengan aturan yang sama:
 
 ```python
-%run /content/papan_skor.py --root {HASIL} --tag v3-qwen3.5-4b-own-4bit
+%run /content/papan_skor.py --root {HASIL} --tag v3-ulang-qwen3.5-4b-own
 ```
 
 ### G3. Sel kumpulkan hasil
@@ -346,7 +379,7 @@ Sel ini memakai `H` dan `RUN` dari Sel cek progres, jadi jalankan sel itu dulu.
 ### G4. Kirim ke chat
 
 Salin dan kirim:
-1. output papan skor v4 (G2), dan papan skor v3 jika dijalankan;
+1. output papan skor v4 (G2), dan papan skor v3-ulang jika dijalankan;
 2. output sel kumpulkan hasil (G3);
 3. baris `sampel terpanjang` dan `sampel dipakai` dari log training.
 
@@ -377,7 +410,7 @@ Hasilnya ada di `MyDrive/finetune-id/v4/qwen3.5-4b-own/gguf/`. `LATIH` harus sam
 | `CUDA out of memory` saat uji | batch terlalu besar | turunkan `--batch-size`, lalu ulangi perintah yang sama |
 | `data valid: 82 sampel` atau angka lain selain 102 | `train.jsonl` lama terpakai | hapus `MyDrive/finetune-id/v4/train.jsonl`, lalu ulangi Bagian B dan C |
 | `data atau pengaturan berubah: hasil lama dipindah ke .../arsip/...` | pengaturan training berbeda dari run sebelumnya | wajar. Training dimulai dari awal, dan hasil lama tetap tersimpan di `arsip/` |
-| `adapter tidak ditemukan` | Drive belum di-mount atau path salah | jalankan Sel 2, lalu periksa `V3` dan `V4` |
+| `adapter tidak ditemukan` | adapter belum dilatih, atau Drive belum di-mount | jalankan Sel 2. Uji v4 butuh Bagian C, uji v3-ulang butuh E1 |
 | `evalplus yang terpasang (0.3.1 dari PyPI)...` | EvalPlus versi PyPI terpasang | jalankan perintah `pip install --force-reinstall --no-deps ...` yang ditampilkan, Restart session, lalu Sel 2 |
 | `No module named 'playwright'` atau `Executable doesn't exist` | Playwright belum terpasang di runtime ini | jalankan baris terakhir Sel 1 |
 | Skor v4 janggal setelah dilatih ulang | jawaban uji adapter lama dipakai ulang | hapus subfolder `v4-qwen3.5-4b-own` di setiap folder `a100/eval-*`, lalu ulangi Bagian D |
@@ -388,7 +421,9 @@ Hasilnya ada di `MyDrive/finetune-id/v4/qwen3.5-4b-own/gguf/`. `LATIH` harus sam
 
 ```
 MyDrive/finetune-id/
-├── v3/qwen3.5-4b-own-4bit/lora-adapter/   adapter v3 (tidak diubah)
+├── v3-ulang/
+│   ├── train_v3.jsonl                      data v3-ulang (commit 3ed189d, 79 sampel)
+│   └── qwen3.5-4b-own/lora-adapter/        adapter v3-ulang (16-bit, konteks 16.384)
 ├── v4/
 │   ├── train.jsonl                         data yang dipakai training v4
 │   └── qwen3.5-4b-own/
@@ -397,7 +432,7 @@ MyDrive/finetune-id/
 │       ├── status.json                     loss, lama training, hasil website uji
 │       └── contoh-*.html                   website uji (batas 12.000 token)
 └── a100/
-    ├── eval-humaneval/   model-dasar/, v3-.../, v4-.../, perbandingan-*.json
+    ├── eval-humaneval/   model-dasar/, v3-ulang-.../, v4-.../, perbandingan-*.json
     ├── eval-mbpp/        (susunan sama)
     ├── eval-indopy-dev/  (susunan sama)
     ├── eval-indopy-test/ model-dasar/, v4-.../
@@ -408,16 +443,17 @@ MyDrive/finetune-id/
 
 ```
 Sel 1   pasang paket (sekali per runtime)
-Sel 2   mount Drive, unduh script, ROOT/HASIL/V3/V4/KONTEKS/LATIH/UJI (setiap sesi)
+Sel 2   mount Drive, unduh script dan data v3-ulang, ROOT/HASIL/V3/V4/KONTEKS/LATIH/LATIH_V3/UJI (setiap sesi)
 cek     !python /content/train_unsloth.py prepare {LATIH}
 latih   !python /content/train_unsloth.py train {LATIH} --max-new-tokens 12000
 v4      %run /content/eval_humaneval.py --adapter {V4} --results {HASIL}/eval-humaneval {UJI} --batch-size 32
         %run /content/eval_humaneval.py --dataset mbpp --adapter {V4} --results {HASIL}/eval-mbpp {UJI} --batch-size 32
         %run /content/indopy_eval.py --split dev --adapter {V4} --results {HASIL}/eval-indopy-dev {UJI} --batch-size 16
         %run /content/web_eval.py --adapter {V4} --results {HASIL}/eval-web {UJI} --max-seq-len {KONTEKS} --max-new-tokens 12000 --batch-size 5
-v3      (empat perintah yang sama dengan {V3})
+latih   !python /content/train_unsloth.py train {LATIH_V3} --no-test
+v3      (empat perintah uji yang sama dengan {V3}, Web-eval dulu)
 akhir   %run /content/indopy_eval.py --split test --adapter {V4} --results {HASIL}/eval-indopy-test {UJI} --batch-size 16
-skor    %run /content/papan_skor.py --root {HASIL} --tag v4-qwen3.5-4b-own --pembanding v3-qwen3.5-4b-own-4bit
+skor    %run /content/papan_skor.py --root {HASIL} --tag v4-qwen3.5-4b-own --pembanding v3-ulang-qwen3.5-4b-own
 ```
 
 ## Lampiran 3. Menambah sampel panjang nanti

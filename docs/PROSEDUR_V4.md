@@ -18,7 +18,7 @@ Buka **[notebook panel interaktif](https://colab.research.google.com/github/PvzK
 
 Setiap langkah berjalan sebagai proses terpisah, jadi memori GPU selalu bersih dan sesi tidak perlu di-restart. Kalau sebuah langkah gagal, panel berhenti dan menampilkan saran perbaikannya. Output setiap langkah juga disimpan di `finetune-id/panel-log/`.
 
-**Punya akses A100?** Ikuti [`PROSEDUR_V4_A100.md`](PROSEDUR_V4_A100.md). Panduan itu melatih v4 dari model dasar dengan LoRA 16-bit dan konteks 16.384, lalu mengukur semua model di A100.
+**Punya akses A100, atau memakai akun Google baru yang belum menyimpan adapter v3?** Ikuti [`PROSEDUR_V4_A100.md`](PROSEDUR_V4_A100.md). Panduan itu melatih v4 dan pembandingnya (v3-ulang) dari model dasar dengan LoRA 16-bit dan konteks 16.384, lalu mengukur semua model di A100. Panduan T4 di bawah butuh adapter v3 yang sudah ada di Drive.
 
 Bagian di bawah ini adalah **cara manual**, sel demi sel. Gunanya untuk memahami apa yang dikerjakan panel, membaca arti output setiap langkah, atau menjalankan satu uji dengan opsi lain. Versi notebook-nya: [notebook manual](https://colab.research.google.com/github/PvzKing/Dataset/blob/main/notebooks/v4_pilot_colab.ipynb).
 <!-- /hanya-md -->
@@ -98,7 +98,8 @@ V4 = "/content/drive/MyDrive/finetune-id/v4-pilot/qwen3.5-4b-own-4bit/lora-adapt
 
 - **Pertama kali**, muncul jendela izin akses Google Drive. Pilih akun yang sama dengan A1, lalu izinkan.
 - **Output yang benar:** `Mounted at /content/drive`, lalu daftar file adapter yang berisi `adapter_config.json` dan `adapter_model.safetensors`.
-- **Kalau muncul `No such file or directory`:** path adapter v3 berbeda. Cari foldernya di panel **Files** di kiri (ikon folder → `drive/MyDrive/...`), klik kanan folder `lora-adapter`, pilih **Copy path**, lalu ganti nilai `V3`.
+- **Kalau muncul `No such file or directory`:** path adapter v3 berbeda. Cari foldernya di panel **Files** di kiri (ikon folder → `drive/MyDrive/...`), klik kanan folder `lora-adapter`, pilih **Copy path**, lalu ganti nilai `V3`. Lokasi lain yang umum adalah `MyDrive/finetune-id/qwen3.5-4b-own-4bit/lora-adapter`.
+- **Kalau Drive-nya baru dan tidak ada adapter v3 sama sekali:** panduan ini tidak bisa dipakai. Ikuti [`PROSEDUR_V4_A100.md`](PROSEDUR_V4_A100.md), yang melatih ulang pembandingnya dari awal.
 
 ---
 
