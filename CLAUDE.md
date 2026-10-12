@@ -9,3 +9,4 @@ Repo ini berisi dataset instruct berbahasa Indonesia dan perangkat fine-tuning. 
 - **Mengubah `eval-suite/`:** jalankan `python eval-suite/indopy/cek_soal.py` dan `python eval-suite/web/uji_pemeriksa.py`. Isi `eval-suite/` adalah data uji: jangan dijadikan sampel latihan.
 - **Mengubah website di `examples/web/`:** jalankan juga tes browser di `tests/`.
 - **Mengubah `docs/PROSEDUR_V4.md`:** jalankan `python scripts/md_to_notebook.py` supaya `notebooks/v4_pilot_colab.ipynb` ikut diperbarui.
+- **Mengubah `scripts/panel_v4.py` atau `scripts/build_panel_notebook.py`:** jalankan `python scripts/build_panel_notebook.py` dan uji alurnya dengan `python scripts/panel_v4.py --demo /tmp/panel-demo`. Pilihan langkah di notebook harus sama dengan judul langkah di panel.

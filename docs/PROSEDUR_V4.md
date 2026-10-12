@@ -3,8 +3,22 @@
 Panduan ini menjalankan bagian [`RENCANA_PYTHON.md`](RENCANA_PYTHON.md) yang butuh GPU, dari membuka Colab sampai mengirim hasilnya. Ikuti berurutan. Setiap sel menjelaskan tujuannya, kode yang harus dijalankan, output yang seharusnya muncul, lama waktunya, dan apa yang dilakukan kalau gagal.
 
 <!-- hanya-md -->
-**Cara termudah:** buka versi notebook panduan ini. Semua sel kode sudah tersedia di sana, tinggal dijalankan satu per satu:
-<https://colab.research.google.com/github/PvzKing/Dataset/blob/main/notebooks/v4_pilot_colab.ipynb>
+## Cara termudah: panel interaktif
+
+Buka **[notebook panel interaktif](https://colab.research.google.com/github/PvzKing/Dataset/blob/main/notebooks/v4_pilot_interaktif.ipynb)**. Notebook ini hanya punya 4 sel berbentuk formulir, tanpa perintah yang perlu disalin:
+
+| Sel | Fungsi |
+|---|---|
+| 1️⃣ Siapkan | cek GPU, pasang paket yang belum ada, hubungkan Google Drive, unduh script terbaru, dan periksa adapter v3. Hasilnya berupa daftar ✅/❌ |
+| 2️⃣ Jalankan | pilihan **Otomatis** menjalankan semua langkah yang belum selesai secara berurutan: ukur v3, latih v4-pilot, ukur v4-pilot, lalu MBPP+. Bisa juga memilih satu langkah saja |
+| 3️⃣ Lihat progres | tabel ✅/▶️/⏳ untuk setiap langkah, dengan perkiraan sisa waktu GPU |
+| 4️⃣ Laporan | papan skor v3 dan v4-pilot, website dan soal yang gagal, serta ringkasan training, siap disalin ke chat. Laporan juga disimpan ke Drive |
+
+**Kalau Colab terputus atau kuota GPU habis**, buka notebook itu lagi, lalu jalankan sel 1 dan sel 2. Panel membaca hasil yang sudah ada di Drive dan melanjutkan dari langkah yang belum selesai.
+
+Setiap langkah berjalan sebagai proses terpisah, jadi memori GPU selalu bersih dan sesi tidak perlu di-restart. Kalau sebuah langkah gagal, panel berhenti dan menampilkan saran perbaikannya. Output setiap langkah juga disimpan di `finetune-id/panel-log/`.
+
+Bagian di bawah ini adalah **cara manual**, sel demi sel. Gunanya untuk memahami apa yang dikerjakan panel, membaca arti output setiap langkah, atau menjalankan satu uji dengan opsi lain. Versi notebook-nya: [notebook manual](https://colab.research.google.com/github/PvzKing/Dataset/blob/main/notebooks/v4_pilot_colab.ipynb).
 <!-- /hanya-md -->
 
 ## Gambaran
