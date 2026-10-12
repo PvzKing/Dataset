@@ -142,6 +142,128 @@ Hal-hal yang dilakukan script:
 - **Model dasar** Qwen3.5-4B dan Qwen2.5-Coder-7B-Instruct berlisensi Apache 2.0. Adapter atau model gabungan hasil fine-tuning boleh didistribusikan dan dipakai secara komersial, dengan syarat menyertakan salinan lisensi, mempertahankan pemberitahuan hak cipta, dan menandai bahwa model telah diubah (Pasal 4 Apache License 2.0). Tidak semua model Qwen berlisensi Apache 2.0: misalnya Qwen2.5-Coder-3B memakai lisensi riset non-komersial. Periksa lisensi setiap model sebelum mengganti model dasar.
 - Periksa kartu dataset (dataset card) masing-masing sumber untuk lisensi terbaru sebelum mendistribusikan dataset campuran atau model hasil training.
 
+## Mencari dataset lain (`scripts/find_datasets.py`)
+
+Crawler ini mencari kandidat dataset berbahasa Indonesia di katalog Hugging Face Hub, lalu menilai lisensi dan risikonya. Script membaca metadata, dataset card, dan beberapa baris contoh lewat API resmi Hugging Face. Dataset tidak diunduh utuh dan halaman web tidak di-scrape. Hasilnya daftar untuk direview manusia, bukan data yang langsung dipakai.
+
+Panduan langkah demi langkah untuk menjalankannya di laptop (Windows, macOS, Linux) ada di [`docs/PANDUAN_CRAWLER.md`](docs/PANDUAN_CRAWLER.md).
+
+```bash
+python scripts/find_datasets.py                                         # 50 kandidat teratas menurut jumlah unduhan
+python scripts/find_datasets.py --search instruct --task text-generation
+python scripts/find_datasets.py --only-permissive --min-downloads 100
+```
+
+Laporan ditulis ke `runs/kandidat_dataset.md`, `.json`, dan `.html` (tidak di-commit). Setiap kandidat diberi:
+
+- **Status lisensi:** permisif, share-alike, bersyarat, nonkomersial, tanpa turunan, atau cek manual. Jika ada beberapa lisensi, yang dipakai adalah yang paling ketat. Dataset tanpa lisensi masuk "cek manual" karena ciptaan tetap dilindungi hak cipta walaupun tidak mencantumkan lisensi (UU No. 28 Tahun 2014).
+- **Bentuk data:** percakapan, instruksi, tanya-jawab, atau teks lainnya, dibaca dari nama kolom di metadata.
+- **Catatan risiko dari dataset card:**
+  - Kemungkinan berisi output model lain (GPT, Claude, Gemini, Alpaca). Cek syarat penggunaan penyedia modelnya.
+  - Sumber media sosial atau ulasan pengguna. Cek data pribadi menurut UU No. 27 Tahun 2022 tentang PDP, juga syarat layanan platform asalnya.
+  - Dataset gated, yang mengharuskan menyetujui syarat pemilik sebelum mengunduh.
+  - Dataset card terlalu singkat sehingga asal-usul datanya tidak jelas.
+
+### Visualisasi jaring
+
+File `.html` di samping laporan memutar ulang jalannya crawl sebagai laba-laba yang merayap di jaring. Buka file itu langsung di browser, tanpa server dan tanpa internet.
+
+- **Fase mencari:** laba-laba berangkat dari "katalog" ke setiap kata kunci pencarian, lalu memintal benang ke setiap dataset yang ditemukan. Dataset yang ditemukan lebih dari satu pencarian mendapat benang tambahan.
+- **Fase membaca card:** laba-laba mendatangi dataset satu per satu sesuai urutan dataset card dibaca. Titik yang sudah dibaca diberi cincin, dan titik kuning kecil menandakan ada catatan risiko.
+- **Arti titik:** warna menunjukkan status lisensi. Besarnya menunjukkan skor kualitas (preset coding) atau jumlah unduhan.
+- **Interaksi:**
+  - Klik kata di jaring untuk melihat detail di panel samping. Setelah animasi selesai, laba-laba merayap ke titik yang dipilih.
+  - Legenda sekaligus berfungsi sebagai filter status lisensi.
+  - Tersedia tombol jeda, ulangi, dan lewati animasi, serta pengatur kecepatan.
+- **Aksesibilitas:** tabel di bawah jaring berisi semua kandidat dan bisa dipakai dengan keyboard. Jika sistem meminta animasi dikurangi (`prefers-reduced-motion`), jaring langsung ditampilkan dalam keadaan akhir.
+
+**Mode live (di laptop).** Dengan `--live`, kamu bisa menonton laba-labanya merayap selama crawl berjalan:
+
+```bash
+python scripts/find_datasets.py --preset coding --live
+```
+
+- **Cara kerja:** script menjalankan server kecil di `http://127.0.0.1:8765` dan membuka browser. Setiap halaman katalog yang terbaca, setiap kandidat baru, dan setiap dataset card yang dibaca dikirim ke halaman lewat Server-Sent Events.
+- **Yang terlihat:** jaring tumbuh per kata kunci pencarian. Dataset yang tergeser dari daftar teratas memudar dan dilepas dari jaring. Kalau laba-labanya tertinggal dari crawl, langkahnya otomatis dipercepat.
+- **Setelah selesai:** laporan tetap ditulis seperti biasa, dan halaman masih bisa dibuka atau dimuat ulang sampai kamu menekan Ctrl+C.
+- **Keamanan:** server hanya mendengarkan `127.0.0.1`, jadi tidak bisa dibuka dari perangkat lain di jaringan.
+- **Opsi:**
+  - `--port` mengganti port kalau 8765 sudah dipakai.
+  - `--no-browser` mencegah browser terbuka otomatis.
+- **Batasan:** mode ini butuh browser di mesin yang sama dengan crawler, jadi tidak jalan di Colab. Untuk Colab, pakai file `.html` hasil crawl biasa.
+
+Templatenya ada di `scripts/crawler_viz.html`. Kalau dibuka langsung, template itu menampilkan data contoh yang ditandai jelas. Semua teks dari Hugging Face dipasang dengan `textContent` atau digambar di canvas, jadi isi dataset card tidak bisa menyisipkan HTML.
+
+### Preset coding
+
+`--preset coding` mencari dataset kode dalam semua bahasa. Script menjalankan pencarian dengan kata kunci `code`, `coding`, `program`, `python`, `javascript`, dan `sql`, ditambah tag `code`. Hasil yang bukan dataset kode (barcode, encoder, code-switching) dibuang, lalu kandidat diurutkan menurut skor kualitas 0–100.
+
+```bash
+python scripts/find_datasets.py --preset coding                    # laporan di runs/kandidat_coding.md
+python scripts/find_datasets.py --preset coding --only-permissive --top 30
+```
+
+| Komponen skor | Poin |
+|---|---|
+| Lisensi permisif (share-alike 10, bersyarat 5) | 25 |
+| Bentuk instruksi atau percakapan (tanya-jawab 15) | 25 |
+| Popularitas: unduhan dan likes | 20 |
+| Dataset card menyebut verifikasi dengan unit test atau eksekusi | 15 |
+| Dekontaminasi dari benchmark, deduplikasi, dan dokumentasi lengkap | masing-masing 5 |
+| Nama dataset adalah benchmark (HumanEval, MBPP, LiveCodeBench, ...) | −30 |
+
+Skor ini perkiraan dari metadata, bukan ukuran mutu pasti. Klaim "diverifikasi" hanya dibaca dari dataset card, jadi tetap jalankan sendiri sebagian solusi beserta tesnya. Preset ini juga menambah catatan risiko khusus kode:
+
+- **Benchmark:** dipakai untuk evaluasi, bukan training. Kalau dilatih, skor evaluasinya tidak bersih, seperti yang sudah dicatat untuk kelompok `bench-support`.
+- **Soal dari situs kompetisi** (LeetCode, Codeforces, dan sejenisnya): teks soal dilindungi hak cipta, dan syarat layanan situsnya umumnya melarang pengambilan otomatis.
+- **Korpus kode mentah dari repo publik:** setiap file punya lisensinya sendiri, termasuk GPL. Program komputer adalah ciptaan yang dilindungi (Pasal 40 ayat (1) huruf s UU No. 28 Tahun 2014). Kode juga bisa memuat email atau API key.
+
+**Isi data.** Untuk setiap kandidat akhir, crawler mengambil beberapa baris pertama (`--preview`, bawaan 3, `0` untuk mematikan) lewat dataset viewer resmi Hugging Face (`datasets-server.huggingface.co`). Biasanya ini cukup satu request per dataset.
+- Teks panjang, list, dan objek bersarang dipotong supaya laporan tetap kecil.
+- Baris contoh tersimpan di laporan `.json`, dan bisa dibuka lewat tombol **Lihat isi data** di visualisasi. Percakapan ditampilkan per giliran.
+- Dataset gated dilewati. Isinya baru boleh dibaca setelah syarat pemiliknya disetujui.
+- Baris contoh bisa memuat data pribadi atau materi berhak cipta, jadi laporan di `runs/` jangan disebarkan.
+
+Crawler bersikap sopan terhadap server: memakai User-Agent yang menyebut identitasnya, memberi jeda minimal 1 detik antar-request (`--delay`), dan mematuhi `Retry-After` saat dibatasi (HTTP 429). Isi `HF_TOKEN` untuk batas request yang lebih longgar. Status lisensi diambil dari metadata yang diisi pemilik dataset dan bisa keliru, jadi tetap baca dataset card sebelum memakai kandidat.
+
+## Mengambil isi untuk SFT (`scripts/harvest_code.py`)
+
+`find_datasets.py` hanya menemukan kandidat. Untuk mengambil isinya sebagai bahan mentah dataset SFT, pakai `scripts/harvest_code.py`, lalu ubah hasilnya dengan `scripts/raw_to_sft.py`.
+
+```bash
+python scripts/harvest_code.py hf --from-report runs/kandidat_coding.json --rows 300   # baris dataset HF berlisensi permisif
+python scripts/harvest_code.py github --repos 20                                      # fungsi Python berdocstring dari repo permisif
+python scripts/harvest_code.py mdn --path web/javascript/guide --path web/css         # halaman MDN Web Docs
+python scripts/raw_to_sft.py                                                           # draf format messages
+python scripts/validate.py runs/harvest/sft_draft.jsonl
+```
+
+| Sumber | Isi | Lisensi | Cara mengambil |
+|---|---|---|---|
+| `hf` | Baris dataset (percakapan, instruksi, tanya-jawab) | Hanya yang permisif (bawaan), dicek ulang dari metadata | Dataset viewer resmi, 100 baris per request |
+| `github` | Fungsi dan method Python yang punya docstring, 4–80 baris | MIT, Apache-2.0, BSD, ISC, dan sejenisnya | Pencarian lewat GitHub API, lalu `git clone --depth 1` |
+| `mdn` | Halaman dokumentasi HTML, CSS, dan JavaScript beserta contoh kodenya | Teks CC BY-SA 2.5, contoh kode CC0 | Sparse clone repo resmi `mdn/content` |
+
+**Hasil.** Hasil ada di `runs/harvest/` (tidak di-commit):
+- `raw.jsonl`: satu record per baris, dengan sumber, URL (untuk kode: sampai commit dan nomor baris), lisensi, dan atribusi.
+- `ATTRIBUTION.md`: daftar sumber beserta kewajiban lisensinya.
+- `sft_draft.jsonl`: draf format `messages` dengan field `meta`.
+
+Record yang sama tidak disimpan dua kali, jadi perintah aman diulang untuk menambah bahan.
+
+**Penyaring hukum dan privasi:**
+- **Hugging Face:** dataset nonkomersial, tanpa lisensi, gated, dan benchmark dilewati.
+- **GitHub:** repo berlisensi copyleft dilewati. Folder `vendor`/`third_party` dan file yang header-nya menyebut lisensi lain dari repo induknya juga dilewati.
+- **Kunci rahasia** (token GitHub, Hugging Face, AWS, OpenAI, private key) membuat record dibuang.
+- **Alamat email:** di teks diganti `<email>`. Kode yang memuat email dibuang, karena mengganti isi kode bisa merusaknya.
+- **Token:** `HF_TOKEN` hanya dikirim ke Hugging Face, dan `GITHUB_TOKEN` hanya ke GitHub.
+
+**Stack Overflow sengaja tidak dipakai.** Isinya memang berlisensi CC BY-SA, tetapi sejak 2024 Stack Exchange mewajibkan pengunduh data dump menyetujui bahwa data itu bukan untuk melatih LLM, dan akses untuk keperluan AI dijadikan layanan berbayar. Persetujuan seperti itu mengikat sebagai perjanjian (Pasal 1338 KUHPerdata), jadi risikonya tidak sebanding.
+
+**Draf belum siap latih.** Sebagian besar bahannya berbahasa Inggris. Terjemahkan atau tulis ulang jawabannya ke bahasa Indonesia, periksa kebenarannya, lalu pindahkan sampel yang lolos ke `data/train.jsonl`. Jika dataset hasil olahan didistribusikan:
+- sertakan `ATTRIBUTION.md` dan teks lisensi sumbernya;
+- bagian dari MDN (teks CC BY-SA) wajib dibagikan dengan lisensi yang sama.
+
 ## Kelompok `bench-support` (HumanEval)
 
 Folder `data/bench-support/` berisi sampel latihan dari benchmark kode, terpisah dari dataset `own`. Saat ini isinya 164 soal HumanEval dengan format prompt instruct EvalPlus. Solusinya diambil dari HumanEval+, kecuali satu soal yang ditulis ulang.
@@ -343,11 +465,16 @@ scripts/chat_gradio.py                chatbot Gradio untuk mencoba adapter (stre
 scripts/agent_gradio.py               agen coding bergaya Claude Code: tulis → uji di browser → perbaiki (SEARCH/REPLACE)
 scripts/build_notebook.py             membangun notebooks/train_colab.ipynb dari script dan runbook
 docs/PANDUAN_TRAINING.md              panduan training lengkap untuk pengguna
+docs/PANDUAN_CRAWLER.md               panduan menjalankan crawler dataset di laptop
 docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol training di Colab
 docs/RENCANA_PYTHON.md                rencana adapter v4: jago Python sekaligus jago membuat website
 docs/PROSEDUR_V4.md                   prosedur Colab: ukur v3, latih v4-pilot, papan skor
 CLAUDE.md                             catatan singkat untuk Claude Code di repo ini
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
+scripts/find_datasets.py              crawler penemu kandidat dataset di Hugging Face Hub, dengan penilaian lisensi
+scripts/crawler_viz.html              template visualisasi laba-laba untuk hasil find_datasets.py (putar ulang dan --live)
+scripts/harvest_code.py               crawler isi: bahan mentah SFT dari dataset HF, repo GitHub, dan MDN (lisensi terbuka)
+scripts/raw_to_sft.py                 mengubah hasil harvest_code.py menjadi draf format messages
 scripts/validate.py                   validasi dataset
 scripts/build_bench_support.py        membuat dan memverifikasi kelompok bench-support (HumanEval)
 scripts/build_python_samples.py       membangun sampel Python dari data/python-src/ dengan output hasil eksekusi
