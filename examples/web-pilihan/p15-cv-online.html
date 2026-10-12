@@ -210,6 +210,8 @@
   }
   $('theme-btn').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
   $('print-btn').addEventListener('click', () => window.print());
+  // Di dalam pratinjau (iframe) unduhan dan dialog cetak diblokir, jadi tombolnya disembunyikan.
+  if (window.self !== window.top) $('print-btn').style.display = 'none';
   document.querySelectorAll('.copy').forEach(b => b.addEventListener('click', async () => {
     try { await navigator.clipboard.writeText(b.dataset.copy); toast('Email disalin'); } catch (e) { toast(b.dataset.copy); }
   }));

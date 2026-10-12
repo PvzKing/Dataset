@@ -289,6 +289,8 @@
     try { await navigator.clipboard.writeText(s.dataset.hex); s.title = 'Tersalin!'; } catch (err) {}
   });
 
+  // Di dalam pratinjau (iframe) unduhan dan dialog cetak diblokir, jadi tombolnya disembunyikan.
+  if (window.self !== window.top) document.getElementById('lb-download').style.display = 'none';
   makeArts(2025);
   renderGallery();
 </script>

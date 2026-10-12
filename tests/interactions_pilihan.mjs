@@ -187,6 +187,10 @@ export default {
     await page.click('#add-form button[type="submit"]');
     expect(await page.locator('#habits .habit').count() === 4, 'habit added', out);
     expect(await page.textContent('#ring-count') === '1/4', 'ring total updates', out);
+    await page.locator('#habits .del').last().click();
+    expect(await page.locator('#habits .habit').count() === 4, 'first tap only asks for confirmation', out);
+    await page.locator('#habits .del').last().click();
+    expect(await page.locator('#habits .habit').count() === 3, 'second tap deletes the habit', out);
     return out;
   },
   'p12-': async (page) => {

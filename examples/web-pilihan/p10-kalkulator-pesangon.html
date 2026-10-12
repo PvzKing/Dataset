@@ -309,6 +309,8 @@
   $('form').addEventListener('change', calc);
   $('form').addEventListener('submit', e => e.preventDefault());
   $('print').addEventListener('click', () => window.print());
+  // Di dalam pratinjau (iframe) unduhan dan dialog cetak diblokir, jadi tombolnya disembunyikan.
+  if (window.self !== window.top) $('print').style.display = 'none';
   $('copy').addEventListener('click', async () => {
     const lines = [...$('rows').querySelectorAll('tr')].map(tr => [...tr.cells].map(td => td.firstChild ? td.firstChild.textContent.trim() : '').filter(Boolean).join(' | '));
     const text = 'Estimasi hak PHK\n' + $('total-sub').textContent + '\n' + lines.join('\n');

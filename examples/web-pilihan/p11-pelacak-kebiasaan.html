@@ -42,6 +42,7 @@
   .heat span.future { background: transparent; }
   .del { border: 0; background: none; color: var(--muted); cursor: pointer; width: 34px; height: 34px; border-radius: 8px; }
   .del:hover { background: var(--line); color: #f85149; }
+  .del.armed { width: auto; padding: 0 10px; color: #f85149; font-weight: 700; }
 
   .add { margin-top: 18px; background: var(--card); border: 1px dashed var(--line); border-radius: 18px; padding: 16px; display: grid; gap: 12px; }
   .add-row { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -185,8 +186,11 @@
       if (habits.every(x => x.done.includes(k))) document.getElementById('quote').textContent = '🎉 Semua kebiasaan selesai! ' + QUOTES[0];
     }
     if (d) {
+      // Konfirmasi dua ketukan: ketukan pertama meminta kepastian, ketukan kedua menghapus
       const h = habits.find(x => x.id === +d.dataset.del);
-      if (confirm(`Hapus kebiasaan “${h.name}” beserta riwayatnya?`)) { habits = habits.filter(x => x !== h); save(); render(); }
+      if (d.dataset.armed) { habits = habits.filter(x => x !== h); save(); render(); return; }
+      d.dataset.armed = '1'; d.textContent = 'Hapus?'; d.classList.add('armed');
+      setTimeout(() => { if (d.isConnected) { delete d.dataset.armed; d.textContent = '✕'; d.classList.remove('armed'); } }, 3000);
     }
   });
 

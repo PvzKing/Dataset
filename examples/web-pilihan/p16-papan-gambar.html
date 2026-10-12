@@ -270,6 +270,8 @@
   });
   let rt;
   window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(fit, 150); });
+  // Di dalam pratinjau (iframe) unduhan dan dialog cetak diblokir, jadi tombolnya disembunyikan.
+  if (window.self !== window.top) document.getElementById('save').style.display = 'none';
   fit(); preview();
 </script>
 </body>
