@@ -5,7 +5,23 @@
 Panduan ini melatih **v4** dari model dasar Qwen3.5-4B di GPU A100, dengan konteks training 16.384 token. Setelah itu v4, v3, dan model dasar diukur dengan semua uji di [`eval-suite/`](../eval-suite/README.md), lalu dinilai dengan gerbang di [`RENCANA_PYTHON.md`](RENCANA_PYTHON.md). Ikuti berurutan. Setiap sel menjelaskan tujuannya, kode yang harus dijalankan, output yang seharusnya muncul, dan apa yang dilakukan kalau gagal.
 
 <!-- hanya-md -->
-Versi notebook panduan ini: [buka di Colab](https://colab.research.google.com/github/PvzKing/Dataset/blob/main/notebooks/v4_a100_colab.ipynb). Panduan untuk T4 gratis tetap ada di [`PROSEDUR_V4.md`](PROSEDUR_V4.md).
+## Cara termudah: panel interaktif
+
+Buka **[panel interaktif A100](https://colab.research.google.com/github/PvzKing/Dataset/blob/main/notebooks/v4_a100_interaktif.ipynb)**. Notebook ini hanya punya 4 sel berbentuk formulir, tanpa perintah yang perlu disalin:
+
+| Sel | Fungsi |
+|---|---|
+| 1️⃣ Siapkan | cek GPU (harus A100), pasang paket yang belum ada, hubungkan Google Drive, unduh script terbaru, dan periksa adapter v3. Konteks training dipilih di sini (16384, atau 12288 jika kehabisan VRAM) |
+| 2️⃣ Jalankan | pilihan **Otomatis** menjalankan semua langkah yang belum selesai secara berurutan: latih v4, uji v4, lalu uji v3. Centang `sertakan_indopy_test` untuk penilaian akhir G2. Bisa juga memilih satu langkah saja |
+| 3️⃣ Lihat progres | tabel ✅/▶️/⏳ untuk setiap langkah, dengan perkiraan sisa waktu GPU |
+| 4️⃣ Laporan | papan skor v4 dan v3, website dan soal yang gagal, serta ringkasan training, siap disalin ke chat. Laporan juga disimpan ke Drive (`finetune-id/laporan-v4-a100.txt`) |
+
+Panel menjalankan perintah yang sama persis dengan bagian manual di bawah, dengan tambahan berikut:
+- **Melanjutkan sendiri setelah Colab terputus.** Jalankan sel 1 dan sel 2 lagi. Training dilanjutkan dari checkpoint terakhir, dan jawaban uji yang sudah tersimpan tidak diulang.
+- **Menurunkan batch uji sendiri saat VRAM habis**, lalu mengulang uji itu tanpa kehilangan jawaban yang sudah tersimpan.
+- **Memberi peringatan** kalau training tidak memakai 102 sampel atau ada sampel yang dibuang.
+
+Bagian di bawah ini adalah **cara manual**, sel demi sel. Gunanya untuk memahami apa yang dikerjakan panel atau menjalankan uji dengan opsi lain. Versi notebook-nya: [notebook manual A100](https://colab.research.google.com/github/PvzKing/Dataset/blob/main/notebooks/v4_a100_colab.ipynb). Panduan untuk T4 gratis ada di [`PROSEDUR_V4.md`](PROSEDUR_V4.md).
 <!-- /hanya-md -->
 
 ## Gambaran

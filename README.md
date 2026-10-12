@@ -347,11 +347,12 @@ docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol traini
 docs/RENCANA_PYTHON.md                rencana adapter v4: jago Python sekaligus jago membuat website
 docs/PROSEDUR_V4.md                   panduan Colab langkah demi langkah: ukur v3, latih v4-pilot, papan skor
 notebooks/v4_pilot_interaktif.ipynb   panel Colab interaktif v4-pilot: siapkan, jalankan otomatis, progres, laporan
-scripts/panel_v4.py                   logika panel: langkah-langkah, status dari Drive, saran saat gagal
+scripts/panel_v4.py                   logika panel (mode pilot dan a100): langkah, status dari Drive, saran saat gagal
 scripts/build_panel_notebook.py       membangun notebook panel interaktif
 notebooks/v4_pilot_colab.ipynb        panduan manual dalam bentuk notebook (dibangun dari PROSEDUR_V4.md)
 docs/PROSEDUR_V4_A100.md              panduan Colab A100: latih v4 dari model dasar, LoRA 16-bit, konteks 16.384
 notebooks/v4_a100_colab.ipynb         panduan A100 dalam bentuk notebook (dibangun dari PROSEDUR_V4_A100.md)
+notebooks/v4_a100_interaktif.ipynb    panel Colab interaktif untuk panduan A100 (mode a100 di panel_v4.py)
 scripts/md_to_notebook.py             membangun notebook Colab dari panduan Markdown
 CLAUDE.md                             catatan singkat untuk Claude Code di repo ini
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face

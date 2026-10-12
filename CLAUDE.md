@@ -10,4 +10,4 @@ Repo ini berisi dataset instruct berbahasa Indonesia dan perangkat fine-tuning. 
 - **Mengubah website di `examples/web/`:** jalankan juga tes browser di `tests/`.
 - **Mengubah `docs/PROSEDUR_V4.md`:** jalankan `python scripts/md_to_notebook.py` supaya `notebooks/v4_pilot_colab.ipynb` ikut diperbarui.
 - **Mengubah `docs/PROSEDUR_V4_A100.md`:** jalankan `python scripts/md_to_notebook.py docs/PROSEDUR_V4_A100.md notebooks/v4_a100_colab.ipynb`.
-- **Mengubah `scripts/panel_v4.py` atau `scripts/build_panel_notebook.py`:** jalankan `python scripts/build_panel_notebook.py` dan uji alurnya dengan `python scripts/panel_v4.py --demo /tmp/panel-demo`. Pilihan langkah di notebook harus sama dengan judul langkah di panel.
+- **Mengubah `scripts/panel_v4.py` atau `scripts/build_panel_notebook.py`:** jalankan `python scripts/build_panel_notebook.py` dan uji alurnya dengan `python scripts/panel_v4.py --demo /tmp/panel-demo` dan `python scripts/panel_v4.py --demo /tmp/panel-demo-a100 --a100`. Pilihan langkah di kedua notebook harus sama dengan judul langkah di panel.

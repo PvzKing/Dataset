@@ -1,4 +1,6 @@
-"""Bangun notebooks/v4_pilot_interaktif.ipynb: panel Colab berbentuk formulir untuk scripts/panel_v4.py.
+"""Bangun panel Colab berbentuk formulir untuk scripts/panel_v4.py:
+  notebooks/v4_pilot_interaktif.ipynb  mode pilot (T4): ukur v3, latih v4-pilot, ukur v4-pilot
+  notebooks/v4_a100_interaktif.ipynb   mode a100: latih v4 dari model dasar dengan konteks 16.384, ukur v4 dan v3
 
 Pemakaian:
     python scripts/build_panel_notebook.py
@@ -6,11 +8,15 @@ Pemakaian:
 import json
 from pathlib import Path
 
-OUT = Path(__file__).resolve().parent.parent / "notebooks" / "v4_pilot_interaktif.ipynb"
+NOTEBOOKS = Path(__file__).resolve().parent.parent / "notebooks"
+OUT = NOTEBOOKS / "v4_pilot_interaktif.ipynb"
+OUT_A100 = NOTEBOOKS / "v4_a100_interaktif.ipynb"
 
 PANEL = "https://raw.githubusercontent.com/PvzKing/Dataset/main/scripts/panel_v4.py"
 LANGKAH = ["Otomatis: semua yang belum selesai", "HumanEval+ v3", "IndoPy-dev v3", "Web-eval v3", "Latih v4-pilot",
            "HumanEval+ v4", "IndoPy-dev v4", "Web-eval v4", "MBPP+ v4", "MBPP+ v3"]
+LANGKAH_A100 = ["Otomatis: semua yang belum selesai", "Latih v4", "HumanEval+ v4", "MBPP+ v4", "IndoPy-dev v4",
+                "Web-eval v4", "Web-eval v3", "HumanEval+ v3", "MBPP+ v3", "IndoPy-dev v3", "IndoPy-test v4"]
 
 def md(text):
     return {"cell_type": "markdown", "metadata": {}, "source": text.strip("\n").splitlines(True)}
@@ -94,8 +100,98 @@ Saat langkah gagal, panel menampilkan saran perbaikannya. Yang paling sering:
 Output setiap langkah juga disimpan di `finetune-id/panel-log/` di Drive.
 """),
 ]
-nb = {"cells": cells, "metadata": {"accelerator": "GPU", "colab": {"gpuType": "T4", "provenance": []},
-      "kernelspec": {"display_name": "Python 3", "name": "python3"}, "language_info": {"name": "python"}},
-      "nbformat": 4, "nbformat_minor": 0}
-OUT.write_text(json.dumps(nb, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-print(f"ditulis {OUT.name}: {len(cells)} sel")
+cells_a100 = [
+    md("""
+# Panel v4 di A100: training dari awal dengan konteks panjang
+
+Notebook ini melatih **v4 dari model dasar** Qwen3.5-4B (bukan lanjutan v3), mengukur v4, v3, dan model dasar, lalu membuat laporan. Semua langkah dijalankan dari tombol di bawah.
+
+| | v4-pilot (T4) | **v4 di notebook ini** |
+|---|---|---|
+| Presisi training | QLoRA 4-bit | LoRA 16-bit (bf16) |
+| Konteks training | 6.144 token | 16.384 token |
+| Batas jawaban website | 6.000 token | 12.000 token |
+| Hasil uji | `finetune-id/eval-*` | `finetune-id/a100/eval-*`: model dasar dan v3 diukur ulang di A100 dengan aturan yang sama |
+
+**Cara pakai**
+1. Pilih **Runtime → Change runtime type → A100 GPU**. Aktifkan **High-RAM** jika ada, lalu **Save**. A100 memakai compute unit; cek sisanya di **Runtime → View resources**.
+2. Jalankan **sel 1 (Siapkan)** dengan tombol ▶. Saat diminta, izinkan akses Google Drive dengan **akun yang menyimpan folder `finetune-id`**. Tunggu sampai semua baris bertanda ✅.
+3. Jalankan **sel 2 (Jalankan)** dengan pilihan *Otomatis*. Panel melatih v4, lalu menjalankan semua uji secara berurutan. Biarkan tab tetap terbuka.
+4. **Kalau Colab terputus:** buka notebook ini lagi, lalu jalankan sel 1 dan sel 2. Training dilanjutkan dari checkpoint terakhir, dan jawaban uji yang sudah tersimpan tidak diulang.
+5. Setelah semua langkah ✅, jalankan **sel 4** dan kirim teksnya ke chat.
+
+Perkiraan kasarnya sekitar 3 jam GPU (belum pernah diukur di A100), jadi biasanya selesai dalam satu sesi. Sel 3 menampilkan progres kapan saja.
+
+**Tentang konteks 16.384:** sampel terpanjang di dataset sekarang ±6.200 token, jadi semua sampel sudah ikut dilatih, sama seperti di T4. Konteks panjang baru mengubah isi pelajaran setelah dataset ditambah sampel yang lebih panjang. Yang langsung terasa adalah batas jawaban 12.000 token, sehingga website panjang tidak terpotong.
+
+Rincian setiap langkah dan arti output-nya ada di panduan [`docs/PROSEDUR_V4_A100.md`](https://github.com/PvzKing/Dataset/blob/main/docs/PROSEDUR_V4_A100.md).
+"""),
+    form(f'''
+#@title 1️⃣ Siapkan (jalankan di awal setiap sesi)
+#@markdown Sel ini mengecek GPU (harus A100), memasang paket yang belum ada (pertama kali ±5–8 menit), menghubungkan Google Drive, mengunduh script terbaru, dan memeriksa adapter v3.
+#@markdown
+#@markdown **Path adapter v3** di Google Drive. v3 dipakai sebagai pembanding Web-eval (gerbang G3).
+adapter_v3 = "/content/drive/MyDrive/finetune-id/v3/qwen3.5-4b-own-4bit/lora-adapter"  #@param {{type:"string"}}
+#@markdown **Konteks training** (`max_seq_len`). Pilih 12288 hanya jika training kehabisan VRAM. Mengubah nilai ini setelah training dimulai akan mengulang training dari awal.
+konteks_training = 16384  #@param [16384, 12288] {{type:"raw"}}
+import importlib, sys, urllib.request
+urllib.request.urlretrieve("{PANEL}", "/content/panel_v4.py")
+sys.path.insert(0, "/content")
+import panel_v4
+importlib.reload(panel_v4)
+panel_v4.siapkan(adapter_v3, mode="a100", konteks=konteks_training)
+'''),
+    form(f'''
+#@title 2️⃣ Jalankan
+#@markdown **Otomatis** menjalankan semua langkah yang belum selesai secara berurutan: latih v4, uji v4, lalu uji v3. Atau pilih satu langkah untuk menjalankan langkah itu saja.
+langkah = "{LANGKAH_A100[0]}"  #@param {json.dumps(LANGKAH_A100, ensure_ascii=False)}
+#@markdown Centang untuk ikut menjalankan **IndoPy-test**, yaitu penilaian akhir gerbang G2 (40 soal yang dikunci, ±10 menit). Jalankan **sekali saja** untuk v4 ini, dan jangan pakai soal atau jawabannya untuk menulis sampel latihan.
+sertakan_indopy_test = False  #@param {{type:"boolean"}}
+{IMPORT}
+panel_v4.jalankan(langkah, sertakan_indopy_test)
+'''),
+    form(f'''
+#@title 3️⃣ Lihat progres
+#@markdown Tidak memuat model, jadi aman dijalankan kapan saja, termasuk saat membuka sesi baru.
+sertakan_indopy_test = False  #@param {{type:"boolean"}}
+{IMPORT}
+panel_v4.progres(sertakan_indopy_test)
+'''),
+    form(f'''
+#@title 4️⃣ Papan skor dan laporan untuk dikirim
+#@markdown Menampilkan papan skor v4 (dibanding model dasar dan v3) dan v3, website dan soal IndoPy-dev yang gagal, serta ringkasan training. Teksnya juga disimpan ke `finetune-id/laporan-v4-a100.txt` di Drive.
+{IMPORT}
+panel_v4.laporan()
+'''),
+    md("""
+## Kalau ada masalah
+
+Saat langkah gagal, panel menampilkan saran perbaikannya. Yang paling sering:
+
+| Gejala | Yang dilakukan |
+|---|---|
+| Sel 1 menampilkan ❌ GPU | runtime-nya bukan A100. Runtime → Change runtime type → A100 GPU, lalu jalankan sel 1 lagi. Untuk T4, pakai notebook `v4_pilot_interaktif` |
+| `Cannot connect to GPU backend` | A100 sedang penuh atau compute unit habis. Coba lagi nanti; semua hasil aman di Drive |
+| ❌ Adapter v3 | sel 1 menampilkan daftar adapter yang ada di Drive. Salin path yang benar ke kolom `adapter_v3`, lalu jalankan sel 1 lagi |
+| `⚠️ VRAM habis ... diulang dengan batch ...` | tidak perlu tindakan. Panel mengulang uji itu dengan batch lebih kecil, dan jawaban yang sudah tersimpan tidak hilang |
+| VRAM habis saat training | pilih `konteks_training` 12288 di sel 1, jalankan sel 1, lalu sel 2 |
+| Ingin menghentikan langkah yang sedang berjalan | klik ■ di sel 2. Langkah itu dilanjutkan saat sel 2 dijalankan lagi |
+
+Output setiap langkah juga disimpan di `finetune-id/panel-log/` di Drive.
+"""),
+]
+
+
+def tulis(path, isi, gpu):
+    colab = {"gpuType": gpu, "provenance": []}
+    if gpu == "A100":
+        colab["machine_shape"] = "hm"  # High-RAM
+    nb = {"cells": isi, "metadata": {"accelerator": "GPU", "colab": colab,
+          "kernelspec": {"display_name": "Python 3", "name": "python3"}, "language_info": {"name": "python"}},
+          "nbformat": 4, "nbformat_minor": 0}
+    path.write_text(json.dumps(nb, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    print(f"ditulis {path.name}: {len(isi)} sel")
+
+
+tulis(OUT, cells, "T4")
+tulis(OUT_A100, cells_a100, "A100")
