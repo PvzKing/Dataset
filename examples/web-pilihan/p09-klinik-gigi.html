@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Klinik Gigi Senyum Sehat — Reservasi Online</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;600;700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&display=swap">
 <style>
   :root { --bg: #ffffff; --soft: #f0f7ff; --text: #0f1f3d; --muted: #5a6b8c; --primary: #2563eb; --primary-d: #1d4ed8; --mint: #14b8a6; --line: #e2e9f5; --radius: 20px; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -120,12 +123,15 @@
     .nav .btn { display: none; }
   }
   @media (max-width: 420px) { .slots { grid-template-columns: repeat(3, 1fr); } .dates { gap: 4px; } .date { font-size: .7rem; } .date b { font-size: .95rem; } .float-card { font-size: .75rem; padding: 8px 10px; } }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button, input, select, textarea { font-family: "Nunito Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .hero h1, .head h2, .booking h2, .logo, .svc h3, .doc h3, .panel h3, .trust b { font-family: "Lexend", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; letter-spacing: -.02em; }
 </style>
 </head>
 <body>
 <header>
   <div class="wrap nav">
-    <a class="logo" href="#"><i>🦷</i>Senyum Sehat</a>
+    <a class="logo" href="#"><i><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#fff" d="M7 3c-2.5 0-4 2-4 4.5 0 2 1 3.3 1.4 5.4.5 2.6 1 6.1 2.6 6.1 1.4 0 1.5-3.6 2.6-5.4.7-1.2 2.1-1.2 2.8 0 1.1 1.8 1.2 5.4 2.6 5.4 1.6 0 2.1-3.5 2.6-6.1.4-2.1 1.4-3.4 1.4-5.4C21 5 19.5 3 17 3c-1.9 0-2.9 1.1-5 1.1S8.9 3 7 3Z"/></svg></i>Senyum Sehat</a>
     <ul id="menu">
       <li><a href="#layanan">Layanan</a></li>
       <li><a href="#dokter">Dokter</a></li>

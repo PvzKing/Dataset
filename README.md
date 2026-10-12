@@ -285,7 +285,7 @@ Tes gagal jika ada error JavaScript, request ke luar, scroll horizontal, atau sk
 
 ### Koleksi tambahan: `examples/web-pilihan/`
 
-Folder ini berisi 20 website single-file tambahan. Isinya **tidak** ada di `data/train.jsonl`, jadi bisa dipakai sebagai contoh atau bahan sampel baru. Semuanya berjalan tanpa internet: tanpa CDN, font, atau gambar dari luar.
+Folder ini berisi 20 website single-file tambahan. Isinya **tidak** ada di `data/train.jsonl`, jadi bisa dipakai sebagai contoh atau bahan sampel baru. Tidak ada CDN atau gambar dari luar. Satu-satunya sumber luar adalah Google Fonts; tanpa internet, website tetap berjalan dengan font sistem.
 
 | File | Jenis | Fitur utama |
 |---|---|---|
@@ -299,7 +299,7 @@ Folder ini berisi 20 website single-file tambahan. Isinya **tidak** ada di `data
 | `p08-2048` | Game 2048 | animasi ubin, geser layar, urungkan, skor terbaik |
 | `p09-klinik-gigi` | Situs klinik + reservasi | wizard 4 langkah, jadwal dokter, validasi nomor WA |
 | `p10-kalkulator-pesangon` | Kalkulator hukum | pesangon/UPMK/UPH per alasan PHK (PP 35/2021), kompensasi PKWT, PPh 21 final |
-| `p11-pelacak-kebiasaan` | Habit tracker | streak, heatmap 26 minggu, progres harian |
+| `p11-pelacak-kebiasaan` | Habit tracker | streak, heatmap hingga setahun, progres harian |
 | `p12-sudoku` | Game sudoku | generator dengan solusi tunggal, catatan, petunjuk, urungkan |
 | `p13-galeri-seni` | Galeri | karya generatif canvas, lightbox keyboard/geser, unduh PNG |
 | `p14-landing-saas` | Landing page SaaS | tab fitur, kalkulator penghematan, harga bulanan/tahunan |

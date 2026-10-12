@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Coret — Papan Gambar Online</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Nunito:wght@400;600;700;800&display=swap">
 <style>
   :root { --bg: #e9e7f0; --panel: #ffffff; --ink: #24203a; --muted: #77738c; --line: #dddae8; --accent: #6c4cff; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -52,11 +55,14 @@
     .top { padding: 8px; }
     .sep { display: none; }
   }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button, input { font-family: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .brand { font-family: "Patrick Hand", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 400; font-size: 1.6rem; }
 </style>
 </head>
 <body>
 <div class="top">
-  <div class="brand">✏️ Co<span>ret</span></div>
+  <div class="brand">Co<span>ret</span></div>
   <div class="group" role="toolbar" aria-label="Alat gambar">
     <button class="ib on" data-tool="pen" title="Pena (P)" aria-label="Pena">✏️</button>
     <button class="ib" data-tool="marker" title="Spidol (M)" aria-label="Spidol">🖍️</button>

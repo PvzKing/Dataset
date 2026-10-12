@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Obrolan — Aplikasi Chat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap">
 <style>
   :root { --bg: #e7ece9; --side: #ffffff; --chat: #efeae2; --me: #d9fdd3; --them: #ffffff; --text: #111b21; --muted: #667781; --line: #e9edef; --accent: #00a884; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,6 +77,8 @@
     .msgs { padding: 12px 10px; }
     .emoji-panel { grid-template-columns: repeat(7, 36px); }
   }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button, input, textarea { font-family: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 </style>
 </head>
 <body>

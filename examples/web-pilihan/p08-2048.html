@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>2048 Rempah — Gabungkan Angka</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700;800;900&display=swap">
 <style>
   :root { --bg: #faf6ee; --board: #b9a58a; --cell: #d6c7b0; --text: #5b4636; --gap: clamp(8px, 2.4vw, 14px); --size: min(460px, 100vw - 32px); }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -41,6 +44,8 @@
   .help { margin-top: 20px; font-size: .9rem; line-height: 1.6; }
   .legend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
   .legend span { padding: 3px 8px; border-radius: 6px; font-size: .75rem; font-weight: 700; }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button { font-family: "Rubik", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 </style>
 </head>
 <body>

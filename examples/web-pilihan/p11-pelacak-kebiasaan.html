@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rutin — Pelacak Kebiasaan Harian</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
   :root { --bg: #0d1117; --card: #161b22; --text: #e6edf3; --muted: #8b949e; --line: #30363d; --accent: #3fb950; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -57,12 +60,15 @@
   .empty { text-align: center; color: var(--muted); padding: 30px; }
   .quote { margin-top: 26px; color: var(--muted); text-align: center; font-style: italic; }
   @media (max-width: 480px) { .wd { padding: 6px 0; } .wd small { font-size: .65rem; } }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button, input { font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .habit .meta, .ring b, .wd b { font-family: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div><h1>🌱 Rutin</h1><p id="date-label"></p></div>
+    <div><h1>Rutin<span style="color:var(--accent)">.</span></h1><p id="date-label"></p></div>
     <div class="ring-wrap">
       <div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--line)" stroke-width="3.5"/><circle id="ring" cx="18" cy="18" r="15.9" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="0 100" style="transition:stroke-dasharray .5s"/></svg><b id="ring-text">0%</b></div>
       <div><b id="ring-count">0/0</b><small>selesai hari ini</small></div>
@@ -140,9 +146,11 @@
     const k = key(selected);
     const el = document.getElementById('habits');
     if (!habits.length) { el.innerHTML = '<div class="empty">Belum ada kebiasaan. Mulai dengan satu yang kecil di bawah ini.</div>'; return; }
-    // Heatmap 26 minggu terakhir, kolom = minggu (Senin di atas)
+    // Heatmap minggu-minggu terakhir, kolom = minggu (Senin di atas)
     const end = new Date(today); end.setDate(end.getDate() + (7 - ((end.getDay() + 6) % 7)) - 1);
-    const start = new Date(end - (26 * 7 - 1) * DAY);
+    // Jumlah minggu menyesuaikan lebar kartu (sel 13px + celah 3px)
+    const weeks = Math.max(12, Math.min(53, Math.floor((el.clientWidth - 32 + 3) / 16)));
+    const start = new Date(end - (weeks * 7 - 1) * DAY);
     el.innerHTML = habits.map(h => {
       const set = new Set(h.done);
       let cells = '';
@@ -207,6 +215,8 @@
     save(); render();
   });
   document.getElementById('quote').textContent = QUOTES[today.getDate() % QUOTES.length];
+  let rz;
+  window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(renderHabits, 150); });
   render();
 </script>
 </body>

@@ -4,8 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hadirin — Aplikasi Absensi &amp; Payroll untuk UMKM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <style>
-  :root { --bg: #ffffff; --soft: #f5f3ff; --text: #18122b; --muted: #635e7a; --primary: #6d28d9; --primary2: #a855f7; --line: #ebe7f5; --green: #059669; }
+  :root { --bg: #ffffff; --soft: #eef6f2; --text: #0f1f1a; --muted: #56675f; --primary: #0b6b55; --primary2: #1aa37a; --line: #dfeae4; --green: #059669; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
   body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: var(--bg); line-height: 1.6; }
@@ -38,20 +41,20 @@
   .form-msg { font-size: .9rem; margin-top: 8px; min-height: 1.3em; font-weight: 600; }
 
   .mock { position: relative; justify-self: center; width: min(360px, 100%); }
-  .phone { background: #0f0b1e; border-radius: 40px; padding: 12px; box-shadow: 0 40px 80px -30px rgba(109, 40, 217, .55); }
-  .screen { background: linear-gradient(180deg, #f5f3ff, #fff 40%); border-radius: 30px; padding: 22px 18px; min-height: 520px; display: flex; flex-direction: column; gap: 14px; }
+  .phone { background: #0c1a15; border-radius: 40px; padding: 12px; box-shadow: 0 40px 80px -30px rgba(11, 107, 85, .55); }
+  .screen { background: linear-gradient(180deg, var(--soft), #fff 40%); border-radius: 30px; padding: 22px 18px; min-height: 520px; display: flex; flex-direction: column; gap: 14px; }
   .screen .hi { font-size: .85rem; color: var(--muted); }
   .screen .clock { font-size: 2.6rem; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
   .geo { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px; font-size: .82rem; display: flex; gap: 10px; align-items: center; }
   .geo i { width: 10px; height: 10px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 4px rgba(5,150,105,.2); animation: ping 1.6s infinite; }
   @keyframes ping { 50% { box-shadow: 0 0 0 8px rgba(5,150,105,0); } }
-  .clockin { margin: 10px auto; width: 150px; height: 150px; border-radius: 50%; border: 0; cursor: pointer; background: linear-gradient(135deg, var(--primary), var(--primary2)); color: #fff; font-weight: 800; font-size: 1.05rem; box-shadow: 0 0 0 12px rgba(168, 85, 247, .15), 0 20px 40px -14px var(--primary); transition: transform .2s; }
+  .clockin { margin: 10px auto; width: 150px; height: 150px; border-radius: 50%; border: 0; cursor: pointer; background: linear-gradient(135deg, var(--primary), var(--primary2)); color: #fff; font-weight: 800; font-size: 1.05rem; box-shadow: 0 0 0 12px rgba(26, 163, 122, .15), 0 20px 40px -14px var(--primary); transition: transform .2s; }
   .clockin:active { transform: scale(.95); }
   .clockin.out { background: linear-gradient(135deg, #f43f5e, #fb923c); box-shadow: 0 0 0 12px rgba(244, 63, 94, .15); }
   .log { list-style: none; font-size: .85rem; display: grid; gap: 6px; }
   .log li { display: flex; justify-content: space-between; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; animation: slide .3s; }
   @keyframes slide { from { opacity: 0; transform: translateY(6px); } }
-  .float { position: absolute; background: #fff; border-radius: 14px; padding: 10px 14px; box-shadow: 0 20px 40px -18px rgba(24, 18, 43, .35); font-size: .82rem; font-weight: 600; }
+  .float { position: absolute; background: #fff; border-radius: 14px; padding: 10px 14px; box-shadow: 0 20px 40px -18px rgba(15, 31, 26, .35); font-size: .82rem; font-weight: 600; }
   .float.a { left: -30px; bottom: 70px; } .float.b { right: -24px; top: 150px; }
 
   .logos { border-block: 1px solid var(--line); padding: 26px 0; text-align: center; color: var(--muted); font-size: .9rem; }
@@ -71,7 +74,7 @@
   .feature p { color: var(--muted); margin: 12px 0 18px; }
   .feature ul { list-style: none; display: grid; gap: 8px; }
   .feature li::before { content: "✓"; color: var(--green); font-weight: 900; margin-right: 10px; }
-  .visual { background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 30px 60px -36px rgba(24, 18, 43, .4); min-height: 240px; min-width: 0; }
+  .visual { background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 30px 60px -36px rgba(15, 31, 26, .4); min-height: 240px; min-width: 0; }
   .vrow { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: .9rem; gap: 10px; }
   .vrow:last-child { border: 0; }
   .pill { font-size: .75rem; padding: 3px 10px; border-radius: 999px; font-weight: 700; }
@@ -83,13 +86,13 @@
 
   .roi { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; background: var(--text); color: #fff; border-radius: 28px; padding: clamp(22px, 5vw, 50px); }
   .roi h2 { font-size: clamp(1.7rem, 3.6vw, 2.4rem); letter-spacing: -.02em; line-height: 1.15; }
-  .roi p { color: #c4bddb; margin-top: 10px; }
+  .roi p { color: #b9cdc4; margin-top: 10px; }
   .slider { margin-bottom: 18px; }
   .slider label { display: flex; justify-content: space-between; font-size: .95rem; margin-bottom: 8px; }
   .slider b { color: #fbbf24; }
   input[type=range] { width: 100%; accent-color: var(--primary2); }
   .saving { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 18px; padding: 18px; margin-top: 8px; }
-  .saving small { color: #c4bddb; }
+  .saving small { color: #b9cdc4; }
   .saving .big { font-size: clamp(1.8rem, 5vw, 2.6rem); font-weight: 900; color: #34d399; letter-spacing: -.02em; }
 
   .billing { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 30px; font-weight: 600; }
@@ -125,6 +128,8 @@
     nav ul { display: none; }
     .float.a { left: 0; } .float.b { right: 0; }
   }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button, input { font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 </style>
 </head>
 <body>

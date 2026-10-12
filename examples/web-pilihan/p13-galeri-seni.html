@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ruang Rupa — Galeri Seni Generatif</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600&display=swap">
 <style>
   :root { --bg: #f7f5f2; --ink: #161514; --muted: #77726b; --line: #e3dfd8; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -58,6 +61,10 @@
     .arrow { top: auto; bottom: 16px; transform: none; width: 40px; height: 40px; }
     .panel { max-height: 40vh; padding: 18px; }
   }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button { font-family: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header h1, .panel h2 { font-family: "Instrument Serif", Georgia, "Times New Roman", serif; }
+  header h1 { font-size: clamp(3rem, 9vw, 6.4rem); }
 </style>
 </head>
 <body>

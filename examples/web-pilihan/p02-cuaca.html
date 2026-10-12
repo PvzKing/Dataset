@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Langit — Prakiraan Cuaca Kota Indonesia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@200;300;400;600;700&display=swap">
 <style>
   :root { --glass: rgba(255,255,255,.14); --glass-line: rgba(255,255,255,.25); --text: #fff; --muted: rgba(255,255,255,.75); }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -13,7 +16,7 @@
   body.malam { background: linear-gradient(160deg, #0f2027, #203a43 60%, #2c5364); }
   .app { width: min(1080px, 100% - 32px); margin: 0 auto; padding: 28px 0 60px; }
   .top { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 26px; }
-  .brand { font-weight: 800; font-size: 1.3rem; letter-spacing: -.02em; }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.3rem; letter-spacing: -.02em; }
   .search { position: relative; flex: 1; max-width: 380px; min-width: 200px; }
   .search input { width: 100%; padding: 13px 18px; border-radius: 999px; border: 1px solid var(--glass-line); background: var(--glass); color: var(--text); font: inherit; backdrop-filter: blur(10px); }
   .search input::placeholder { color: var(--muted); }
@@ -59,12 +62,15 @@
   .icon-sm { width: 34px; height: 34px; }
   @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
   @media (max-width: 420px) { .day { grid-template-columns: 70px 34px 1fr; } .range span { width: 34px; } }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button, input { font-family: "Sora", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .now .temp { font-weight: 200; }
 </style>
 </head>
 <body>
 <div class="app">
   <div class="top">
-    <div class="brand">☁ Langit</div>
+    <div class="brand"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>Langit</div>
     <div class="search">
       <input id="city-input" placeholder="Cari kota… (mis. Medan)" autocomplete="off" aria-label="Cari kota">
       <ul class="suggest" id="suggest"></ul>

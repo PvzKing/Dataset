@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jelajah Nusantara — Rencanakan Liburan Anda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Karla:wght@400;500;600;700&display=swap">
 <style>
   :root { --bg: #f4f7f5; --card: #fff; --text: #10241b; --muted: #5b6f66; --accent: #0f766e; --accent2: #f59e0b; --line: #dfe8e3; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -72,6 +75,9 @@
 
   @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } .planner { position: static; } }
   @media (max-width: 720px) { .sun { top: 104px; right: 22px; width: 46px; } .finder { grid-template-columns: 1fr 1fr; } .finder label:first-child { grid-column: 1 / -1; } .finder .btn { grid-column: 1 / -1; } }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button, input, select { font-family: "Karla", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .hero h1, .hero nav b, .section-title h2, .dest h3, .planner h2, .breakdown .total { font-family: "Familjen Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 </style>
 </head>
 <body>

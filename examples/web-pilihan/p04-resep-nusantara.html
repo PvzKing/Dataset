@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dapur Nusantara — Resep Masakan Rumahan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Work+Sans:wght@400;500;600&display=swap">
 <style>
   :root { --bg: #fffaf3; --card: #fff; --text: #2b1d12; --muted: #7d6a5a; --accent: #c2410c; --accent-soft: #ffedd5; --green: #15803d; --line: #f0e3d3; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -69,6 +72,10 @@
   .timer-bar.show { display: flex; }
   .timer-bar button { background: none; border: 1px solid rgba(255,255,255,.4); color: inherit; border-radius: 999px; padding: 4px 12px; cursor: pointer; }
   @media (max-width: 720px) { .modal-body { grid-template-columns: 1fr; padding: 0 18px 22px; } .modal-head { padding: 28px 18px 18px; } }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, .sans, button, input, select { font-family: "Work Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .logo, .hero h1, .card-body h3, dialog h2, .box h3, .modal-body h3 { font-family: "Young Serif", Georgia, "Times New Roman", serif; font-weight: 400; font-style: normal; }
+  .hero h1 { letter-spacing: -.01em; }
 </style>
 </head>
 <body>
