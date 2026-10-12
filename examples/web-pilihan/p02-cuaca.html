@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Langit — Prakiraan Cuaca Kota Indonesia</title>
+<style>
+  :root { --glass: rgba(255,255,255,.14); --glass-line: rgba(255,255,255,.25); --text: #fff; --muted: rgba(255,255,255,.75); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); min-height: 100vh; background: linear-gradient(160deg, #3a7bd5, #00d2ff); transition: background 1s; }
+  body.hujan { background: linear-gradient(160deg, #283e51, #4b79a1); }
+  body.berawan { background: linear-gradient(160deg, #5f7ea3, #a3bdd6); }
+  body.malam { background: linear-gradient(160deg, #0f2027, #203a43 60%, #2c5364); }
+  .app { width: min(1080px, 100% - 32px); margin: 0 auto; padding: 28px 0 60px; }
+  .top { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 26px; }
+  .brand { font-weight: 800; font-size: 1.3rem; letter-spacing: -.02em; }
+  .search { position: relative; flex: 1; max-width: 380px; min-width: 200px; }
+  .search input { width: 100%; padding: 13px 18px; border-radius: 999px; border: 1px solid var(--glass-line); background: var(--glass); color: var(--text); font: inherit; backdrop-filter: blur(10px); }
+  .search input::placeholder { color: var(--muted); }
+  .search input:focus { outline: 2px solid #fff; }
+  .suggest { position: absolute; top: 52px; left: 0; right: 0; background: rgba(20, 40, 70, .95); border-radius: 16px; overflow: hidden; z-index: 10; list-style: none; display: none; }
+  .suggest.open { display: block; }
+  .suggest li { padding: 12px 18px; cursor: pointer; display: flex; justify-content: space-between; }
+  .suggest li:hover, .suggest li.hl { background: rgba(255,255,255,.12); }
+  .suggest small { color: var(--muted); }
+  .unit { display: flex; background: var(--glass); border: 1px solid var(--glass-line); border-radius: 999px; padding: 4px; }
+  .unit button { border: 0; background: none; color: var(--text); padding: 8px 14px; border-radius: 999px; cursor: pointer; font: inherit; font-weight: 600; }
+  .unit button.active { background: #fff; color: #1d4e89; }
+
+  .grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; }
+  .card { background: var(--glass); border: 1px solid var(--glass-line); border-radius: 24px; padding: 24px; backdrop-filter: blur(14px); min-width: 0; }
+  .now { display: flex; flex-direction: column; justify-content: space-between; min-height: 300px; position: relative; overflow: hidden; }
+  .now h1 { font-size: 1.6rem; }
+  .now .date { color: var(--muted); }
+  .now .temp { font-size: clamp(4.5rem, 14vw, 7.5rem); font-weight: 200; line-height: 1; letter-spacing: -.05em; }
+  .now .cond { font-size: 1.2rem; }
+  .big-icon { position: absolute; right: 18px; top: 50px; width: clamp(110px, 26vw, 170px); }
+  .details { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .detail { background: rgba(255,255,255,.1); border-radius: 18px; padding: 16px; }
+  .detail small { color: var(--muted); display: block; font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; }
+  .detail b { font-size: 1.5rem; }
+  .bar { height: 6px; border-radius: 9px; background: rgba(255,255,255,.2); margin-top: 8px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: #fff; border-radius: 9px; transition: width .6s; }
+
+  h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 14px; }
+  .hourly { margin-top: 18px; }
+  .chart-wrap { width: 100%; overflow-x: auto; }
+  svg.chart { display: block; width: 100%; min-width: 620px; height: 190px; }
+  .daily { margin-top: 18px; }
+  .day { display: grid; grid-template-columns: 90px 40px 1fr; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.12); }
+  .day:last-child { border: 0; }
+  .range { display: flex; align-items: center; gap: 10px; }
+  .range span { width: 42px; text-align: right; font-variant-numeric: tabular-nums; }
+  .range span:first-child { color: var(--muted); }
+  .track { flex: 1; height: 6px; border-radius: 9px; background: rgba(255,255,255,.15); position: relative; }
+  .track i { position: absolute; top: 0; bottom: 0; border-radius: 9px; background: linear-gradient(90deg, #8fd3fe, #ffd36e, #ff8a5c); }
+  .advice { margin-top: 18px; display: flex; gap: 14px; align-items: center; }
+  .advice .emoji { font-size: 2rem; }
+  .icon-sm { width: 34px; height: 34px; }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+  @media (max-width: 420px) { .day { grid-template-columns: 70px 34px 1fr; } .range span { width: 34px; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand">☁ Langit</div>
+    <div class="search">
+      <input id="city-input" placeholder="Cari kota… (mis. Medan)" autocomplete="off" aria-label="Cari kota">
+      <ul class="suggest" id="suggest"></ul>
+    </div>
+    <div class="unit" role="group" aria-label="Satuan suhu">
+      <button id="unit-c" class="active">°C</button>
+      <button id="unit-f">°F</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <section class="card now">
+      <div>
+        <h1 id="city-name">Jakarta</h1>
+        <div class="date" id="date"></div>
+      </div>
+      <div class="big-icon" id="big-icon"></div>
+      <div>
+        <div class="temp" id="temp">--</div>
+        <div class="cond" id="cond"></div>
+        <div class="date" id="feels"></div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="details">
+        <div class="detail"><small>Kelembapan</small><b id="hum">--</b><div class="bar"><i id="hum-bar"></i></div></div>
+        <div class="detail"><small>Angin</small><b id="wind">--</b></div>
+        <div class="detail"><small>Indeks UV</small><b id="uv">--</b><div class="bar"><i id="uv-bar"></i></div></div>
+        <div class="detail"><small>Peluang hujan</small><b id="rain">--</b></div>
+      </div>
+      <div class="advice"><div class="emoji" id="advice-emoji"></div><p id="advice"></p></div>
+    </section>
+  </div>
+
+  <section class="card hourly">
+    <h2>24 jam ke depan</h2>
+    <div class="chart-wrap"><svg class="chart" id="chart" viewBox="0 0 720 190" preserveAspectRatio="none"></svg></div>
+  </section>
+
+  <section class="card daily">
+    <h2>7 hari</h2>
+    <div id="daily"></div>
+  </section>
+</div>
+
+<script>
+  // Data contoh: dibangkitkan dari "iklim" tiap kota supaya halaman bisa jalan tanpa internet.
+  const cities = [
+    { name: 'Jakarta', prov: 'DKI Jakarta', base: 31, wet: .55, tz: 7 },
+    { name: 'Bandung', prov: 'Jawa Barat', base: 26, wet: .6, tz: 7 },
+    { name: 'Surabaya', prov: 'Jawa Timur', base: 32, wet: .45, tz: 7 },
+    { name: 'Medan', prov: 'Sumatera Utara', base: 30, wet: .6, tz: 7 },
+    { name: 'Denpasar', prov: 'Bali', base: 30, wet: .4, tz: 8 },
+    { name: 'Makassar', prov: 'Sulawesi Selatan', base: 31, wet: .5, tz: 8 },
+    { name: 'Yogyakarta', prov: 'DI Yogyakarta', base: 29, wet: .5, tz: 7 },
+    { name: 'Balikpapan', prov: 'Kalimantan Timur', base: 30, wet: .65, tz: 8 },
+    { name: 'Jayapura', prov: 'Papua', base: 30, wet: .6, tz: 9 },
+    { name: 'Malang', prov: 'Jawa Timur', base: 25, wet: .55, tz: 7 },
+    { name: 'Padang', prov: 'Sumatera Barat', base: 29, wet: .75, tz: 7 },
+    { name: 'Kupang', prov: 'Nusa Tenggara Timur', base: 31, wet: .25, tz: 8 }
+  ];
+  const tzName = { 7: 'WIB', 8: 'WITA', 9: 'WIT' };
+  let unit = 'C';
+  let current = cities[0];
+
+  // Generator acak dengan seed agar data tiap kota stabil dalam satu hari
+  function rng(seed) { return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; }
+  function seedOf(str) { let h = 7; for (const ch of str) h = (h * 31 + ch.charCodeAt(0)) % 2147483647; return h + new Date().getDate(); }
+
+  function forecast(city) {
+    const r = rng(seedOf(city.name));
+    const now = new Date(Date.now() + (city.tz - 7) * 3600e3);
+    const hourNow = now.getHours();
+    const hours = [];
+    for (let i = 0; i < 24; i++) {
+      const h = (hourNow + i) % 24;
+      const daily = Math.sin((h - 9) / 24 * Math.PI * 2);
+      const temp = city.base - 4 + daily * 4 + r() * 1.5;
+      const rain = Math.min(95, Math.max(0, Math.round((city.wet * 70 + (h >= 13 && h <= 18 ? 25 : -10) + r() * 20 - 10))));
+      hours.push({ h, temp, rain });
+    }
+    const days = [];
+    for (let d = 0; d < 7; d++) {
+      const hi = city.base + r() * 3 - 1, lo = hi - 6 - r() * 3;
+      const rain = Math.round(Math.min(95, city.wet * 80 + r() * 30 - 15));
+      days.push({ date: new Date(now.getTime() + d * 864e5), hi, lo, rain });
+    }
+    return {
+      now, hours, days,
+      hum: Math.round(55 + city.wet * 40 + r() * 5),
+      wind: Math.round(5 + r() * 18),
+      uv: Math.round(hourNow >= 6 && hourNow <= 17 ? 4 + r() * 7 : 0)
+    };
+  }
+
+  function condition(rain, hour) {
+    const night = hour < 6 || hour >= 18;
+    if (rain >= 65) return { key: 'hujan', text: rain >= 80 ? 'Hujan petir' : 'Hujan ringan' };
+    if (rain >= 40) return { key: 'berawan', text: 'Berawan' };
+    return { key: night ? 'malam' : 'cerah', text: night ? 'Cerah malam' : 'Cerah' };
+  }
+
+  function icon(key, size) {
+    const sun = '<circle cx="50" cy="50" r="20" fill="#FFD36E"/><g stroke="#FFD36E" stroke-width="5" stroke-linecap="round">' +
+      [0, 45, 90, 135, 180, 225, 270, 315].map(a => `<line x1="50" y1="14" x2="50" y2="22" transform="rotate(${a} 50 50)"/>`).join('') + '</g>';
+    const cloud = (x, y, c) => `<path d="M${x} ${y}h40a14 14 0 0 0 0-28 20 20 0 0 0-38-6 14 14 0 0 0-2 34z" fill="${c}"/>`;
+    const moon = '<path d="M60 22a28 28 0 1 0 18 46 24 24 0 0 1-18-46z" fill="#F6E7B0"/>';
+    const drops = '<g stroke="#9fd8ff" stroke-width="4" stroke-linecap="round"><line x1="35" y1="80" x2="31" y2="92"/><line x1="52" y1="80" x2="48" y2="92"/><line x1="69" y1="80" x2="65" y2="92"/></g>';
+    const body = { cerah: sun, malam: moon, berawan: '<g transform="translate(14 -10) scale(.8)">' + sun + '</g>' + cloud(20, 74, '#fff'), hujan: cloud(22, 70, '#dfe9f5') + drops }[key];
+    return `<svg viewBox="0 0 100 100" class="${size}" aria-hidden="true">${body}</svg>`;
+  }
+
+  const toUnit = c => unit === 'C' ? c : c * 9 / 5 + 32;
+  const fmt = c => Math.round(toUnit(c)) + '°';
+
+  function render() {
+    const f = forecast(current);
+    const nowH = f.hours[0];
+    const cond = condition(nowH.rain, nowH.h);
+    document.body.className = cond.key;
+    document.getElementById('city-name').textContent = current.name;
+    document.getElementById('date').textContent = f.now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }) + ' · ' +
+      String(f.now.getHours()).padStart(2, '0') + ':' + String(f.now.getMinutes()).padStart(2, '0') + ' ' + tzName[current.tz];
+    document.getElementById('temp').textContent = fmt(nowH.temp);
+    document.getElementById('cond').textContent = cond.text;
+    document.getElementById('feels').textContent = 'Terasa seperti ' + fmt(nowH.temp + (f.hum - 60) / 10);
+    document.getElementById('big-icon').innerHTML = icon(cond.key, '');
+    document.getElementById('hum').textContent = f.hum + '%';
+    document.getElementById('hum-bar').style.width = f.hum + '%';
+    document.getElementById('wind').textContent = f.wind + ' km/j';
+    document.getElementById('uv').innerHTML = f.uv + ' <span style="font-size:.9rem;font-weight:500">' + (f.uv >= 8 ? 'Sangat tinggi' : f.uv >= 6 ? 'Tinggi' : f.uv >= 3 ? 'Sedang' : 'Rendah') + '</span>';
+    document.getElementById('uv-bar').style.width = Math.min(100, f.uv / 11 * 100) + '%';
+    document.getElementById('rain').textContent = nowH.rain + '%';
+    const [emo, adv] = nowH.rain >= 60 ? ['☂️', 'Bawa payung atau jas hujan sebelum berangkat.']
+      : f.uv >= 6 ? ['🧴', 'Matahari terik. Pakai tabir surya dan banyak minum air.']
+      : ['😎', 'Cuaca bersahabat untuk beraktivitas di luar.'];
+    document.getElementById('advice-emoji').textContent = emo;
+    document.getElementById('advice').textContent = adv;
+    drawChart(f.hours);
+    renderDaily(f.days);
+  }
+
+  function drawChart(hours) {
+    const W = 720, H = 190, pad = 30;
+    const temps = hours.map(h => toUnit(h.temp));
+    const min = Math.min(...temps) - 2, max = Math.max(...temps) + 2;
+    const x = i => pad + i * (W - pad * 2) / (hours.length - 1);
+    const y = t => 30 + (1 - (t - min) / (max - min)) * 95;
+    let d = `M${x(0)} ${y(temps[0])}`;
+    for (let i = 1; i < temps.length; i++) {
+      const cx = (x(i - 1) + x(i)) / 2;
+      d += ` C${cx} ${y(temps[i - 1])} ${cx} ${y(temps[i])} ${x(i)} ${y(temps[i])}`;
+    }
+    let svg = `<defs><linearGradient id="fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>`;
+    svg += `<path d="${d} L${x(23)} 135 L${x(0)} 135Z" fill="url(#fill)"/><path d="${d}" fill="none" stroke="#fff" stroke-width="2.5"/>`;
+    hours.forEach((h, i) => {
+      if (i % 3) return;
+      svg += `<circle cx="${x(i)}" cy="${y(temps[i])}" r="4" fill="#fff"/>`;
+      svg += `<text x="${x(i)}" y="${y(temps[i]) - 10}" fill="#fff" font-size="13" text-anchor="middle" font-weight="600">${Math.round(temps[i])}°</text>`;
+      svg += `<rect x="${x(i) - 9}" y="${170 - h.rain * .3}" width="18" height="${h.rain * .3}" rx="3" fill="#9fd8ff" opacity=".7"/>`;
+      svg += `<text x="${x(i)}" y="186" fill="rgba(255,255,255,.8)" font-size="12" text-anchor="middle">${i === 0 ? 'Kini' : String(h.h).padStart(2, '0') + ':00'}</text>`;
+    });
+    document.getElementById('chart').innerHTML = svg;
+  }
+
+  function renderDaily(days) {
+    const lo = Math.min(...days.map(d => d.lo)), hi = Math.max(...days.map(d => d.hi));
+    document.getElementById('daily').innerHTML = days.map((d, i) => {
+      const left = (d.lo - lo) / (hi - lo) * 100, width = (d.hi - d.lo) / (hi - lo) * 100;
+      const name = i === 0 ? 'Hari ini' : d.date.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric' });
+      return `<div class="day"><span>${name}</span>${icon(condition(d.rain, 12).key, 'icon-sm')}
+        <div class="range"><span>${fmt(d.lo)}</span><div class="track"><i style="left:${left}%;width:${width}%"></i></div><span>${fmt(d.hi)}</span></div></div>`;
+    }).join('');
+  }
+
+  // Pencarian kota dengan saran, bisa dipakai lewat keyboard
+  const input = document.getElementById('city-input');
+  const suggest = document.getElementById('suggest');
+  let matches = [], hl = 0;
+  function showSuggest() {
+    const q = input.value.trim().toLowerCase();
+    matches = q ? cities.filter(c => c.name.toLowerCase().includes(q) || c.prov.toLowerCase().includes(q)) : [];
+    hl = 0;
+    suggest.innerHTML = matches.length ? matches.map((c, i) => `<li data-i="${i}" class="${i === 0 ? 'hl' : ''}">${c.name}<small>${c.prov}</small></li>`).join('')
+      : (q ? '<li>Kota tidak ditemukan</li>' : '');
+    suggest.classList.toggle('open', !!q);
+  }
+  function pick(city) { current = city; input.value = ''; suggest.classList.remove('open'); render(); }
+  input.addEventListener('input', showSuggest);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!matches.length) return;
+      hl = (hl + (e.key === 'ArrowDown' ? 1 : -1) + matches.length) % matches.length;
+      [...suggest.children].forEach((li, i) => li.classList.toggle('hl', i === hl));
+    } else if (e.key === 'Enter' && matches[hl]) pick(matches[hl]);
+    else if (e.key === 'Escape') suggest.classList.remove('open');
+  });
+  suggest.addEventListener('click', e => { const li = e.target.closest('li[data-i]'); if (li) pick(matches[+li.dataset.i]); });
+  document.addEventListener('click', e => { if (!e.target.closest('.search')) suggest.classList.remove('open'); });
+
+  function setUnit(u) {
+    unit = u;
+    document.getElementById('unit-c').classList.toggle('active', u === 'C');
+    document.getElementById('unit-f').classList.toggle('active', u === 'F');
+    try { localStorage.setItem('langit-unit', u); } catch (e) {}
+    render();
+  }
+  document.getElementById('unit-c').addEventListener('click', () => setUnit('C'));
+  document.getElementById('unit-f').addEventListener('click', () => setUnit('F'));
+  try { if (localStorage.getItem('langit-unit') === 'F') unit = 'F'; } catch (e) {}
+  setUnit(unit);
+</script>
+</body>
+</html>

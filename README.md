@@ -283,6 +283,43 @@ node test_web.mjs 04-          # satu website saja
 
 Tes gagal jika ada error JavaScript, request ke luar, scroll horizontal, atau skenario interaksi di `tests/interactions.mjs` yang tidak terpenuhi. Screenshot disimpan di `tests/screenshots/`.
 
+### Koleksi tambahan: `examples/web-pilihan/`
+
+Folder ini berisi 20 website single-file tambahan. Isinya **tidak** ada di `data/train.jsonl`, jadi bisa dipakai sebagai contoh atau bahan sampel baru. Semuanya berjalan tanpa internet: tanpa CDN, font, atau gambar dari luar.
+
+| File | Jenis | Fitur utama |
+|---|---|---|
+| `p01-agensi-kreatif` | Landing page agensi | filter portofolio, animasi angka, testimoni bergilir, validasi form |
+| `p02-cuaca` | Aplikasi cuaca | cari kota (keyboard), grafik 24 jam SVG, prakiraan 7 hari, °C/°F |
+| `p03-pemutar-musik` | Pemutar musik | lagu disintesis Web Audio, visualizer, acak/ulang, pintasan keyboard |
+| `p04-resep-nusantara` | Situs resep | cari bahan, takaran ikut jumlah porsi, favorit, timer memasak |
+| `p05-wisata-nusantara` | Perencana liburan | filter pulau & anggaran, rencana perjalanan, estimasi biaya |
+| `p06-catatan-keuangan` | Pencatat keuangan | grafik donat, batas anggaran, per bulan, ekspor CSV, mode gelap |
+| `p07-memori-satwa` | Game kartu memori | 3 tingkat, rekor, fakta satwa endemik |
+| `p08-2048` | Game 2048 | animasi ubin, geser layar, urungkan, skor terbaik |
+| `p09-klinik-gigi` | Situs klinik + reservasi | wizard 4 langkah, jadwal dokter, validasi nomor WA |
+| `p10-kalkulator-pesangon` | Kalkulator hukum | pesangon/UPMK/UPH per alasan PHK (PP 35/2021), kompensasi PKWT, PPh 21 final |
+| `p11-pelacak-kebiasaan` | Habit tracker | streak, heatmap 26 minggu, progres harian |
+| `p12-sudoku` | Game sudoku | generator dengan solusi tunggal, catatan, petunjuk, urungkan |
+| `p13-galeri-seni` | Galeri | karya generatif canvas, lightbox keyboard/geser, unduh PNG |
+| `p14-landing-saas` | Landing page SaaS | tab fitur, kalkulator penghematan, harga bulanan/tahunan |
+| `p15-cv-online` | CV / resume | dwibahasa, mode gelap, siap cetak A4 |
+| `p16-papan-gambar` | Aplikasi gambar | pena, spidol, bentuk, ember cat, undo/redo, simpan PNG |
+| `p17-aplikasi-chat` | UI chat | balasan otomatis, indikator mengetik, emoji, reaksi |
+| `p18-konferensi-teknologi` | Situs acara | hitung mundur, agenda pribadi, deteksi bentrok, tiket + promo |
+| `p19-konverter-satuan` | Konverter | 8 kategori termasuk tumbak/bata/ubin, dua arah, riwayat |
+| `p20-pecah-bata` | Game arkade | 4 level, power-up, efek suara, kontrol sentuh |
+
+Kalkulator pesangon hanya memberi estimasi hak minimal, bukan nasihat hukum. Dasar hukumnya dicantumkan per baris perhitungan.
+
+Tesnya memakai runner yang sama, dengan skenario interaksi di `tests/interactions_pilihan.mjs`:
+
+```bash
+cd tests
+WEB_DIR=web-pilihan node test_web.mjs        # ke-20 website
+WEB_DIR=web-pilihan node test_web.mjs p10    # satu website
+```
+
 Sampel perbaikan bug diuji dengan `node test_debug.mjs`. Untuk setiap sampel, tes memeriksa tiga hal:
 1. Blok SEARCH/REPLACE di jawaban, bila diterapkan ke kode di prompt, menghasilkan website asli di `examples/web` persis sama.
 2. Versi ber-bug benar-benar gagal di browser.
@@ -362,7 +399,9 @@ data/bench-support/                   kelompok dataset bench-support, lisensi, d
 humaneval-bench-script/               script uji skor HumanEval+ dan MBPP+ (harness resmi EvalPlus, uji McNemar)
 eval-suite/                           IndoPy (60 soal Python berbahasa Indonesia), Web-eval (10 website), papan skor
 examples/web/*.html                   26 website dari sampel web, siap dibuka di browser
+examples/web-pilihan/*.html           20 website tambahan (bukan data latihan)
 tests/test_web.mjs                    tes otomatis website dengan Playwright
 tests/interactions.mjs                skenario interaksi per website
+tests/interactions_pilihan.mjs        skenario interaksi untuk examples/web-pilihan
 tests/test_debug.mjs                  tes sampel perbaikan bug (web_debug)
 ```

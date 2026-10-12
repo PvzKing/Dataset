@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Coret — Papan Gambar Online</title>
+<style>
+  :root { --bg: #e9e7f0; --panel: #ffffff; --ink: #24203a; --muted: #77738c; --line: #dddae8; --accent: #6c4cff; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); display: flex; flex-direction: column; overflow: hidden; }
+  button, input { font: inherit; color: inherit; }
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .brand { font-weight: 900; font-size: 1.2rem; }
+  .brand span { color: var(--accent); }
+  .group { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .ib { width: 40px; height: 40px; border-radius: 10px; border: 1px solid transparent; background: none; cursor: pointer; display: grid; place-items: center; font-size: 1.1rem; }
+  .ib:hover { background: var(--bg); }
+  .ib.on { background: var(--accent); color: #fff; }
+  .ib:disabled { opacity: .35; cursor: default; background: none; }
+  .sep { width: 1px; height: 26px; background: var(--line); margin: 0 4px; }
+  .text-btn { height: 40px; padding: 0 14px; border-radius: 10px; border: 0; cursor: pointer; font-weight: 700; background: var(--accent); color: #fff; }
+  .text-btn.ghost { background: var(--bg); color: var(--ink); }
+  .workspace { flex: 1; display: flex; min-height: 0; }
+  .side { width: 220px; background: var(--panel); border-right: 1px solid var(--line); padding: 16px; display: flex; flex-direction: column; gap: 18px; overflow-y: auto; }
+  .side h3 { font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 8px; }
+  .swatches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .sw { aspect-ratio: 1; border-radius: 50%; border: 2px solid var(--panel); box-shadow: 0 0 0 1px var(--line); cursor: pointer; }
+  .sw.on { box-shadow: 0 0 0 2px var(--accent); }
+  .custom { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: .85rem; color: var(--muted); }
+  .custom input { width: 36px; height: 30px; border: 0; padding: 0; background: none; cursor: pointer; }
+  .range label { display: flex; justify-content: space-between; font-size: .85rem; margin-bottom: 4px; }
+  .range input { width: 100%; accent-color: var(--accent); }
+  .preview { height: 60px; border-radius: 10px; background: var(--bg); display: grid; place-items: center; }
+  .preview i { display: block; border-radius: 50%; }
+  .stage { flex: 1; position: relative; overflow: hidden; display: grid; place-items: center; padding: 16px; min-width: 0; }
+  canvas { background: #fff; border-radius: 10px; box-shadow: 0 20px 50px -26px rgba(36, 32, 58, .5); touch-action: none; cursor: crosshair; max-width: 100%; max-height: 100%; }
+  .status { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: .8rem; color: var(--muted); background: rgba(255,255,255,.8); padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+  .bg-opts { display: flex; gap: 6px; }
+  .bg-opts button { flex: 1; height: 34px; border-radius: 8px; border: 1px solid var(--line); cursor: pointer; font-size: .75rem; background: #fff; }
+  .bg-opts button.on { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  @media (max-width: 760px) {
+    .workspace { flex-direction: column-reverse; }
+    .side { width: 100%; flex-direction: row; gap: 14px; padding: 10px; border-right: 0; border-top: 1px solid var(--line); overflow-x: auto; overflow-y: hidden; flex-shrink: 0; }
+    .side > div { flex: 0 0 auto; }
+    .swatches { grid-template-columns: repeat(10, 26px); }
+    .side .range { width: 140px; }
+    .side .pv, .side .bgs { display: none; }
+    .brand { display: none; }
+    .ib { width: 34px; height: 34px; font-size: 1rem; }
+    .group { gap: 2px; }
+    .top { padding: 8px; }
+    .sep { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="brand">✏️ Co<span>ret</span></div>
+  <div class="group" role="toolbar" aria-label="Alat gambar">
+    <button class="ib on" data-tool="pen" title="Pena (P)" aria-label="Pena">✏️</button>
+    <button class="ib" data-tool="marker" title="Spidol (M)" aria-label="Spidol">🖍️</button>
+    <button class="ib" data-tool="eraser" title="Penghapus (E)" aria-label="Penghapus">🧽</button>
+    <button class="ib" data-tool="line" title="Garis (L)" aria-label="Garis">📏</button>
+    <button class="ib" data-tool="rect" title="Kotak (R)" aria-label="Kotak">⬜</button>
+    <button class="ib" data-tool="circle" title="Lingkaran (C)" aria-label="Lingkaran">⚪</button>
+    <button class="ib" data-tool="fill" title="Ember cat (F)" aria-label="Ember cat">🪣</button>
+    <span class="sep"></span>
+    <button class="ib" id="undo" title="Urungkan (Ctrl+Z)" aria-label="Urungkan" disabled>↶</button>
+    <button class="ib" id="redo" title="Ulangi (Ctrl+Y)" aria-label="Ulangi" disabled>↷</button>
+  </div>
+  <div class="group">
+    <button class="text-btn ghost" id="clear">Bersihkan</button>
+    <button class="text-btn" id="save">⬇ Simpan PNG</button>
+  </div>
+</div>
+<div class="workspace">
+  <aside class="side">
+    <div><h3>Warna</h3><div class="swatches" id="swatches"></div><label class="custom">Pilih sendiri <input type="color" id="custom" value="#6c4cff"></label></div>
+    <div class="range"><label>Ukuran <b id="size-v">6</b></label><input type="range" id="size" min="1" max="60" value="6"></div>
+    <div class="range"><label>Opasitas <b id="op-v">100%</b></label><input type="range" id="opacity" min="10" max="100" value="100"></div>
+    <div class="pv"><h3>Pratinjau</h3><div class="preview"><i id="pv"></i></div></div>
+    <div class="bgs"><h3>Latar</h3><div class="bg-opts" id="bg"><button data-bg="plain" class="on">Polos</button><button data-bg="grid">Kotak</button><button data-bg="dots">Titik</button></div></div>
+  </aside>
+  <div class="stage" id="stage">
+    <canvas id="canvas" aria-label="Kanvas gambar"></canvas>
+    <span class="status" id="status">Gambar dengan mouse, pena, atau jari</span>
+  </div>
+</div>
+
+<script>
+  const COLORS = ['#24203a', '#ffffff', '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#6c4cff', '#ec4899'];
+  const cv = document.getElementById('canvas'), ctx = cv.getContext('2d', { willReadFrequently: true });
+  let tool = 'pen', color = COLORS[0], size = 6, opacity = 1, bg = 'plain';
+  let drawing = false, start = null, last = null, snapshot = null, points = [];
+  const undoStack = [], redoStack = [];
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  let W = 0, H = 0;
+
+  function fit() {
+    const st = document.getElementById('stage');
+    const w = Math.floor(st.clientWidth - 32), h = Math.floor(st.clientHeight - 32);
+    if (w <= 0 || h <= 0) return;
+    const old = W ? ctx.getImageData(0, 0, cv.width, cv.height) : null;
+    W = w; H = h;
+    cv.width = W * DPR; cv.height = H * DPR;
+    cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    paintBg();
+    if (old) ctx.putImageData(old, 0, 0);
+  }
+  function paintBg() {
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.restore();
+    cv.style.backgroundImage = bg === 'grid' ? 'linear-gradient(#eceaf3 1px, transparent 1px), linear-gradient(90deg, #eceaf3 1px, transparent 1px)'
+      : bg === 'dots' ? 'radial-gradient(#d4d0e2 1.2px, transparent 1.2px)' : 'none';
+    cv.style.backgroundSize = '24px 24px';
+  }
+
+  function saveState() {
+    undoStack.push(ctx.getImageData(0, 0, cv.width, cv.height));
+    if (undoStack.length > 30) undoStack.shift();
+    redoStack.length = 0;
+    updateButtons();
+  }
+  function updateButtons() {
+    document.getElementById('undo').disabled = !undoStack.length;
+    document.getElementById('redo').disabled = !redoStack.length;
+  }
+  function undo() { if (!undoStack.length) return; redoStack.push(ctx.getImageData(0, 0, cv.width, cv.height)); ctx.putImageData(undoStack.pop(), 0, 0); updateButtons(); }
+  function redo() { if (!redoStack.length) return; undoStack.push(ctx.getImageData(0, 0, cv.width, cv.height)); ctx.putImageData(redoStack.pop(), 0, 0); updateButtons(); }
+
+  const pos = e => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height, p: e.pressure || .5 }; };
+
+  function style() {
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : 'source-over';
+    ctx.strokeStyle = ctx.fillStyle = color;
+    ctx.globalAlpha = tool === 'marker' ? Math.min(opacity, .35) : tool === 'eraser' ? 1 : opacity;
+    ctx.lineWidth = tool === 'marker' ? size * 2.2 : size;
+  }
+
+  cv.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    cv.setPointerCapture(e.pointerId);
+    const p = pos(e);
+    saveState();
+    if (tool === 'fill') { floodFill(Math.floor(p.x * DPR), Math.floor(p.y * DPR)); return; }
+    drawing = true; start = last = p; points = [p];
+    snapshot = ctx.getImageData(0, 0, cv.width, cv.height);
+    style();
+    if (tool === 'pen' || tool === 'eraser' || tool === 'marker') { ctx.beginPath(); ctx.arc(p.x, p.y, ctx.lineWidth / 2, 0, Math.PI * 2); if (tool !== 'marker') ctx.fill(); }
+  });
+  cv.addEventListener('pointermove', e => {
+    const p = pos(e);
+    document.getElementById('status').textContent = `x ${Math.round(p.x)} · y ${Math.round(p.y)}`;
+    if (!drawing) return;
+    style();
+    if (tool === 'pen' || tool === 'eraser') {
+      // Kurva halus melalui titik tengah antar sampel
+      const mid = { x: (last.x + p.x) / 2, y: (last.y + p.y) / 2 };
+      if (e.pointerType === 'pen') ctx.lineWidth = size * (.4 + p.p * 1.2);
+      ctx.beginPath(); ctx.moveTo(start.mx ?? last.x, start.my ?? last.y);
+      ctx.quadraticCurveTo(last.x, last.y, mid.x, mid.y); ctx.stroke();
+      start.mx = mid.x; start.my = mid.y; last = p;
+    } else if (tool === 'marker') {
+      // Spidol digambar ulang sebagai satu jalur agar transparansinya tidak menumpuk
+      points.push(p);
+      ctx.putImageData(snapshot, 0, 0); style();
+      ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y);
+      points.forEach(q => ctx.lineTo(q.x, q.y)); ctx.stroke();
+    } else {
+      ctx.putImageData(snapshot, 0, 0); style();
+      ctx.beginPath();
+      let x = start.x, y = start.y, w = p.x - start.x, h = p.y - start.y;
+      if (e.shiftKey && tool !== 'line') { const m = Math.max(Math.abs(w), Math.abs(h)); w = Math.sign(w) * m; h = Math.sign(h) * m; }
+      if (tool === 'line') { ctx.moveTo(x, y); ctx.lineTo(p.x, p.y); }
+      if (tool === 'rect') ctx.rect(x, y, w, h);
+      if (tool === 'circle') ctx.ellipse(x + w / 2, y + h / 2, Math.abs(w / 2), Math.abs(h / 2), 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  });
+  const end = () => { drawing = false; ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; };
+  cv.addEventListener('pointerup', end);
+  cv.addEventListener('pointercancel', end);
+  cv.addEventListener('pointerleave', () => { document.getElementById('status').textContent = 'Gambar dengan mouse, pena, atau jari'; });
+
+  // Ember cat: flood fill berbasis tumpukan dengan toleransi warna kecil
+  function floodFill(x, y) {
+    const img = ctx.getImageData(0, 0, cv.width, cv.height), d = img.data, w = cv.width, h = cv.height;
+    const i0 = (y * w + x) * 4, target = [d[i0], d[i0 + 1], d[i0 + 2], d[i0 + 3]];
+    const c = parseInt(color.slice(1), 16), fill = [c >> 16 & 255, c >> 8 & 255, c & 255, Math.round(opacity * 255)];
+    const same = i => Math.abs(d[i] - target[0]) + Math.abs(d[i + 1] - target[1]) + Math.abs(d[i + 2] - target[2]) + Math.abs(d[i + 3] - target[3]) < 48;
+    if (fill.every((v, k) => Math.abs(v - target[k]) < 3)) return;
+    const seen = new Uint8Array(w * h), stack = [x, y];
+    while (stack.length) {
+      const py = stack.pop(), px = stack.pop();
+      if (px < 0 || py < 0 || px >= w || py >= h) continue;
+      const k = py * w + px;
+      if (seen[k] || !same(k * 4)) continue;
+      seen[k] = 1;
+      d.set(fill, k * 4);
+      stack.push(px + 1, py, px - 1, py, px, py + 1, px, py - 1);
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
+  // Palet & kontrol
+  const swEl = document.getElementById('swatches');
+  swEl.innerHTML = COLORS.map((c, i) => `<button class="sw ${i ? '' : 'on'}" style="background:${c}" data-c="${c}" aria-label="Warna ${c}"></button>`).join('');
+  swEl.addEventListener('click', e => { const b = e.target.closest('.sw'); if (b) setColor(b.dataset.c); });
+  document.getElementById('custom').addEventListener('input', e => setColor(e.target.value));
+  function setColor(c) {
+    color = c;
+    [...swEl.children].forEach(b => b.classList.toggle('on', b.dataset.c === c));
+    if (tool === 'eraser') setTool('pen');
+    preview();
+  }
+  function setTool(t) {
+    tool = t;
+    document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
+    cv.style.cursor = t === 'fill' ? 'cell' : 'crosshair';
+  }
+  document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+  function preview() {
+    const pv = document.getElementById('pv');
+    pv.style.width = pv.style.height = Math.max(2, size) + 'px';
+    pv.style.background = color; pv.style.opacity = opacity;
+    document.getElementById('size-v').textContent = size;
+    document.getElementById('op-v').textContent = Math.round(opacity * 100) + '%';
+  }
+  document.getElementById('size').addEventListener('input', e => { size = +e.target.value; preview(); });
+  document.getElementById('opacity').addEventListener('input', e => { opacity = e.target.value / 100; preview(); });
+  document.getElementById('bg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    bg = b.dataset.bg;
+    [...b.parentNode.children].forEach(x => x.classList.toggle('on', x === b));
+    const img = ctx.getImageData(0, 0, cv.width, cv.height); paintBg(); ctx.putImageData(img, 0, 0);
+  });
+  document.getElementById('undo').addEventListener('click', undo);
+  document.getElementById('redo').addEventListener('click', redo);
+  document.getElementById('clear').addEventListener('click', () => { saveState(); paintBg(); });
+  document.getElementById('save').addEventListener('click', () => {
+    // Gabungkan pola latar ke file PNG supaya hasil unduhan sama dengan yang terlihat
+    const out = document.createElement('canvas'); out.width = cv.width; out.height = cv.height;
+    const o = out.getContext('2d');
+    o.fillStyle = '#fff'; o.fillRect(0, 0, out.width, out.height);
+    if (bg !== 'plain') {
+      o.fillStyle = bg === 'grid' ? '#eceaf3' : '#d4d0e2';
+      const s = 24 * DPR;
+      for (let x = 0; x < out.width; x += s) for (let y = 0; y < out.height; y += s) {
+        if (bg === 'grid') { o.fillRect(x, 0, DPR, out.height); o.fillRect(0, y, out.width, DPR); }
+        else { o.beginPath(); o.arc(x + s / 2, y + s / 2, 1.2 * DPR, 0, Math.PI * 2); o.fill(); }
+      }
+    }
+    o.drawImage(cv, 0, 0);
+    const a = document.createElement('a');
+    a.download = 'coretan-' + new Date().toISOString().slice(0, 10) + '.png';
+    a.href = out.toDataURL('image/png'); a.click();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
+    const map = { p: 'pen', m: 'marker', e: 'eraser', l: 'line', r: 'rect', c: 'circle', f: 'fill' };
+    if (map[e.key.toLowerCase()] && !e.ctrlKey && !e.metaKey) setTool(map[e.key.toLowerCase()]);
+    if (e.key === '[') { size = Math.max(1, size - 2); document.getElementById('size').value = size; preview(); }
+    if (e.key === ']') { size = Math.min(60, size + 2); document.getElementById('size').value = size; preview(); }
+  });
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(fit, 150); });
+  fit(); preview();
+</script>
+</body>
+</html>

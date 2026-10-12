@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jelajah Nusantara — Rencanakan Liburan Anda</title>
+<style>
+  :root { --bg: #f4f7f5; --card: #fff; --text: #10241b; --muted: #5b6f66; --accent: #0f766e; --accent2: #f59e0b; --line: #dfe8e3; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.55; }
+  .wrap { width: min(1180px, 100% - 32px); margin: 0 auto; }
+  button, input, select { font: inherit; }
+
+  .hero { position: relative; color: #fff; overflow: hidden; padding: 28px 0 120px; background: linear-gradient(180deg, #0c4a6e, #0f766e 70%, #14b8a6); }
+  .hero svg.scene { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 55%; }
+  .sun { position: absolute; width: clamp(70px, 12vw, 140px); aspect-ratio: 1; border-radius: 50%; background: #fde68a; opacity: .85; right: 12%; top: 38%; box-shadow: 0 0 80px 20px rgba(253, 230, 138, .35); }
+  .hero nav { display: flex; justify-content: space-between; align-items: center; position: relative; }
+  .hero nav b { font-size: 1.3rem; }
+  .hero nav a { color: #fff; text-decoration: none; padding: 8px 16px; border: 1px solid rgba(255,255,255,.4); border-radius: 999px; font-size: .9rem; }
+  .hero-text { position: relative; padding-top: 70px; max-width: 640px; }
+  .hero h1 { font-size: clamp(2.3rem, 6.5vw, 4.4rem); line-height: 1.02; letter-spacing: -.03em; }
+  .hero p { margin-top: 16px; font-size: 1.1rem; opacity: .9; max-width: 480px; }
+
+  .finder { position: relative; margin-top: -70px; background: var(--card); border-radius: 22px; box-shadow: 0 30px 60px -30px rgba(16, 36, 27, .4); padding: 18px; display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 12px; align-items: end; }
+  .finder label { display: grid; gap: 4px; font-size: .8rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; min-width: 0; }
+  .finder input, .finder select { padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--text); width: 100%; min-width: 0; text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .btn { background: var(--accent); color: #fff; border: 0; border-radius: 12px; padding: 13px 22px; cursor: pointer; font-weight: 600; }
+  .btn:hover { filter: brightness(1.1); }
+  .btn.alt { background: var(--accent2); color: #3a2400; }
+
+  .layout { display: grid; grid-template-columns: 1fr 360px; gap: 28px; margin: 40px auto 70px; align-items: start; }
+  .section-title { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; gap: 10px; flex-wrap: wrap; }
+  .section-title h2 { font-size: 1.6rem; letter-spacing: -.02em; }
+  .section-title span { color: var(--muted); font-size: .9rem; }
+  .dests { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 18px; }
+  .dest { background: var(--card); border-radius: 20px; overflow: hidden; border: 1px solid var(--line); display: flex; flex-direction: column; }
+  .dest .pic { height: 150px; position: relative; overflow: hidden; }
+  .dest .pic svg { width: 100%; height: 100%; display: block; }
+  .badge { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,.92); border-radius: 999px; padding: 3px 10px; font-size: .75rem; font-weight: 600; }
+  .rating { position: absolute; top: 10px; right: 10px; background: rgba(16,36,27,.75); color: #fff; border-radius: 999px; padding: 3px 10px; font-size: .75rem; }
+  .dest .body { padding: 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .dest h3 { font-size: 1.1rem; }
+  .dest p { color: var(--muted); font-size: .9rem; flex: 1; }
+  .dest .row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; gap: 8px; }
+  .price b { font-size: 1.05rem; }
+  .price small { color: var(--muted); }
+  .add { border: 1px solid var(--accent); color: var(--accent); background: none; border-radius: 10px; padding: 8px 12px; cursor: pointer; font-weight: 600; white-space: nowrap; }
+  .add.in { background: var(--accent); color: #fff; }
+
+  .planner { position: sticky; top: 16px; background: var(--card); border-radius: 22px; border: 1px solid var(--line); padding: 22px; }
+  .planner h2 { font-size: 1.3rem; margin-bottom: 4px; }
+  .planner .sub { color: var(--muted); font-size: .9rem; margin-bottom: 16px; }
+  .trip { list-style: none; display: grid; gap: 10px; margin-bottom: 16px; }
+  .trip li { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; background: var(--bg); border-radius: 14px; padding: 10px 12px; }
+  .trip .nights { display: flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--muted); }
+  .trip .nights button { width: 26px; height: 26px; border-radius: 8px; border: 1px solid var(--line); background: #fff; cursor: pointer; }
+  .trip .rm { border: 0; background: none; color: #b91c1c; cursor: pointer; font-size: .85rem; }
+  .empty { text-align: center; padding: 26px 10px; color: var(--muted); border: 2px dashed var(--line); border-radius: 16px; margin-bottom: 16px; }
+  .opts { display: grid; gap: 10px; margin-bottom: 16px; }
+  .opts label { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: .9rem; }
+  .opts select { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); }
+  .seg { display: flex; background: var(--bg); border-radius: 10px; padding: 3px; }
+  .seg button { border: 0; background: none; padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: .85rem; }
+  .seg button.active { background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.1); font-weight: 600; }
+  .breakdown { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 6px; font-size: .9rem; }
+  .breakdown div { display: flex; justify-content: space-between; }
+  .breakdown .total { font-size: 1.25rem; font-weight: 800; color: var(--accent); margin-top: 6px; }
+  .itinerary { margin-top: 14px; font-size: .88rem; color: var(--muted); }
+  .itinerary ol { padding-left: 18px; }
+  .toast { position: fixed; bottom: 18px; left: 50%; transform: translate(-50%, 140%); background: var(--text); color: #fff; padding: 12px 20px; border-radius: 12px; transition: transform .3s; z-index: 50; max-width: calc(100% - 24px); }
+  .toast.show { transform: translate(-50%, 0); }
+
+  @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } .planner { position: static; } }
+  @media (max-width: 720px) { .sun { top: 104px; right: 22px; width: 46px; } .finder { grid-template-columns: 1fr 1fr; } .finder label:first-child { grid-column: 1 / -1; } .finder .btn { grid-column: 1 / -1; } }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="sun" aria-hidden="true"></div>
+  <svg class="scene" viewBox="0 0 1440 400" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 260 L180 120 L300 220 L460 60 L640 240 L780 150 L960 260 L1140 140 L1300 230 L1440 170 V400 H0Z" fill="#115e59" opacity=".7"/>
+    <path d="M0 310 Q360 230 720 300 T1440 290 V400 H0Z" fill="#0f766e"/>
+    <path d="M0 350 Q360 300 720 350 T1440 340 V400 H0Z" fill="#f4f7f5"/>
+  </svg>
+  <div class="wrap">
+    <nav><b>🧭 Jelajah Nusantara</b><a href="#rencana">Rencana Saya</a></nav>
+    <div class="hero-text">
+      <h1>17.000 pulau.<br>Satu liburan impian.</h1>
+      <p>Pilih destinasi, atur lama menginap, dan lihat perkiraan biayanya langsung.</p>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <form class="finder" id="finder">
+    <label>Cari destinasi<input id="q" placeholder="Pantai, gunung, budaya…"></label>
+    <label>Pulau<select id="island"><option value="">Semua pulau</option></select></label>
+    <label>Anggaran / malam<select id="budget"><option value="">Semua</option><option value="500000">≤ Rp500 rb</option><option value="1000000">≤ Rp1 jt</option><option value="2000000">≤ Rp2 jt</option></select></label>
+    <button class="btn" type="submit">Cari</button>
+  </form>
+
+  <div class="layout">
+    <section>
+      <div class="section-title"><h2>Destinasi pilihan</h2><span id="result-count"></span></div>
+      <div class="dests" id="dests"></div>
+    </section>
+
+    <aside class="planner" id="rencana">
+      <h2>Rencana Perjalanan</h2>
+      <p class="sub">Tambahkan destinasi dari daftar di samping.</p>
+      <ul class="trip" id="trip"></ul>
+      <div class="opts">
+        <label>Jumlah orang
+          <span class="seg" id="people">
+            <button type="button" data-n="1">1</button><button type="button" data-n="2" class="active">2</button><button type="button" data-n="4">4</button><button type="button" data-n="6">6</button>
+          </span>
+        </label>
+        <label>Berangkat dari
+          <select id="origin"><option value="jkt">Jakarta</option><option value="sby">Surabaya</option><option value="mdn">Medan</option><option value="mks">Makassar</option></select>
+        </label>
+        <label>Gaya liburan
+          <span class="seg" id="style">
+            <button type="button" data-s="hemat">Hemat</button><button type="button" data-s="nyaman" class="active">Nyaman</button><button type="button" data-s="mewah">Mewah</button>
+          </span>
+        </label>
+      </div>
+      <div class="breakdown" id="breakdown"></div>
+      <div class="itinerary" id="itinerary"></div>
+      <button class="btn alt" id="share" style="width:100%;margin-top:14px">Salin Ringkasan</button>
+    </aside>
+  </div>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+  // Harga adalah perkiraan per orang per malam (penginapan kelas menengah) + tiket pesawat PP dari kota asal.
+  const dests = [
+    { id: 'raja-ampat', name: 'Raja Ampat', island: 'Papua', type: 'Laut', rating: 4.9, stay: 1800000, desc: 'Gugusan pulau karst dengan terumbu karang terkaya di dunia.', fare: { jkt: 7200000, sby: 6800000, mdn: 8800000, mks: 4200000 }, art: ['#0ea5e9', '#14b8a6', 'karst'] },
+    { id: 'bromo', name: 'Gunung Bromo', island: 'Jawa', type: 'Gunung', rating: 4.8, stay: 550000, desc: 'Matahari terbit di atas lautan pasir dan kawah yang masih aktif.', fare: { jkt: 1600000, sby: 300000, mdn: 3200000, mks: 2200000 }, art: ['#f97316', '#7c3aed', 'volcano'] },
+    { id: 'labuan-bajo', name: 'Labuan Bajo', island: 'Nusa Tenggara', type: 'Laut', rating: 4.8, stay: 1200000, desc: 'Gerbang menuju Pulau Komodo, Padar, dan Pink Beach.', fare: { jkt: 3400000, sby: 2800000, mdn: 5200000, mks: 2400000 }, art: ['#f472b6', '#38bdf8', 'island'] },
+    { id: 'toba', name: 'Danau Toba', island: 'Sumatera', type: 'Danau', rating: 4.7, stay: 450000, desc: 'Danau vulkanik terbesar di Asia Tenggara dengan Pulau Samosir di tengahnya.', fare: { jkt: 2400000, sby: 3000000, mdn: 400000, mks: 3600000 }, art: ['#0284c7', '#22c55e', 'lake'] },
+    { id: 'ubud', name: 'Ubud', island: 'Bali', type: 'Budaya', rating: 4.7, stay: 900000, desc: 'Sawah terasering, pura, dan pusat seni tradisional Bali.', fare: { jkt: 1900000, sby: 1100000, mdn: 3600000, mks: 1500000 }, art: ['#65a30d', '#facc15', 'terrace'] },
+    { id: 'borobudur', name: 'Borobudur', island: 'Jawa', type: 'Budaya', rating: 4.8, stay: 600000, desc: 'Candi Buddha terbesar di dunia, warisan budaya UNESCO.', fare: { jkt: 1300000, sby: 900000, mdn: 3000000, mks: 2000000 }, art: ['#a16207', '#fbbf24', 'temple'] },
+    { id: 'derawan', name: 'Kepulauan Derawan', island: 'Kalimantan', type: 'Laut', rating: 4.6, stay: 700000, desc: 'Berenang bersama ubur-ubur tak menyengat di Danau Kakaban.', fare: { jkt: 3000000, sby: 2600000, mdn: 4400000, mks: 1800000 }, art: ['#06b6d4', '#a7f3d0', 'island'] },
+    { id: 'bunaken', name: 'Bunaken', island: 'Sulawesi', type: 'Laut', rating: 4.6, stay: 650000, desc: 'Taman laut dengan dinding karang curam dan penyu hijau.', fare: { jkt: 3200000, sby: 2700000, mdn: 4600000, mks: 1300000 }, art: ['#2563eb', '#5eead4', 'karst'] },
+    { id: 'kelimutu', name: 'Danau Kelimutu', island: 'Nusa Tenggara', type: 'Gunung', rating: 4.7, stay: 400000, desc: 'Tiga danau kawah yang warnanya berubah dari waktu ke waktu.', fare: { jkt: 3600000, sby: 3000000, mdn: 5400000, mks: 2600000 }, art: ['#0d9488', '#7c3aed', 'volcano'] },
+    { id: 'toraja', name: 'Tana Toraja', island: 'Sulawesi', type: 'Budaya', rating: 4.6, stay: 500000, desc: 'Rumah adat tongkonan dan tradisi upacara Rambu Solo.', fare: { jkt: 2800000, sby: 2300000, mdn: 4200000, mks: 300000 }, art: ['#b45309', '#16a34a', 'terrace'] }
+  ];
+  const styleMul = { hemat: .6, nyaman: 1, mewah: 2.2 };
+  const DAILY = { hemat: 200000, nyaman: 400000, mewah: 900000 }; // makan & transport lokal per orang per hari
+  const rp = n => 'Rp' + Math.round(n).toLocaleString('id-ID');
+  const rpShort = n => n >= 1e6 ? 'Rp' + (n / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' jt' : 'Rp' + Math.round(n / 1000) + ' rb';
+
+  let trip = [];
+  try { trip = JSON.parse(localStorage.getItem('jelajah-trip') || '[]').filter(t => dests.some(d => d.id === t.id)); } catch (e) {}
+  let people = 2, style = 'nyaman';
+
+  [...new Set(dests.map(d => d.island))].sort().forEach(i => document.getElementById('island').insertAdjacentHTML('beforeend', `<option>${i}</option>`));
+
+  function art([c1, c2, kind], id) {
+    const shapes = {
+      karst: `<path d="M20 150 Q40 60 70 150Z M90 150 Q115 40 150 150Z M170 150 Q190 80 215 150Z" fill="#14532d" opacity=".8"/>`,
+      volcano: `<path d="M0 150 L90 60 L120 70 L150 55 L260 150Z" fill="#3f3f46"/><path d="M95 60 Q120 30 150 55" fill="none" stroke="#e5e7eb" stroke-width="6" opacity=".7"/>`,
+      island: `<ellipse cx="130" cy="140" rx="90" ry="22" fill="#fde68a"/><path d="M130 130 Q120 90 140 70 M140 70 q-30 -5 -40 10 M140 70 q25 -10 40 5 M140 70 q-10 -25 -30 -25 M140 70 q15 -25 35 -20" stroke="#166534" stroke-width="6" fill="none" stroke-linecap="round"/>`,
+      lake: `<path d="M0 100 L60 50 L110 90 L170 40 L260 100 V110 H0Z" fill="#14532d" opacity=".75"/><ellipse cx="130" cy="135" rx="140" ry="28" fill="#0369a1" opacity=".8"/>`,
+      terrace: [0, 1, 2, 3].map(i => `<path d="M0 ${80 + i * 20} Q130 ${60 + i * 20} 260 ${80 + i * 20} V160 H0Z" fill="${['#4d7c0f', '#65a30d', '#84cc16', '#a3e635'][i]}"/>`).join(''),
+      temple: `<path d="M50 150 h160 v-15 h-140 v-15 h120 v-15 h-100 v-15 h80 v-15 h-60 v-15 h40 v-10 h-20" fill="#78350f"/><rect x="125" y="40" width="10" height="20" fill="#78350f"/>`
+    };
+    return `<svg viewBox="0 0 260 150" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="g-${id}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs>
+      <rect width="260" height="150" fill="url(#g-${id})"/><circle cx="210" cy="35" r="16" fill="#fff" opacity=".6"/>${shapes[kind]}</svg>`;
+  }
+
+  function renderDests() {
+    const q = document.getElementById('q').value.trim().toLowerCase();
+    const island = document.getElementById('island').value;
+    const budget = +document.getElementById('budget').value || Infinity;
+    const list = dests.filter(d => (!island || d.island === island) && d.stay <= budget &&
+      (!q || (d.name + d.desc + d.type + d.island).toLowerCase().includes(q)));
+    document.getElementById('result-count').textContent = `${list.length} dari ${dests.length} destinasi`;
+    document.getElementById('dests').innerHTML = list.map(d => {
+      const inTrip = trip.some(t => t.id === d.id);
+      return `<article class="dest">
+        <div class="pic">${art(d.art, d.id)}<span class="badge">${d.type} · ${d.island}</span><span class="rating">★ ${d.rating}</span></div>
+        <div class="body"><h3>${d.name}</h3><p>${d.desc}</p>
+          <div class="row"><span class="price"><b>${rpShort(d.stay)}</b> <small>/malam</small></span>
+          <button class="add ${inTrip ? 'in' : ''}" data-id="${d.id}">${inTrip ? '✓ Ditambahkan' : '+ Rencana'}</button></div>
+        </div></article>`;
+    }).join('') || '<p style="color:var(--muted)">Tidak ada destinasi yang cocok. Coba longgarkan filter.</p>';
+  }
+
+  function save() { try { localStorage.setItem('jelajah-trip', JSON.stringify(trip)); } catch (e) {} }
+
+  function renderTrip() {
+    const ul = document.getElementById('trip');
+    if (!trip.length) {
+      ul.innerHTML = '<div class="empty">🗺️<br>Belum ada destinasi.<br>Klik “+ Rencana” untuk memulai.</div>';
+    } else {
+      ul.innerHTML = trip.map(t => {
+        const d = dests.find(x => x.id === t.id);
+        return `<li><div><b>${d.name}</b><div class="nights"><button data-dec="${d.id}" aria-label="Kurangi malam">−</button>${t.nights} malam<button data-inc="${d.id}" aria-label="Tambah malam">+</button></div></div>
+          <button class="rm" data-rm="${d.id}">Hapus</button></li>`;
+      }).join('');
+    }
+    const m = styleMul[style];
+    const nights = trip.reduce((s, t) => s + t.nights, 0);
+    const rooms = Math.ceil(people / 2);
+    const stay = trip.reduce((s, t) => s + dests.find(d => d.id === t.id).stay * m * t.nights * rooms, 0);
+    const origin = document.getElementById('origin').value;
+    // Penerbangan: kota asal ke destinasi pertama dan pulang dari destinasi terakhir, antar-destinasi dihitung separuh.
+    let fare = 0;
+    trip.forEach((t, i) => { const f = dests.find(d => d.id === t.id).fare[origin]; fare += (i === 0 || i === trip.length - 1 ? f / 2 : 0) + (i > 0 ? f / 4 : 0); });
+    if (trip.length === 1) fare = dests.find(d => d.id === trip[0].id).fare[origin];
+    fare *= people;
+    const daily = DAILY[style] * people * (nights + (trip.length ? 1 : 0));
+    const total = stay + fare + daily;
+    document.getElementById('breakdown').innerHTML = `
+      <div><span>Penginapan (${nights} malam, ${rooms} kamar)</span><span>${rp(stay)}</span></div>
+      <div><span>Tiket pesawat (${people} orang)</span><span>${rp(fare)}</span></div>
+      <div><span>Makan &amp; transport lokal</span><span>${rp(daily)}</span></div>
+      <div class="total"><span>Total</span><span id="total">${rp(total)}</span></div>
+      <div style="color:var(--muted)"><span>Per orang</span><span>${rp(people ? total / people : 0)}</span></div>`;
+    const it = document.getElementById('itinerary');
+    if (trip.length) {
+      let day = 1;
+      it.innerHTML = '<b>Garis besar jadwal</b><ol>' + trip.map(t => {
+        const d = dests.find(x => x.id === t.id);
+        const s = `<li>Hari ${day}–${day + t.nights}: ${d.name}</li>`;
+        day += t.nights;
+        return s;
+      }).join('') + '</ol>';
+    } else it.innerHTML = '';
+    document.getElementById('share').disabled = !trip.length;
+  }
+
+  document.getElementById('dests').addEventListener('click', e => {
+    const b = e.target.closest('.add'); if (!b) return;
+    const id = b.dataset.id;
+    if (trip.some(t => t.id === id)) trip = trip.filter(t => t.id !== id);
+    else { trip.push({ id, nights: 2 }); toast(`${dests.find(d => d.id === id).name} ditambahkan ke rencana`); }
+    save(); renderDests(); renderTrip();
+  });
+  document.getElementById('trip').addEventListener('click', e => {
+    const t = e.target;
+    const id = t.dataset.inc || t.dataset.dec || t.dataset.rm;
+    if (!id) return;
+    const item = trip.find(x => x.id === id);
+    if (t.dataset.inc) item.nights = Math.min(14, item.nights + 1);
+    if (t.dataset.dec) item.nights = Math.max(1, item.nights - 1);
+    if (t.dataset.rm) trip = trip.filter(x => x.id !== id);
+    save(); renderDests(); renderTrip();
+  });
+  function seg(id, attr, set) {
+    document.getElementById(id).addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      [...e.currentTarget.children].forEach(x => x.classList.toggle('active', x === b));
+      set(b.dataset[attr]); renderTrip();
+    });
+  }
+  seg('people', 'n', v => people = +v);
+  seg('style', 's', v => style = v);
+  document.getElementById('origin').addEventListener('change', renderTrip);
+  document.getElementById('finder').addEventListener('submit', e => { e.preventDefault(); renderDests(); });
+  ['q', 'island', 'budget'].forEach(id => document.getElementById(id).addEventListener('input', renderDests));
+
+  document.getElementById('share').addEventListener('click', async () => {
+    const text = 'Rencana liburan: ' + trip.map(t => `${dests.find(d => d.id === t.id).name} (${t.nights} malam)`).join(' → ') +
+      `. Perkiraan total ${document.getElementById('total').textContent} untuk ${people} orang.`;
+    try { await navigator.clipboard.writeText(text); toast('Ringkasan disalin ke clipboard'); }
+    catch (e) { toast(text); }
+  });
+  let tt;
+  function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2600); }
+
+  renderDests(); renderTrip();
+</script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dapur Nusantara — Resep Masakan Rumahan</title>
+<style>
+  :root { --bg: #fffaf3; --card: #fff; --text: #2b1d12; --muted: #7d6a5a; --accent: #c2410c; --accent-soft: #ffedd5; --green: #15803d; --line: #f0e3d3; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, "Times New Roman", serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .sans { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  button, input, select { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 1rem; }
+  .wrap { width: min(1160px, 100% - 32px); margin: 0 auto; }
+  header { padding: 22px 0; border-bottom: 1px solid var(--line); }
+  header .wrap { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .logo { font-size: 1.5rem; font-weight: 700; font-style: italic; color: var(--accent); }
+  .fav-btn { border: 1px solid var(--line); background: var(--card); padding: 9px 16px; border-radius: 999px; cursor: pointer; }
+  .fav-btn b { color: var(--accent); }
+
+  .hero { padding: 56px 0 30px; text-align: center; }
+  .hero h1 { font-size: clamp(2.2rem, 6vw, 4rem); line-height: 1.05; letter-spacing: -.02em; }
+  .hero p { color: var(--muted); margin: 14px auto 28px; max-width: 520px; font-size: 1.1rem; }
+  .searchbar { display: flex; gap: 10px; max-width: 620px; margin: 0 auto; flex-wrap: wrap; }
+  .searchbar input { flex: 1 1 240px; min-width: 0; padding: 15px 20px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); box-shadow: 0 6px 24px -14px rgba(120, 60, 0, .4); }
+  .searchbar select { padding: 15px 18px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); flex: 0 1 auto; }
+  input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .cats { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 26px 0 8px; }
+  .cat { border: 1px solid var(--line); background: var(--card); padding: 8px 16px; border-radius: 999px; cursor: pointer; }
+  .cat.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .count { text-align: center; color: var(--muted); font-size: .9rem; margin-bottom: 18px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 22px; padding-bottom: 60px; }
+  .card { background: var(--card); border-radius: 22px; overflow: hidden; border: 1px solid var(--line); cursor: pointer; transition: transform .25s, box-shadow .25s; display: flex; flex-direction: column; text-align: left; padding: 0; color: inherit; }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -24px rgba(120, 60, 0, .5); }
+  .plate { aspect-ratio: 16 / 11; display: grid; place-items: center; font-size: 4.2rem; position: relative; }
+  .heart { position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; border-radius: 50%; border: 0; background: rgba(255,255,255,.9); cursor: pointer; font-size: 1.1rem; }
+  .card-body { padding: 18px 20px 20px; }
+  .card-body h3 { font-size: 1.25rem; line-height: 1.25; }
+  .card-body p { color: var(--muted); font-size: .95rem; margin: 6px 0 12px; }
+  .meta { display: flex; gap: 14px; color: var(--muted); font-size: .85rem; flex-wrap: wrap; }
+  .lvl { color: var(--green); }
+  .empty { grid-column: 1 / -1; text-align: center; padding: 50px; color: var(--muted); }
+
+  dialog { border: 0; border-radius: 26px; padding: 0; width: min(860px, 100% - 24px); max-height: 92vh; color: var(--text); background: var(--bg); }
+  dialog::backdrop { background: rgba(40, 20, 0, .55); backdrop-filter: blur(3px); }
+  .modal-head { padding: 34px 32px 22px; position: relative; }
+  .modal-head .emoji { font-size: 3rem; }
+  .modal-head h2 { font-size: clamp(1.6rem, 4vw, 2.3rem); line-height: 1.15; }
+  .close { position: absolute; top: 16px; right: 16px; width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); cursor: pointer; font-size: 1.2rem; }
+  .modal-body { display: grid; grid-template-columns: 300px 1fr; gap: 28px; padding: 0 32px 32px; }
+  .box { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 20px; }
+  .box h3 { font-size: 1.1rem; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .stepper { display: flex; align-items: center; gap: 8px; }
+  .stepper button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--bg); cursor: pointer; }
+  .stepper span { min-width: 64px; text-align: center; font-size: .95rem; }
+  .ing { list-style: none; }
+  .ing li { padding: 7px 0; border-bottom: 1px dashed var(--line); display: flex; gap: 10px; align-items: flex-start; }
+  .ing label { display: flex; gap: 10px; cursor: pointer; flex: 1; }
+  .ing input { margin-top: 6px; accent-color: var(--accent); }
+  .ing input:checked + span { text-decoration: line-through; color: var(--muted); }
+  .qty { font-weight: 700; white-space: nowrap; }
+  .steps { list-style: none; counter-reset: s; }
+  .steps li { counter-increment: s; padding: 0 0 18px 46px; position: relative; cursor: pointer; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 700; font-family: system-ui, sans-serif; }
+  .steps li.done { color: var(--muted); }
+  .steps li.done::before { content: "✓"; background: var(--green); color: #fff; }
+  .timer-btn { margin-left: 6px; border: 1px solid var(--accent); color: var(--accent); background: none; border-radius: 999px; padding: 1px 10px; font-size: .8rem; cursor: pointer; }
+  .timer-bar { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 12px 20px; border-radius: 999px; display: none; align-items: center; gap: 12px; z-index: 100; font-family: system-ui, sans-serif; max-width: calc(100% - 24px); }
+  .timer-bar.show { display: flex; }
+  .timer-bar button { background: none; border: 1px solid rgba(255,255,255,.4); color: inherit; border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  @media (max-width: 720px) { .modal-body { grid-template-columns: 1fr; padding: 0 18px 22px; } .modal-head { padding: 28px 18px 18px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="logo">Dapur Nusantara</div>
+    <button class="fav-btn" id="fav-toggle">♥ Favorit <b id="fav-count">0</b></button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Masak enak,<br>seperti di rumah nenek.</h1>
+    <p>Resep rumahan dari Sabang sampai Merauke, lengkap dengan takaran yang bisa disesuaikan jumlah porsi.</p>
+    <div class="searchbar">
+      <input id="q" type="search" placeholder="Cari resep atau bahan… (mis. santan)" aria-label="Cari resep">
+      <select id="sort" aria-label="Urutkan">
+        <option value="pop">Terpopuler</option>
+        <option value="time">Tercepat</option>
+        <option value="name">A–Z</option>
+      </select>
+    </div>
+    <div class="cats" id="cats"></div>
+  </section>
+  <p class="count sans" id="count"></p>
+  <section class="grid" id="grid"></section>
+</main>
+
+<dialog id="modal" aria-labelledby="m-title">
+  <div class="modal-head">
+    <button class="close" id="close" aria-label="Tutup">✕</button>
+    <div class="emoji" id="m-emoji"></div>
+    <h2 id="m-title"></h2>
+    <p class="meta sans" id="m-meta"></p>
+  </div>
+  <div class="modal-body">
+    <div class="box">
+      <h3>Bahan
+        <span class="stepper sans"><button id="minus" aria-label="Kurangi porsi">−</button><span id="portions"></span><button id="plus" aria-label="Tambah porsi">+</button></span>
+      </h3>
+      <ul class="ing sans" id="m-ing"></ul>
+    </div>
+    <div>
+      <h3 style="margin-bottom:12px">Cara membuat</h3>
+      <ol class="steps" id="m-steps"></ol>
+    </div>
+  </div>
+</dialog>
+
+<div class="timer-bar" id="timer-bar" role="status"><span>⏲ <b id="timer-left"></b></span><span id="timer-label"></span><button id="timer-stop">Batal</button></div>
+
+<script>
+  // Takaran ditulis untuk jumlah porsi "serves". Angka dalam {} ikut diskalakan.
+  const recipes = [
+    { id: 'rendang', name: 'Rendang Daging', region: 'Sumatera Barat', cat: 'Daging', time: 240, level: 'Sulit', pop: 99, emoji: '🍛', bg: '#7c2d12', serves: 6, desc: 'Daging sapi dimasak perlahan dengan santan dan bumbu hingga kering dan meresap.',
+      ing: [[1, 'kg', 'daging sapi bagian paha'], [1500, 'ml', 'santan dari 3 butir kelapa'], [12, 'butir', 'bawang merah'], [8, 'siung', 'bawang putih'], [150, 'g', 'cabai merah keriting'], [4, 'cm', 'jahe'], [4, 'cm', 'lengkuas'], [2, 'batang', 'serai, memarkan'], [4, 'lembar', 'daun jeruk'], [1, 'lembar', 'daun kunyit'], [1.5, 'sdt', 'garam']],
+      steps: ['Haluskan bawang merah, bawang putih, cabai, jahe, dan lengkuas.', 'Didihkan santan bersama bumbu halus, serai, daun jeruk, dan daun kunyit sambil terus diaduk.', 'Masukkan potongan daging. Masak dengan api sedang hingga santan menyusut dan berminyak. [90]', 'Kecilkan api, aduk sesekali hingga bumbu menghitam dan kering. [120]', 'Bumbui garam, cicipi, lalu angkat.'] },
+    { id: 'soto', name: 'Soto Ayam Lamongan', region: 'Jawa Timur', cat: 'Sup', time: 75, level: 'Sedang', pop: 92, emoji: '🍜', bg: '#ca8a04', serves: 4, desc: 'Kuah kuning bening yang gurih dengan taburan koya yang khas.',
+      ing: [[1, 'ekor', 'ayam kampung'], [2, 'liter', 'air'], [6, 'butir', 'bawang merah'], [4, 'siung', 'bawang putih'], [3, 'cm', 'kunyit, bakar'], [3, 'butir', 'kemiri'], [100, 'g', 'soun, seduh'], [4, 'butir', 'telur rebus'], [5, 'lembar', 'kerupuk udang untuk koya']],
+      steps: ['Rebus ayam hingga empuk, angkat, lalu suwir dagingnya. [40]', 'Tumis bumbu halus hingga harum dan masukkan ke kaldu.', 'Haluskan kerupuk bersama bawang putih goreng untuk koya.', 'Tata soun, suwiran ayam, dan telur di mangkuk, siram kuah panas, taburi koya.'] },
+    { id: 'gado', name: 'Gado-Gado', region: 'DKI Jakarta', cat: 'Sayur', time: 30, level: 'Mudah', pop: 88, emoji: '🥗', bg: '#16a34a', serves: 2, desc: 'Sayuran rebus dengan saus kacang kental yang manis gurih.',
+      ing: [[150, 'g', 'kacang tanah goreng'], [2, 'buah', 'cabai rawit'], [1, 'siung', 'bawang putih'], [30, 'g', 'gula merah'], [1, 'sdm', 'air asam jawa'], [100, 'g', 'kol'], [100, 'g', 'tauge'], [1, 'ikat', 'kangkung'], [2, 'buah', 'kentang rebus'], [2, 'potong', 'tahu goreng']],
+      steps: ['Rebus sebentar kol, tauge, dan kangkung. Tiriskan. [3]', 'Ulek kacang, cabai, bawang putih, gula merah, dan air asam hingga halus.', 'Tambahkan air panas sedikit demi sedikit hingga saus mengental.', 'Tata sayuran, kentang, dan tahu, lalu siram dengan saus kacang.'] },
+    { id: 'nasgor', name: 'Nasi Goreng Kampung', region: 'Jawa', cat: 'Nasi', time: 15, level: 'Mudah', pop: 95, emoji: '🍳', bg: '#b45309', serves: 1, desc: 'Nasi goreng sederhana dengan terasi dan cabai, cocok untuk sarapan.',
+      ing: [[1, 'piring', 'nasi putih dingin'], [3, 'butir', 'bawang merah'], [1, 'siung', 'bawang putih'], [3, 'buah', 'cabai rawit'], [0.5, 'sdt', 'terasi bakar'], [1, 'sdm', 'kecap manis'], [1, 'butir', 'telur'], [0.25, 'sdt', 'garam']],
+      steps: ['Ulek bawang merah, bawang putih, cabai, dan terasi.', 'Tumis bumbu hingga harum, lalu orak-arik telur di sisi wajan.', 'Masukkan nasi, kecap, dan garam. Aduk dengan api besar. [3]', 'Sajikan dengan kerupuk dan irisan mentimun.'] },
+    { id: 'pempek', name: 'Pempek Kapal Selam', region: 'Sumatera Selatan', cat: 'Ikan', time: 90, level: 'Sulit', pop: 85, emoji: '🐟', bg: '#0e7490', serves: 4, desc: 'Adonan ikan tenggiri berisi telur, disiram cuko yang asam pedas.',
+      ing: [[500, 'g', 'daging ikan tenggiri giling'], [250, 'g', 'tepung sagu'], [200, 'ml', 'air es'], [1, 'sdt', 'garam'], [4, 'butir', 'telur'], [250, 'g', 'gula batok untuk cuko'], [5, 'siung', 'bawang putih'], [10, 'buah', 'cabai rawit']],
+      steps: ['Campur ikan, air es, dan garam. Tambahkan sagu sedikit demi sedikit.', 'Ambil adonan, buat cekungan, isi dengan telur, lalu rapatkan.', 'Rebus pempek hingga mengapung. [10]', 'Rebus gula batok, bawang putih, dan cabai halus untuk cuko. [20]', 'Goreng pempek sebelum disajikan bersama cuko.'] },
+    { id: 'klepon', name: 'Klepon', region: 'Jawa Tengah', cat: 'Jajanan', time: 40, level: 'Mudah', pop: 81, emoji: '🟢', bg: '#65a30d', serves: 4, desc: 'Bola ketan pandan berisi gula merah cair dengan balutan kelapa parut.',
+      ing: [[250, 'g', 'tepung ketan'], [200, 'ml', 'air daun pandan'], [100, 'g', 'gula merah sisir'], [150, 'g', 'kelapa parut kukus'], [0.25, 'sdt', 'garam']],
+      steps: ['Uleni tepung ketan dengan air pandan hingga kalis.', 'Bentuk bola, isi dengan gula merah, lalu bulatkan.', 'Rebus hingga mengapung. [5]', 'Gulingkan di kelapa parut yang sudah diberi garam.'] },
+    { id: 'ayam-betutu', name: 'Ayam Betutu', region: 'Bali', cat: 'Daging', time: 180, level: 'Sedang', pop: 83, emoji: '🍗', bg: '#9a3412', serves: 4, desc: 'Ayam utuh berbumbu base genep yang dikukus lalu dipanggang.',
+      ing: [[1, 'ekor', 'ayam kampung'], [10, 'butir', 'bawang merah'], [6, 'siung', 'bawang putih'], [5, 'cm', 'kencur'], [5, 'cm', 'kunyit'], [10, 'buah', 'cabai merah'], [1, 'sdt', 'terasi'], [3, 'lembar', 'daun salam'], [1, 'ikat', 'daun singkong']],
+      steps: ['Haluskan bumbu base genep lalu tumis hingga matang.', 'Lumuri ayam dengan bumbu dan isi perutnya dengan daun singkong.', 'Bungkus dengan daun pisang, kukus hingga empuk. [120]', 'Panggang sebentar agar kulit kecokelatan. [20]'] },
+    { id: 'sayur-asem', name: 'Sayur Asem', region: 'Jawa Barat', cat: 'Sayur', time: 40, level: 'Mudah', pop: 78, emoji: '🍲', bg: '#ea580c', serves: 4, desc: 'Sup sayur segar dengan rasa asam manis dari asam jawa.',
+      ing: [[1.5, 'liter', 'air'], [1, 'buah', 'jagung manis'], [100, 'g', 'kacang panjang'], [1, 'buah', 'labu siam'], [50, 'g', 'melinjo'], [2, 'sdm', 'asam jawa'], [2, 'sdm', 'gula merah'], [2, 'lembar', 'daun salam']],
+      steps: ['Didihkan air bersama bumbu halus dan daun salam.', 'Masukkan jagung dan melinjo terlebih dahulu. [10]', 'Tambahkan sayuran lain, asam jawa, dan gula. [10]', 'Koreksi rasa, lalu sajikan hangat.'] },
+    { id: 'es-cendol', name: 'Es Cendol', region: 'Jawa Barat', cat: 'Minuman', time: 35, level: 'Mudah', pop: 86, emoji: '🍧', bg: '#15803d', serves: 4, desc: 'Cendol hijau pandan dengan santan dan gula aren cair.',
+      ing: [[100, 'g', 'tepung hunkwe'], [500, 'ml', 'air pandan suji'], [400, 'ml', 'santan'], [150, 'g', 'gula aren'], [0.5, 'sdt', 'garam'], [2, 'gelas', 'es batu']],
+      steps: ['Masak tepung hunkwe dan air pandan hingga meletup-letup. [8]', 'Cetak adonan ke dalam air es menggunakan saringan cendol.', 'Rebus santan dengan garam dan daun pandan sambil diaduk. [5]', 'Tata cendol, sirup gula aren, santan, dan es batu.'] }
+  ];
+  const cats = ['Semua', ...new Set(recipes.map(r => r.cat))];
+  let cat = 'Semua', onlyFav = false, favs = new Set(), current = null, portions = 1;
+  try { favs = new Set(JSON.parse(localStorage.getItem('dapur-fav') || '[]')); } catch (e) {}
+
+  const saveFavs = () => { try { localStorage.setItem('dapur-fav', JSON.stringify([...favs])); } catch (e) {} };
+  const fmtTime = m => m >= 60 ? `${Math.floor(m / 60)} jam${m % 60 ? ' ' + (m % 60) + ' mnt' : ''}` : m + ' mnt';
+
+  document.getElementById('cats').innerHTML = cats.map(c => `<button class="cat sans ${c === cat ? 'active' : ''}" data-cat="${c}">${c}</button>`).join('');
+  document.getElementById('cats').addEventListener('click', e => {
+    const b = e.target.closest('.cat'); if (!b) return;
+    cat = b.dataset.cat;
+    document.querySelectorAll('.cat').forEach(x => x.classList.toggle('active', x === b));
+    render();
+  });
+
+  function render() {
+    const q = document.getElementById('q').value.trim().toLowerCase();
+    const sort = document.getElementById('sort').value;
+    let list = recipes.filter(r => (cat === 'Semua' || r.cat === cat) && (!onlyFav || favs.has(r.id)) &&
+      (!q || r.name.toLowerCase().includes(q) || r.region.toLowerCase().includes(q) || r.ing.some(i => i[2].includes(q))));
+    list.sort(sort === 'time' ? (a, b) => a.time - b.time : sort === 'name' ? (a, b) => a.name.localeCompare(b.name, 'id') : (a, b) => b.pop - a.pop);
+    document.getElementById('count').textContent = `${list.length} resep${onlyFav ? ' favorit' : ''}${q ? ` untuk “${q}”` : ''}`;
+    document.getElementById('grid').innerHTML = list.length ? list.map(r => `
+      <article class="card" data-id="${r.id}" tabindex="0" role="button" aria-label="Buka resep ${r.name}">
+        <div class="plate" style="background:radial-gradient(circle at 50% 45%, #fff 0 34%, ${r.bg}22 35% 100%)">
+          ${r.emoji}
+          <button class="heart" data-fav="${r.id}" aria-label="Simpan ke favorit" aria-pressed="${favs.has(r.id)}">${favs.has(r.id) ? '❤️' : '🤍'}</button>
+        </div>
+        <div class="card-body">
+          <h3>${r.name}</h3>
+          <p>${r.desc}</p>
+          <div class="meta sans"><span>⏱ ${fmtTime(r.time)}</span><span class="lvl">● ${r.level}</span><span>📍 ${r.region}</span></div>
+        </div>
+      </article>`).join('') : '<div class="empty">Belum ada resep yang cocok. Coba kata kunci lain.</div>';
+    document.getElementById('fav-count').textContent = favs.size;
+  }
+
+  document.getElementById('grid').addEventListener('click', e => {
+    const fav = e.target.closest('[data-fav]');
+    if (fav) {
+      e.stopPropagation();
+      const id = fav.dataset.fav;
+      favs.has(id) ? favs.delete(id) : favs.add(id);
+      saveFavs(); render();
+      return;
+    }
+    const card = e.target.closest('.card');
+    if (card) openRecipe(card.dataset.id);
+  });
+  document.getElementById('grid').addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('card')) { e.preventDefault(); openRecipe(e.target.dataset.id); }
+  });
+  document.getElementById('q').addEventListener('input', render);
+  document.getElementById('sort').addEventListener('change', render);
+  document.getElementById('fav-toggle').addEventListener('click', e => {
+    onlyFav = !onlyFav;
+    e.currentTarget.style.background = onlyFav ? 'var(--accent-soft)' : '';
+    render();
+  });
+
+  // Angka takaran dibulatkan ke pecahan yang wajar di dapur
+  function fmtQty(n) {
+    if (n >= 10) return String(Math.round(n));
+    const whole = Math.floor(n), frac = n - whole;
+    const fr = [[0, ''], [.25, '¼'], [.33, '⅓'], [.5, '½'], [.67, '⅔'], [.75, '¾'], [1, '']].reduce((a, b) => Math.abs(b[0] - frac) < Math.abs(a[0] - frac) ? b : a);
+    const w = whole + (fr[0] === 1 ? 1 : 0);
+    return (w ? w : '') + fr[1] || '0';
+  }
+
+  function openRecipe(id) {
+    current = recipes.find(r => r.id === id);
+    portions = current.serves;
+    document.getElementById('m-emoji').textContent = current.emoji;
+    document.getElementById('m-title').textContent = current.name;
+    document.getElementById('m-meta').textContent = `⏱ ${fmtTime(current.time)} · ${current.level} · ${current.region}`;
+    document.getElementById('m-steps').innerHTML = current.steps.map(s => {
+      const m = s.match(/\[(\d+)\]$/);
+      const text = s.replace(/\s*\[\d+\]$/, '');
+      return `<li>${text}${m ? ` <button class="timer-btn" data-min="${m[1]}">⏲ ${m[1]} mnt</button>` : ''}</li>`;
+    }).join('');
+    renderIng();
+    document.getElementById('modal').showModal();
+  }
+  function renderIng() {
+    document.getElementById('portions').textContent = portions + ' porsi';
+    const k = portions / current.serves;
+    document.getElementById('m-ing').innerHTML = current.ing.map(([q, u, name], i) =>
+      `<li><label><input type="checkbox"><span><span class="qty">${fmtQty(q * k)} ${u}</span> ${name}</span></label></li>`).join('');
+  }
+  document.getElementById('minus').addEventListener('click', () => { if (portions > 1) { portions--; renderIng(); } });
+  document.getElementById('plus').addEventListener('click', () => { if (portions < 20) { portions++; renderIng(); } });
+  document.getElementById('close').addEventListener('click', () => document.getElementById('modal').close());
+  document.getElementById('modal').addEventListener('click', e => { if (e.target.id === 'modal') e.target.close(); });
+  document.getElementById('m-steps').addEventListener('click', e => {
+    const t = e.target.closest('.timer-btn');
+    if (t) { e.stopPropagation(); startTimer(+t.dataset.min, current.name); return; }
+    const li = e.target.closest('li');
+    if (li) li.classList.toggle('done');
+  });
+
+  let timerId = null;
+  function startTimer(min, label) {
+    clearInterval(timerId);
+    const end = Date.now() + min * 60000;
+    const bar = document.getElementById('timer-bar');
+    document.getElementById('timer-label').textContent = label;
+    bar.classList.add('show');
+    const tick = () => {
+      const left = Math.max(0, end - Date.now());
+      document.getElementById('timer-left').textContent = `${Math.floor(left / 60000)}:${String(Math.floor(left / 1000) % 60).padStart(2, '0')}`;
+      if (!left) { clearInterval(timerId); document.getElementById('timer-left').textContent = 'Waktunya cek masakan!'; }
+    };
+    tick(); timerId = setInterval(tick, 500);
+  }
+  document.getElementById('timer-stop').addEventListener('click', () => { clearInterval(timerId); document.getElementById('timer-bar').classList.remove('show'); });
+
+  render();
+</script>
+</body>
+</html>

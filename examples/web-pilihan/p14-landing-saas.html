@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hadirin — Aplikasi Absensi &amp; Payroll untuk UMKM</title>
+<style>
+  :root { --bg: #ffffff; --soft: #f5f3ff; --text: #18122b; --muted: #635e7a; --primary: #6d28d9; --primary2: #a855f7; --line: #ebe7f5; --green: #059669; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: var(--bg); line-height: 1.6; }
+  button, input { font: inherit; color: inherit; }
+  a { color: inherit; text-decoration: none; }
+  .wrap { width: min(1160px, 100% - 32px); margin: 0 auto; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 13px 22px; border-radius: 12px; border: 0; font-weight: 700; cursor: pointer; transition: transform .2s, box-shadow .2s; }
+  .btn-p { background: var(--primary); color: #fff; box-shadow: 0 10px 24px -12px var(--primary); }
+  .btn-p:hover { transform: translateY(-2px); }
+  .btn-o { background: #fff; border: 1px solid var(--line); }
+
+  .banner { background: var(--text); color: #fff; text-align: center; font-size: .85rem; padding: 8px 16px; }
+  .banner b { color: #fbbf24; }
+  nav { display: flex; justify-content: space-between; align-items: center; height: 72px; gap: 12px; }
+  .logo { font-weight: 900; font-size: 1.3rem; display: flex; align-items: center; gap: 8px; }
+  .logo span { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, var(--primary), var(--primary2)); display: grid; place-items: center; color: #fff; font-size: .9rem; }
+  nav ul { display: flex; gap: 26px; list-style: none; color: var(--muted); font-weight: 500; }
+  nav ul a:hover { color: var(--primary); }
+
+  .hero { padding: 50px 0 80px; display: grid; grid-template-columns: 1.05fr .95fr; gap: 40px; align-items: center; }
+  .badge { display: inline-flex; gap: 8px; align-items: center; padding: 6px 12px 6px 6px; border-radius: 999px; background: var(--soft); font-size: .85rem; color: var(--primary); font-weight: 600; }
+  .badge b { background: var(--primary); color: #fff; padding: 2px 8px; border-radius: 999px; font-size: .75rem; }
+  .hero h1 { font-size: clamp(2.3rem, 5.6vw, 4rem); line-height: 1.05; letter-spacing: -.035em; margin: 18px 0; }
+  .hero h1 span { background: linear-gradient(90deg, var(--primary), var(--primary2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p { color: var(--muted); font-size: 1.12rem; max-width: 500px; }
+  .hero form { display: flex; gap: 8px; margin-top: 28px; flex-wrap: wrap; max-width: 480px; }
+  .hero input { flex: 1 1 220px; min-width: 0; padding: 13px 16px; border-radius: 12px; border: 1px solid var(--line); }
+  .hero input:focus { outline: 2px solid var(--primary); border-color: transparent; }
+  .hero .small { font-size: .85rem; color: var(--muted); margin-top: 10px; }
+  .form-msg { font-size: .9rem; margin-top: 8px; min-height: 1.3em; font-weight: 600; }
+
+  .mock { position: relative; justify-self: center; width: min(360px, 100%); }
+  .phone { background: #0f0b1e; border-radius: 40px; padding: 12px; box-shadow: 0 40px 80px -30px rgba(109, 40, 217, .55); }
+  .screen { background: linear-gradient(180deg, #f5f3ff, #fff 40%); border-radius: 30px; padding: 22px 18px; min-height: 520px; display: flex; flex-direction: column; gap: 14px; }
+  .screen .hi { font-size: .85rem; color: var(--muted); }
+  .screen .clock { font-size: 2.6rem; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+  .geo { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px; font-size: .82rem; display: flex; gap: 10px; align-items: center; }
+  .geo i { width: 10px; height: 10px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 4px rgba(5,150,105,.2); animation: ping 1.6s infinite; }
+  @keyframes ping { 50% { box-shadow: 0 0 0 8px rgba(5,150,105,0); } }
+  .clockin { margin: 10px auto; width: 150px; height: 150px; border-radius: 50%; border: 0; cursor: pointer; background: linear-gradient(135deg, var(--primary), var(--primary2)); color: #fff; font-weight: 800; font-size: 1.05rem; box-shadow: 0 0 0 12px rgba(168, 85, 247, .15), 0 20px 40px -14px var(--primary); transition: transform .2s; }
+  .clockin:active { transform: scale(.95); }
+  .clockin.out { background: linear-gradient(135deg, #f43f5e, #fb923c); box-shadow: 0 0 0 12px rgba(244, 63, 94, .15); }
+  .log { list-style: none; font-size: .85rem; display: grid; gap: 6px; }
+  .log li { display: flex; justify-content: space-between; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; animation: slide .3s; }
+  @keyframes slide { from { opacity: 0; transform: translateY(6px); } }
+  .float { position: absolute; background: #fff; border-radius: 14px; padding: 10px 14px; box-shadow: 0 20px 40px -18px rgba(24, 18, 43, .35); font-size: .82rem; font-weight: 600; }
+  .float.a { left: -30px; bottom: 70px; } .float.b { right: -24px; top: 150px; }
+
+  .logos { border-block: 1px solid var(--line); padding: 26px 0; text-align: center; color: var(--muted); font-size: .9rem; }
+  .logos div { display: flex; justify-content: center; gap: clamp(20px, 5vw, 56px); flex-wrap: wrap; margin-top: 12px; font-weight: 800; font-size: 1.15rem; color: #b5afc9; }
+
+  section { padding: 86px 0; }
+  .head { text-align: center; max-width: 640px; margin: 0 auto 40px; }
+  .head small { color: var(--primary); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+  .head h2 { font-size: clamp(1.8rem, 4vw, 2.7rem); letter-spacing: -.03em; line-height: 1.12; margin-top: 8px; }
+  .head p { color: var(--muted); margin-top: 10px; }
+
+  .tabs { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin-bottom: 28px; }
+  .tab { border: 1px solid var(--line); background: #fff; padding: 10px 18px; border-radius: 999px; cursor: pointer; font-weight: 600; color: var(--muted); }
+  .tab.active { background: var(--text); color: #fff; border-color: var(--text); }
+  .feature { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; background: var(--soft); border-radius: 28px; padding: clamp(22px, 5vw, 50px); }
+  .feature h3 { font-size: 1.7rem; letter-spacing: -.02em; line-height: 1.2; }
+  .feature p { color: var(--muted); margin: 12px 0 18px; }
+  .feature ul { list-style: none; display: grid; gap: 8px; }
+  .feature li::before { content: "✓"; color: var(--green); font-weight: 900; margin-right: 10px; }
+  .visual { background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 30px 60px -36px rgba(24, 18, 43, .4); min-height: 240px; min-width: 0; }
+  .vrow { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: .9rem; gap: 10px; }
+  .vrow:last-child { border: 0; }
+  .pill { font-size: .75rem; padding: 3px 10px; border-radius: 999px; font-weight: 700; }
+  .ok { background: #d1fae5; color: #065f46; } .late { background: #fef3c7; color: #92400e; } .off { background: #ede9fe; color: #5b21b6; }
+  .bars { display: flex; align-items: end; gap: 10px; height: 170px; padding-top: 10px; }
+  .bars div { flex: 1; background: linear-gradient(180deg, var(--primary2), var(--primary)); border-radius: 8px 8px 0 0; position: relative; animation: grow .8s ease backwards; }
+  .bars div span { position: absolute; bottom: -22px; left: 0; right: 0; text-align: center; font-size: .75rem; color: var(--muted); }
+  @keyframes grow { from { height: 0 !important; } }
+
+  .roi { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; background: var(--text); color: #fff; border-radius: 28px; padding: clamp(22px, 5vw, 50px); }
+  .roi h2 { font-size: clamp(1.7rem, 3.6vw, 2.4rem); letter-spacing: -.02em; line-height: 1.15; }
+  .roi p { color: #c4bddb; margin-top: 10px; }
+  .slider { margin-bottom: 18px; }
+  .slider label { display: flex; justify-content: space-between; font-size: .95rem; margin-bottom: 8px; }
+  .slider b { color: #fbbf24; }
+  input[type=range] { width: 100%; accent-color: var(--primary2); }
+  .saving { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 18px; padding: 18px; margin-top: 8px; }
+  .saving small { color: #c4bddb; }
+  .saving .big { font-size: clamp(1.8rem, 5vw, 2.6rem); font-weight: 900; color: #34d399; letter-spacing: -.02em; }
+
+  .billing { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 30px; font-weight: 600; }
+  .switch { width: 54px; height: 30px; border-radius: 999px; background: var(--line); border: 0; cursor: pointer; position: relative; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.2); transition: left .2s; }
+  .switch.on { background: var(--primary); }
+  .switch.on::after { left: 27px; }
+  .save-tag { background: #d1fae5; color: #065f46; font-size: .75rem; padding: 3px 8px; border-radius: 999px; }
+  .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .plan { border: 1px solid var(--line); border-radius: 24px; padding: 28px; display: flex; flex-direction: column; gap: 10px; }
+  .plan.pop { border: 2px solid var(--primary); position: relative; box-shadow: 0 30px 60px -36px var(--primary); }
+  .plan.pop::before { content: "Paling diminati"; position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: var(--primary); color: #fff; font-size: .75rem; font-weight: 700; padding: 4px 12px; border-radius: 999px; white-space: nowrap; }
+  .plan .price { font-size: 2.2rem; font-weight: 900; letter-spacing: -.03em; }
+  .plan .price small { font-size: .9rem; color: var(--muted); font-weight: 500; }
+  .plan ul { list-style: none; display: grid; gap: 6px; color: var(--muted); font-size: .93rem; flex: 1; margin: 6px 0 14px; }
+  .plan li::before { content: "✓ "; color: var(--green); font-weight: 900; }
+
+  .faq { max-width: 760px; margin: 0 auto; display: grid; gap: 10px; }
+  .q { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .q button { width: 100%; text-align: left; background: #fff; border: 0; padding: 18px 20px; font-weight: 700; cursor: pointer; display: flex; justify-content: space-between; gap: 12px; }
+  .q button::after { content: "+"; color: var(--primary); font-size: 1.3rem; line-height: 1; transition: transform .25s; }
+  .q.open button::after { transform: rotate(45deg); }
+  .q .a { max-height: 0; overflow: hidden; transition: max-height .3s ease; color: var(--muted); }
+  .q .a p { padding: 0 20px 18px; }
+  .cta { text-align: center; background: linear-gradient(135deg, var(--primary), var(--primary2)); color: #fff; border-radius: 28px; padding: clamp(30px, 6vw, 60px) 20px; }
+  .cta h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); letter-spacing: -.02em; }
+  .cta p { opacity: .85; margin: 10px 0 22px; }
+  footer { padding: 40px 0; color: var(--muted); font-size: .9rem; text-align: center; }
+
+  @media (max-width: 900px) {
+    .hero, .feature, .roi { grid-template-columns: 1fr; }
+    .plans { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+    nav ul { display: none; }
+    .float.a { left: 0; } .float.b { right: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="banner">🎉 Promo awal tahun: <b>gratis 3 bulan</b> untuk paket Bisnis. Berlaku hingga akhir bulan.</div>
+<div class="wrap">
+  <nav>
+    <a class="logo" href="#"><span>H</span>Hadirin</a>
+    <ul><li><a href="#fitur">Fitur</a></li><li><a href="#hemat">Hitung Hemat</a></li><li><a href="#harga">Harga</a></li><li><a href="#faq">FAQ</a></li></ul>
+    <a class="btn btn-p" href="#daftar">Coba Gratis</a>
+  </nav>
+
+  <header class="hero" id="daftar">
+    <div>
+      <span class="badge"><b>Baru</b> Integrasi BPJS &amp; PPh 21 otomatis</span>
+      <h1>Absensi, cuti, dan gaji karyawan <span>beres dari HP.</span></h1>
+      <p>Hadirin membantu UMKM mencatat kehadiran dengan GPS dan swafoto, mengelola cuti, lalu menghitung gaji dalam hitungan menit — bukan hari.</p>
+      <form id="signup" novalidate>
+        <input type="email" id="email" placeholder="Email kantor Anda" aria-label="Email">
+        <button class="btn btn-p" type="submit">Mulai Gratis 14 Hari</button>
+      </form>
+      <div class="form-msg" id="form-msg" role="status"></div>
+      <p class="small">Tanpa kartu kredit · Batalkan kapan saja · Data tersimpan di server Indonesia</p>
+    </div>
+    <div class="mock">
+      <div class="phone"><div class="screen">
+        <div><div class="hi">Selamat pagi, Rina 👋</div><div class="clock" id="clock">08:00</div><div class="hi" id="today"></div></div>
+        <div class="geo"><i></i><div><b>Di area kantor</b><br>Toko Maju Jaya, Jl. Gajah Mada 12</div></div>
+        <button class="clockin" id="clockin">Masuk</button>
+        <ul class="log" id="log"></ul>
+      </div></div>
+      <div class="float a">✅ 24 karyawan hadir</div>
+      <div class="float b">💸 Gaji terkirim 25/10</div>
+    </div>
+  </header>
+</div>
+
+<div class="logos wrap">Dipercaya 3.200+ usaha di seluruh Indonesia
+  <div><span>KopiKita</span><span>Batik Lestari</span><span>Bengkel Prima</span><span>Apotek Sehat</span><span>LaundryGo</span></div>
+</div>
+
+<section id="fitur">
+  <div class="wrap">
+    <div class="head"><small>Fitur</small><h2>Satu aplikasi untuk seluruh urusan SDM</h2></div>
+    <div class="tabs" id="tabs"></div>
+    <div class="feature" id="feature"></div>
+  </div>
+</section>
+
+<section id="hemat" style="padding-top:0">
+  <div class="wrap roi">
+    <div>
+      <h2>Berapa waktu yang bisa Anda hemat?</h2>
+      <p>Geser sesuai kondisi usaha Anda. Perhitungan memakai rata-rata waktu rekap absensi dan gaji manual dari survei pengguna kami.</p>
+    </div>
+    <div>
+      <div class="slider"><label>Jumlah karyawan <b id="v-emp">25</b></label><input type="range" id="emp" min="5" max="200" value="25"></div>
+      <div class="slider"><label>Jam rekap manual per karyawan / bulan <b id="v-min">20 menit</b></label><input type="range" id="min" min="5" max="60" step="5" value="20"></div>
+      <div class="slider"><label>Gaji staf admin per bulan <b id="v-sal">Rp5.000.000</b></label><input type="range" id="sal" min="3000000" max="15000000" step="500000" value="5000000"></div>
+      <div class="saving"><small>Perkiraan penghematan per tahun</small><div class="big" id="save">Rp0</div><small id="save-sub"></small></div>
+    </div>
+  </div>
+</section>
+
+<section id="harga" style="background:var(--soft)">
+  <div class="wrap">
+    <div class="head"><small>Harga</small><h2>Harga jujur, bayar per karyawan</h2><p>Semua paket sudah termasuk aplikasi Android &amp; iOS dan dukungan via WhatsApp.</p></div>
+    <div class="billing">Bulanan <button class="switch" id="billing" aria-label="Tagihan tahunan" aria-pressed="false"></button> Tahunan <span class="save-tag">Hemat 20%</span></div>
+    <div class="plans" id="plans"></div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="head"><small>FAQ</small><h2>Masih ragu?</h2></div>
+    <div class="faq" id="faq-list"></div>
+  </div>
+</section>
+
+<div class="wrap"><div class="cta"><h2>Siap meninggalkan absensi kertas?</h2><p>Gabung dengan ribuan pemilik usaha yang sudah pindah ke Hadirin.</p><a class="btn btn-o" href="#daftar" style="color:var(--primary)">Coba Gratis Sekarang →</a></div></div>
+<footer>© <span id="yr"></span> PT Hadirin Teknologi Nusantara · Jakarta</footer>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const rp = n => 'Rp' + Math.round(n).toLocaleString('id-ID');
+
+  // Mockup ponsel
+  function tick() {
+    const d = new Date();
+    $('clock').textContent = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+    $('today').textContent = d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+  tick(); setInterval(tick, 10000);
+  let clockedIn = false;
+  $('clockin').addEventListener('click', () => {
+    clockedIn = !clockedIn;
+    const t = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+    $('log').insertAdjacentHTML('afterbegin', `<li><span>${clockedIn ? '🟢 Masuk' : '🔴 Pulang'}</span><b>${t}</b></li>`);
+    while ($('log').children.length > 3) $('log').lastElementChild.remove();
+    $('clockin').textContent = clockedIn ? 'Pulang' : 'Masuk';
+    $('clockin').classList.toggle('out', clockedIn);
+  });
+
+  $('signup').addEventListener('submit', e => {
+    e.preventDefault();
+    const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('email').value.trim());
+    $('form-msg').style.color = ok ? 'var(--green)' : '#dc2626';
+    $('form-msg').textContent = ok ? `✓ Tautan aktivasi dikirim ke ${$('email').value.trim()}` : 'Masukkan alamat email yang valid.';
+    if (ok) $('email').value = '';
+  });
+
+  // Tab fitur
+  const FEATURES = [
+    { tab: '📍 Absensi', title: 'Absen dengan GPS dan swafoto', desc: 'Karyawan hanya bisa absen di radius lokasi kerja. Foto wajah mencegah titip absen.', points: ['Atur radius per cabang', 'Mode offline, sinkron otomatis', 'Shift dan lembur fleksibel'],
+      visual: () => [['Rina Wulandari', '07:52', 'ok', 'Tepat waktu'], ['Agus Saputra', '08:14', 'late', 'Terlambat 14 mnt'], ['Dewi Lestari', '—', 'off', 'Cuti tahunan'], ['Bayu Nugroho', '07:58', 'ok', 'Tepat waktu']]
+        .map(r => `<div class="vrow"><span><b>${r[0]}</b><br><small style="color:var(--muted)">${r[1]}</small></span><span class="pill ${r[2]}">${r[3]}</span></div>`).join('') },
+    { tab: '🌴 Cuti', title: 'Pengajuan cuti tanpa kertas', desc: 'Karyawan mengajukan dari HP, atasan menyetujui dengan satu ketukan. Saldo cuti terhitung otomatis.', points: ['Cuti tahunan, sakit, melahirkan', 'Alur persetujuan bertingkat', 'Kalender tim bersama'],
+      visual: () => `<div class="vrow"><b>Saldo cuti tahunan</b><b style="color:var(--primary)">9 / 12 hari</b></div>` + [['Dewi Lestari', '20–22 Okt', 'ok', 'Disetujui'], ['Fajar Hidayat', '28 Okt', 'late', 'Menunggu'], ['Sinta Maharani', '3–7 Nov', 'off', 'Cuti melahirkan']]
+        .map(r => `<div class="vrow"><span><b>${r[0]}</b><br><small style="color:var(--muted)">${r[1]}</small></span><span class="pill ${r[2]}">${r[3]}</span></div>`).join('') },
+    { tab: '💸 Payroll', title: 'Gaji, BPJS, dan PPh 21 sekali klik', desc: 'Komponen gaji, potongan BPJS Kesehatan & Ketenagakerjaan, serta PPh 21 dihitung otomatis dari data absensi.', points: ['Slip gaji digital', 'Transfer massal ke banyak bank', 'Laporan siap untuk e-Bupot'],
+      visual: () => `<div class="vrow"><span>Gaji pokok</span><b>Rp5.200.000</b></div><div class="vrow"><span>Tunjangan transport</span><b>Rp440.000</b></div><div class="vrow"><span>Lembur 6 jam</span><b>Rp270.000</b></div><div class="vrow"><span>Potongan BPJS</span><b style="color:#dc2626">−Rp208.000</b></div><div class="vrow"><span>PPh 21</span><b style="color:#dc2626">−Rp29.550</b></div><div class="vrow"><b>Diterima</b><b style="color:var(--green)">Rp5.672.450</b></div>` },
+    { tab: '📊 Laporan', title: 'Pantau tim dari mana saja', desc: 'Dasbor kehadiran, keterlambatan, dan biaya lembur per cabang, diperbarui secara langsung.', points: ['Ekspor Excel & PDF', 'Notifikasi keterlambatan', 'Perbandingan antar cabang'],
+      visual: () => '<b>Tingkat kehadiran 6 bulan terakhir</b><div class="bars">' + [['Mei', 88], ['Jun', 91], ['Jul', 86], ['Agu', 94], ['Sep', 95], ['Okt', 97]].map((b, i) => `<div style="height:${b[1] - 40}%;animation-delay:${i * .08}s" title="${b[1]}%"><span>${b[0]}</span></div>`).join('') + '</div>' }
+  ];
+  $('tabs').innerHTML = FEATURES.map((f, i) => `<button class="tab ${i ? '' : 'active'}" data-i="${i}" role="tab" aria-selected="${!i}">${f.tab}</button>`).join('');
+  function showFeature(i) {
+    const f = FEATURES[i];
+    $('feature').innerHTML = `<div><h3>${f.title}</h3><p>${f.desc}</p><ul>${f.points.map(p => `<li>${p}</li>`).join('')}</ul></div><div class="visual">${f.visual()}</div>`;
+    [...$('tabs').children].forEach((b, j) => { b.classList.toggle('active', i === j); b.setAttribute('aria-selected', i === j); });
+  }
+  $('tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) showFeature(+b.dataset.i); });
+  showFeature(0);
+
+  // Kalkulator penghematan
+  function roi() {
+    const emp = +$('emp').value, min = +$('min').value, sal = +$('sal').value;
+    const hoursMonth = emp * min / 60;
+    const hourly = sal / 173; // 173 jam kerja per bulan
+    const yearly = hoursMonth * .85 * hourly * 12; // asumsi 85% pekerjaan rekap bisa diotomatisasi
+    $('v-emp').textContent = emp;
+    $('v-min').textContent = min + ' menit';
+    $('v-sal').textContent = rp(sal);
+    $('save').textContent = rp(yearly);
+    $('save-sub').textContent = `≈ ${Math.round(hoursMonth * .85 * 12)} jam kerja admin per tahun`;
+  }
+  ['emp', 'min', 'sal'].forEach(id => $(id).addEventListener('input', roi));
+  roi();
+
+  // Harga
+  const PLANS = [
+    { name: 'Starter', price: 0, desc: 'Untuk usaha hingga 5 karyawan', feats: ['Absensi GPS', 'Pengajuan cuti', '1 lokasi kerja'], cta: 'Daftar Gratis' },
+    { name: 'Bisnis', price: 15000, desc: 'Untuk usaha yang sedang tumbuh', feats: ['Semua fitur Starter', 'Payroll + BPJS + PPh 21', 'Hingga 10 lokasi', 'Laporan lengkap'], cta: 'Coba 14 Hari', pop: true },
+    { name: 'Korporat', price: 25000, desc: 'Untuk perusahaan multi-cabang', feats: ['Semua fitur Bisnis', 'Lokasi tak terbatas', 'Integrasi API & SSO', 'Manajer akun khusus'], cta: 'Hubungi Sales' }
+  ];
+  let yearly = false;
+  function renderPlans() {
+    $('plans').innerHTML = PLANS.map(p => {
+      const price = yearly ? p.price * .8 : p.price;
+      return `<div class="plan ${p.pop ? 'pop' : ''}"><h3>${p.name}</h3><small style="color:var(--muted)">${p.desc}</small>
+        <div class="price">${price ? rp(price) : 'Gratis'}${price ? '<small> /karyawan/bln</small>' : ''}</div>
+        ${yearly && price ? `<small style="color:var(--green);font-weight:700">Ditagih ${rp(price * 12)} per karyawan per tahun</small>` : '<small>&nbsp;</small>'}
+        <ul>${p.feats.map(f => `<li>${f}</li>`).join('')}</ul>
+        <a class="btn ${p.pop ? 'btn-p' : 'btn-o'}" href="#daftar">${p.cta}</a></div>`;
+    }).join('');
+  }
+  $('billing').addEventListener('click', e => { yearly = !yearly; e.currentTarget.classList.toggle('on', yearly); e.currentTarget.setAttribute('aria-pressed', yearly); renderPlans(); });
+  renderPlans();
+
+  // FAQ akordeon
+  const FAQ = [
+    ['Apakah data karyawan aman?', 'Data dienkripsi dan disimpan di pusat data di Indonesia. Kami menyesuaikan praktik pengelolaan data dengan UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi.'],
+    ['Apakah bisa dipakai tanpa internet?', 'Bisa. Absensi tersimpan di HP dan disinkronkan otomatis begitu sinyal tersedia.'],
+    ['Bagaimana jika karyawan tidak punya smartphone?', 'Gunakan mode kios: satu tablet di lokasi kerja dipakai bersama dengan PIN dan swafoto.'],
+    ['Bisakah saya pindah dari Excel?', 'Tim kami membantu impor data karyawan dan riwayat gaji dari Excel tanpa biaya tambahan.']
+  ];
+  $('faq-list').innerHTML = FAQ.map(([q, a]) => `<div class="q"><button aria-expanded="false">${q}</button><div class="a"><p>${a}</p></div></div>`).join('');
+  $('faq-list').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const item = b.parentNode, open = !item.classList.contains('open');
+    document.querySelectorAll('.q').forEach(q => { q.classList.remove('open'); q.querySelector('.a').style.maxHeight = 0; q.querySelector('button').setAttribute('aria-expanded', false); });
+    if (open) { item.classList.add('open'); item.querySelector('.a').style.maxHeight = item.querySelector('.a').scrollHeight + 'px'; b.setAttribute('aria-expanded', true); }
+  });
+  $('yr').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>

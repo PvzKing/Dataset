@@ -1,13 +1,16 @@
 // Uji semua website di examples/web dengan Chromium (desktop 1280px dan HP 375px).
 // Pemakaian dari folder tests/:  npm install && npx playwright install chromium && node test_web.mjs [filter]
+// Folder lain di examples/: WEB_DIR=web-pilihan node test_web.mjs [filter]
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { chromium } from 'playwright';
-import interactions from './interactions.mjs';
+import baseInteractions from './interactions.mjs';
+import pilihanInteractions from './interactions_pilihan.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const dir = path.join(here, '..', 'examples', 'web');
+const dir = path.join(here, '..', 'examples', process.env.WEB_DIR || 'web');
+const interactions = { ...baseInteractions, ...pilihanInteractions };
 const filter = process.argv[2] || '';
 const shots = path.join(here, 'screenshots');
 fs.mkdirSync(shots, { recursive: true });
