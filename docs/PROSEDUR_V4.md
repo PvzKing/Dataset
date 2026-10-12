@@ -18,7 +18,7 @@ Buka **[notebook panel interaktif](https://colab.research.google.com/github/PvzK
 
 Setiap langkah berjalan sebagai proses terpisah, jadi memori GPU selalu bersih dan sesi tidak perlu di-restart. Kalau sebuah langkah gagal, panel berhenti dan menampilkan saran perbaikannya. Output setiap langkah juga disimpan di `finetune-id/panel-log/`.
 
-**Punya akses A100, atau memakai akun Google baru yang belum menyimpan adapter v3?** Ikuti [`PROSEDUR_V4_A100.md`](PROSEDUR_V4_A100.md). Panduan itu melatih v4 dan pembandingnya (v3-ulang) dari model dasar dengan LoRA 16-bit dan konteks 16.384, lalu mengukur semua model di A100. Panduan T4 di bawah butuh adapter v3 yang sudah ada di Drive.
+**Punya akses A100, atau memakai akun Google baru yang belum menyimpan adapter v3?** Ikuti [`PROSEDUR_V4_A100.md`](PROSEDUR_V4_A100.md). Panduan itu melatih v4 dari model dasar dengan LoRA 16-bit dan konteks 16.384, lalu mengukurnya tanpa pembanding. Panduan T4 di bawah butuh adapter v3 yang sudah ada di Drive.
 
 Bagian di bawah ini adalah **cara manual**, sel demi sel. Gunanya untuk memahami apa yang dikerjakan panel, membaca arti output setiap langkah, atau menjalankan satu uji dengan opsi lain. Versi notebook-nya: [notebook manual](https://colab.research.google.com/github/PvzKing/Dataset/blob/main/notebooks/v4_pilot_colab.ipynb).
 <!-- /hanya-md -->
