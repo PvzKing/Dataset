@@ -211,6 +211,11 @@ class Generator:
             tok.pad_token = tok.eos_token
         self.stop_strings = True
 
+    def close(self):
+        """Lepaskan model supaya memori GPU bisa dipakai uji berikutnya di sesi Colab yang sama."""
+        self.engine = None
+        free_gpu()
+
     @property
     def can_disable_adapter(self):
         return self.args.demo or (self.engine.has_adapter and hasattr(self.engine.model, "disable_adapter"))
@@ -248,6 +253,15 @@ class Generator:
         new = out[:, enc["input_ids"].shape[1]:]
         texts = tok.batch_decode(new, skip_special_tokens=True)
         return texts, int((new != tok.pad_token_id).sum())
+
+
+def free_gpu():
+    import gc
+
+    gc.collect()
+    torch = sys.modules.get("torch")
+    if torch is not None and torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
 
 def demo_answer(task, use_adapter, dataset="humaneval"):
@@ -414,24 +428,29 @@ def main():
             generator = Generator(args)
         return generator
 
-    tag = run_tag(args)
-    vs_base = args.vs_base and args.adapter != "none"
-    adapter_label = "demo" if args.demo else ("model dasar" if args.adapter == "none" else args.adapter)
-    rows = run_one(args, tag, adapter_label, True, tasks, problems, results_dir, get_generator)
-    if vs_base:
-        # --tag dan --demo mendapat folder model dasar sendiri, supaya jawaban tiruan atau uji cepat tidak terpakai
-        # ulang oleh run sungguhan.
-        prefix = args.tag or ("demo" if args.demo else "")
-        base_tag = f"{prefix}-model-dasar" if prefix else "model-dasar"
-        # Jawaban model dasar tidak bergantung pada adapter, jadi dipakai ulang oleh run adapter mana pun.
-        if any(t["task_id"] not in {r["task_id"] for r in read_jsonl(results_dir / base_tag / "jawaban.jsonl")}
-               for t in tasks) and not get_generator().can_disable_adapter:
-            raise SystemExit("model ini tidak bisa mematikan adapter sementara; jalankan run terpisah dengan "
-                             "--adapter none untuk model dasar")
-        base_rows = run_one(args, base_tag, f"{args.base_model} (adapter dimatikan)", False, tasks, problems,
-                            results_dir, get_generator)
-        compare(rows, base_rows, tag, base_tag, results_dir, NAMES[args.dataset])
-    print_all_runs(results_dir, args.dataset)
+    try:
+        tag = run_tag(args)
+        vs_base = args.vs_base and args.adapter != "none"
+        adapter_label = "demo" if args.demo else ("model dasar" if args.adapter == "none" else args.adapter)
+        rows = run_one(args, tag, adapter_label, True, tasks, problems, results_dir, get_generator)
+        if vs_base:
+            # --tag dan --demo mendapat folder model dasar sendiri, supaya jawaban tiruan atau uji cepat tidak terpakai
+            # ulang oleh run sungguhan.
+            prefix = args.tag or ("demo" if args.demo else "")
+            base_tag = f"{prefix}-model-dasar" if prefix else "model-dasar"
+            # Jawaban model dasar tidak bergantung pada adapter, jadi dipakai ulang oleh run adapter mana pun.
+            if any(t["task_id"] not in {r["task_id"] for r in read_jsonl(results_dir / base_tag / "jawaban.jsonl")}
+                   for t in tasks) and not get_generator().can_disable_adapter:
+                raise SystemExit("model ini tidak bisa mematikan adapter sementara; jalankan run terpisah dengan "
+                                 "--adapter none untuk model dasar")
+            base_rows = run_one(args, base_tag, f"{args.base_model} (adapter dimatikan)", False, tasks, problems,
+                                results_dir, get_generator)
+            compare(rows, base_rows, tag, base_tag, results_dir, NAMES[args.dataset])
+        print_all_runs(results_dir, args.dataset)
+    finally:
+        if generator is not None:  # lepaskan VRAM supaya uji berikutnya di sesi yang sama punya memori penuh
+            generator.close()
+        free_gpu()
 
 
 if __name__ == "__main__":

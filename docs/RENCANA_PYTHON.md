@@ -7,7 +7,7 @@ Dokumen ini adalah rencana kerja untuk adapter berikutnya (v4) di atas Qwen3.5-4
 
 Ringkasnya: **ukur dulu, latih dengan data yang terverifikasi, dan terima adapter hanya jika lolos gerbang uji.**
 
-Bagian 5 mencatat apa yang sudah dikerjakan di repo. Langkah yang butuh GPU ada di [`PROSEDUR_V4.md`](PROSEDUR_V4.md).
+Bagian 5 mencatat apa yang sudah dikerjakan di repo. Langkah yang butuh GPU ada di [`PROSEDUR_V4.md`](PROSEDUR_V4.md) (T4, v4-pilot dengan resep v3) dan [`PROSEDUR_V4_A100.md`](PROSEDUR_V4_A100.md) (A100: v4 dari model dasar, LoRA 16-bit, konteks 16.384).
 
 ---
 
@@ -16,7 +16,7 @@ Bagian 5 mencatat apa yang sudah dikerjakan di repo. Langkah yang butuh GPU ada 
 | Model | HumanEval | HumanEval+ | Catatan |
 |---|---|---|---|
 | Model dasar Qwen3.5-4B (4-bit, greedy) | 82,3% | 73,8% | pembanding utama |
-| v3 (dataset own, website) | belum diukur | belum diukur | Langkah 1 di PROSEDUR_V4 |
+| v3 (dataset own, website) | belum diukur | belum diukur | Bagian C di PROSEDUR_V4 |
 | bench-lanjut (v3 + 164 soal HumanEval) | 78,0% | 72,0% | terkontaminasi, tidak dipakai lagi |
 
 Kemampuan website v3 sejauh ini hanya dinilai dari dua website uji setelah training. Belum ada angka terukur yang bisa dibandingkan, dan itu yang diperbaiki oleh Web-eval.
@@ -101,7 +101,8 @@ Data ini memakai gaya model itu sendiri, jadi menjaga ketelitian model dasar dan
 | Data pilot | `data/python-src/py-001` … `py-020` | 20 sampel. Patch di sampel debug terbukti; Flask dan HTML diuji di Chromium |
 
 **Belum dikerjakan:**
-- Semua yang butuh GPU: uji baseline, training v4-pilot, dan uji setelahnya. Prosedurnya di [`PROSEDUR_V4.md`](PROSEDUR_V4.md).
+- Semua yang butuh GPU: uji baseline, training v4-pilot atau v4, dan uji setelahnya. Prosedurnya di [`PROSEDUR_V4.md`](PROSEDUR_V4.md) dan [`PROSEDUR_V4_A100.md`](PROSEDUR_V4_A100.md).
+- Sampel panjang (di atas ±6.200 token) yang memanfaatkan konteks 16.384 di A100.
 - Set uji G4 (perbaikan bug).
 - Web-eval 20 prompt.
 - Data penuh dan swa-distilasi.
