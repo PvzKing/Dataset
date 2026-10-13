@@ -13,6 +13,7 @@ import sys
 from collections import Counter
 
 HTML_BLOCK = re.compile(r"```html\n(.*?)\n```", re.S)
+THINK_BLOCK = re.compile(r"\A<think>\n(.*?)\n</think>\n\n", re.S)
 PATCH_BLOCK = re.compile(r"<<<<<<< SEARCH\n(.*?)\n=======\n(.*?)\n>>>>>>> REPLACE", re.S)
 
 
@@ -35,6 +36,17 @@ def check_sample(sample, line_no):
     expected = ["user", "assistant"] * (len(roles) // 2)
     if roles != expected or not roles:
         errors.append(f"urutan role harus [system] lalu user/assistant bergantian, diakhiri assistant: {roles}")
+
+    # Isi <think> ditulis lewat scripts/editor_think.py; jika ada, harus satu blok rapi di awal jawaban.
+    for m in messages:
+        content = m.get("content") if isinstance(m.get("content"), str) else ""
+        if m.get("role") != "assistant" or "<think>" not in content:
+            continue
+        block = THINK_BLOCK.match(content)
+        if not block or not block.group(1).strip():
+            errors.append("blok <think> harus di awal jawaban dengan format '<think>\\n...\\n</think>\\n\\n' dan tidak kosong")
+        elif content.count("<think>") > 1 or "</think>" in content[block.end():]:
+            errors.append("jawaban hanya boleh punya satu blok <think>")
 
     if sample.get("category") == "web_oneshot":
         blocks = HTML_BLOCK.findall(messages[-1]["content"])

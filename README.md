@@ -395,6 +395,38 @@ Batasan yang perlu diketahui:
   - Blok yang tetap tidak cocok dilaporkan dan dilewati, tidak diterapkan sembarangan.
   - Setiap versi disimpan di `<workdir>/.versi/`, dan perubahan bisa dibatalkan dengan `/undo`.
 
+## Menulis isi `<think>` sendiri (`scripts/editor_think.py`)
+
+Isi tag `<think>` untuk sampel dataset own ditulis manusia lewat editor ini. Editor tidak membuat atau menyarankan isi apa pun.
+
+- **Isi editor.** Setiap sampel ditampilkan dengan prompt dan jawabannya, ditambah kotak untuk menulis isi `<think>`. Sampel multi-giliran punya satu kotak per jawaban.
+- **Saat Simpan:**
+  1. Teks ditulis ke `data/think/<id>-<n>.md`, yaitu isi `<think>` untuk jawaban assistant ke-n.
+  2. `scripts/think_tags.py` memasangnya ke `data/train.jsonl` sebagai `<think>\n...\n</think>\n\n` di awal jawaban.
+  3. `scripts/validate.py` dijalankan.
+  4. Jika kotak **Commit & push** dicentang, perubahan di-commit lalu di-push ke GitHub.
+- **Menghapus.** Kosongkan teks lalu Simpan untuk menghapus `<think>` dari sampel itu.
+- **Aman saat build ulang.** `build_python_samples.py` ikut memasang isi `data/think/`, jadi membangun ulang sampel Python tidak menghapusnya.
+
+Di Colab (CPU saja cukup), simpan token GitHub fine-grained dengan izin *Contents: Read and write* untuk repo ini di **Secrets** dengan nama `GITHUB_TOKEN`, lalu jalankan:
+
+```python
+import os
+from google.colab import userdata
+os.environ["GITHUB_TOKEN"] = userdata.get("GITHUB_TOKEN")
+!git clone -q https://github.com/PvzKing/Dataset.git /content/Dataset
+!pip install -q "gradio>=5"
+!git -C /content/Dataset config user.name "Nama Anda" && git -C /content/Dataset config user.email "email@contoh.com"
+%run /content/Dataset/scripts/editor_think.py --share --auth penulis:ganti-sandi
+```
+
+Di laptop: `python scripts/editor_think.py` dari clone repo, lalu buka `http://127.0.0.1:7861`. Push ke `main` adalah bawaan; pakai `--branch <nama>` untuk cabang lain, atau `--no-push` untuk menyimpan saja. Token tidak disimpan ke git config dan tidak ditampilkan di layar.
+
+**Dampaknya ke training.**
+- Sampel yang berisi `<think>` dilatih dengan isi itu: blok `<think>` kosong dari template mode non-thinking dibuang, jadi model belajar menulis penalarannya sendiri sebelum menjawab.
+- Saat dipakai dengan `enable_thinking=False`, template menyisipkan `<think>` kosong, sehingga model langsung menjawab. Untuk memakai penalaran yang dipelajari, jalankan inferensi dengan `enable_thinking=True`.
+- Sampel tanpa `<think>` tetap dilatih seperti sebelumnya.
+
 ## Menambah sampel
 
 1. Tambahkan satu baris JSON ke `data/train.jsonl` dengan `id` unik. Untuk sampel Python, buat folder di `data/python-src/` lalu jalankan `python scripts/build_python_samples.py`.
