@@ -397,7 +397,7 @@ Batasan yang perlu diketahui:
 
 ## Menulis isi `<think>` sendiri (`scripts/editor_think.py`)
 
-Isi tag `<think>` untuk sampel dataset own ditulis manusia lewat editor ini. Editor tidak membuat atau menyarankan isi apa pun.
+Isi tag `<think>` untuk sampel dataset own ditulis manusia lewat editor ini. **Cara termudah:** buka [notebook editor di Colab](https://colab.research.google.com/github/PvzKing/Dataset/blob/main/notebooks/editor_think_colab.ipynb), isi nama, email, dan sandi, lalu jalankan satu sel. Langkah membuat token GitHub ada di notebook itu. Editor tidak membuat atau menyarankan isi apa pun.
 
 - **Isi editor.** Setiap sampel ditampilkan dengan prompt dan jawabannya, ditambah kotak untuk menulis isi `<think>`. Sampel multi-giliran punya satu kotak per jawaban.
 - **Saat Simpan:**

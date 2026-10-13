@@ -206,7 +206,8 @@ def main():
     parser.add_argument("--port", type=int, default=7861)
     parser.add_argument("--share", action="store_true", help="link publik sementara (wajib --auth)")
     parser.add_argument("--auth", help="user:sandi")
-    args = parser.parse_args([] if "ipykernel" in sys.modules else None)
+    # Di Colab, `%run editor_think.py --share ...` mengisi sys.argv; argumen kernel Jupyter (-f ...) diabaikan.
+    args = parser.parse_args([] if "-f" in sys.argv[1:2] else None)
     if args.share and not args.auth:
         raise SystemExit("--share membuat link yang bisa dibuka siapa pun; tambahkan --auth user:sandi")
     demo = build_ui(args.branch, not args.no_push)
