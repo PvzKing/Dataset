@@ -1,7 +1,7 @@
 """Uji sel-sel docs/PANDUAN_V5_A100.md tanpa GPU dan tanpa Colab.
 
 GPU, google.colab, train_unsloth.py, dan script uji diganti tiruan yang menulis file hasil dengan struktur yang sama.
-Yang diuji adalah alur panduan: pilih cabang, cek data, training, uji, pilih epoch, ekspor, laporan, matikan runtime,
+Yang diuji adalah alur panduan: pilih cabang, cek data, training, uji, pilih epoch, ekspor, laporan,
 melanjutkan setelah terputus, VRAM habis saat uji, dan training yang gagal.
 
 Simulasi menulis ke /content (path Colab yang dipakai panduan), jadi jalankan hanya di container sekali pakai:
@@ -41,7 +41,7 @@ harus("V5 memakai adapter epoch 2" in o, "epoch 2 dipilih saat skornya unggul â‰
 harus("dipakai adapter: {'epoch': 2}" in o, "ekspor GGUF memakai adapter epoch terpilih")
 harus((HASIL / "qwen3.5-4b-V5/gguf/qwen3.5-4b-V5.Q4_K_M.gguf").is_file(), "file GGUF memuat nama V5")
 harus((HASIL / "laporan-V5.txt").is_file() and "HumanEval+ (terkontaminasi)" in o, "laporan ditulis ke Drive")
-harus("runtime.unassign" in o, "runtime dimatikan setelah selesai")
+harus("runtime.unassign" not in o, "Sel 3 tidak mematikan runtime")
 
 o = jalan("semua")
 harus(o.count("sudah selesai") >= 10 and "[sim] eval" not in o, "jalankan ulang: semua langkah dilewati")
@@ -55,8 +55,7 @@ harus("VRAM habis: Web-eval diulang dengan batch 2" in o and "V5 memakai adapter
 
 shutil.rmtree(HASIL)
 o = jalan("semua", SIM_FAIL_TRAIN="1")
-harus(o.find("Training gagal") < o.find("runtime.unassign") and (HASIL / "GAGAL-V5.txt").is_file(),
-      "training gagal: pesan dicetak dan disimpan sebelum runtime dimatikan")
+harus("Training gagal" in o and "runtime.unassign" not in o, "training gagal: pesan tampil, runtime tetap menyala")
 
 shutil.rmtree(HASIL, ignore_errors=True)
 shutil.rmtree(HOME)

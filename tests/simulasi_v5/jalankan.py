@@ -44,7 +44,7 @@ time.sleep = lambda s: None
 mode = sys.argv[1]
 ns = {}
 s1 = sel1 if mode == "oom" else sel1.replace("EKSPOR_16BIT = False", "EKSPOR_16BIT = True")
-kode = [s1.replace("MATIKAN_RUNTIME = True", "MATIKAN_RUNTIME = False"), sel2, progres] if mode == "langkah" else [s1, sel2, sel3]
+kode = [s1, sel2, progres] if mode == "langkah" else [s1, sel2, sel3]
 try:
     for k in kode:
         exec(compile(k, "<sel>", "exec"), ns)
