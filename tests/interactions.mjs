@@ -1,7 +1,9 @@
 // Each entry returns an array of failed expectations (empty = pass).
+import pilihan from './interactions_pilihan.mjs';
+
 const expect = (cond, msg, out) => { if (!cond) out.push(msg); };
 
-export default {
+const scenarios = {
   '01-': async (page, vp) => {
     const out = [];
     expect(await page.locator('#menu-panel .menu-item').count() === 5, 'kopi tab should show 5 items', out);
@@ -696,3 +698,13 @@ export default {
     return out;
   },
 };
+
+// 27–41 adalah versi dataset dari examples/web-pilihan (tanpa Google Fonts, dipadatkan agar muat di batas token),
+// jadi skenarionya sama dengan website asalnya.
+const FROM_PILIHAN = {
+  '27-': 'p01-', '28-': 'p02-', '29-': 'p03-', '30-': 'p04-', '31-': 'p05-', '32-': 'p08-', '33-': 'p09-', '34-': 'p10-',
+  '35-': 'p11-', '36-': 'p12-', '37-': 'p14-', '38-': 'p15-', '39-': 'p16-', '40-': 'p17-', '41-': 'p20-',
+};
+for (const [key, from] of Object.entries(FROM_PILIHAN)) scenarios[key] ??= pilihan[from];
+
+export default scenarios;

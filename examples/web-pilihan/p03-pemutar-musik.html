@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gending — Pemutar Musik Sintetis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+  :root { --bg: #120d1d; --panel: #1c1530; --text: #f5f0ff; --muted: #a99cc8; --accent: #f7b733; --accent2: #fc4a1a; --line: #2e2547; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: radial-gradient(circle at 20% 0%, #2b1a4a, var(--bg) 60%); color: var(--text); min-height: 100vh; }
+  .app { width: min(1000px, 100% - 32px); margin: 0 auto; padding: 32px 0; display: grid; grid-template-columns: 1fr 340px; gap: 24px; }
+  .player { background: var(--panel); border: 1px solid var(--line); border-radius: 28px; padding: 28px; min-width: 0; }
+  .cover { aspect-ratio: 1; max-width: 340px; margin: 0 auto 24px; border-radius: 24px; position: relative; overflow: hidden; box-shadow: 0 30px 60px -20px rgba(0,0,0,.7); }
+  .cover .disc { position: absolute; inset: 0; transition: background 1s; }
+  .cover canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .cover .center { position: absolute; inset: 38%; border-radius: 50%; background: var(--bg); border: 6px solid rgba(255,255,255,.2); }
+  .playing .cover .disc { animation: spin 12s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .title { text-align: center; }
+  .title h1 { font-size: 1.6rem; letter-spacing: -.02em; }
+  .title p { color: var(--muted); margin-top: 4px; }
+  .progress { margin: 26px 0 8px; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; background: var(--line); border-radius: 9px; outline-offset: 6px; cursor: pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); border: 0; }
+  input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); border: 0; }
+  .times { display: flex; justify-content: space-between; color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+  .controls { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 18px 0; }
+  .ctl { width: 46px; height: 46px; border-radius: 50%; border: 0; background: none; color: var(--text); cursor: pointer; display: grid; place-items: center; transition: background .2s; }
+  .ctl:hover { background: rgba(255,255,255,.08); }
+  .ctl.on { color: var(--accent); }
+  .ctl svg { width: 22px; height: 22px; fill: currentColor; }
+  .play { width: 70px; height: 70px; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #1a0f00; box-shadow: 0 12px 30px -10px var(--accent2); }
+  .play:hover { background: linear-gradient(135deg, var(--accent), var(--accent2)); transform: scale(1.05); }
+  .play svg { width: 28px; height: 28px; }
+  .volume { display: flex; align-items: center; gap: 10px; color: var(--muted); max-width: 260px; margin: 0 auto; }
+  .hint { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 16px; }
+  kbd { background: var(--line); border-radius: 5px; padding: 1px 6px; font-family: inherit; }
+
+  .list { background: var(--panel); border: 1px solid var(--line); border-radius: 28px; padding: 20px; min-width: 0; }
+  .list h2 { font-size: 1rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; padding: 6px 8px 14px; }
+  .track { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; padding: 10px; border-radius: 14px; cursor: pointer; border: 0; background: none; color: inherit; width: 100%; text-align: left; font: inherit; }
+  .track:hover { background: rgba(255,255,255,.05); }
+  .track.active { background: rgba(247,183,51,.12); }
+  .track.active .tname { color: var(--accent); }
+  .thumb { width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; }
+  .eq { display: flex; gap: 2px; align-items: end; height: 16px; }
+  .eq i { width: 3px; background: #fff; animation: eq .8s ease-in-out infinite alternate; }
+  .eq i:nth-child(2) { animation-delay: -.3s; } .eq i:nth-child(3) { animation-delay: -.6s; }
+  @keyframes eq { from { height: 3px; } to { height: 16px; } }
+  .paused .eq i { animation-play-state: paused; }
+  .tname { font-weight: 600; display: block; }
+  .tmeta { color: var(--muted); font-size: .85rem; }
+  .dur { color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+  @media (max-width: 820px) { .app { grid-template-columns: 1fr; } }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button { font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .title h1, .list h2 { font-family: "Unbounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .title h1 { font-size: 1.35rem; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="app paused" id="app">
+  <section class="player">
+    <div class="cover">
+      <div class="disc" id="disc"></div>
+      <canvas id="viz" width="600" height="600"></canvas>
+      <div class="center"></div>
+    </div>
+    <div class="title">
+      <h1 id="t-title">—</h1>
+      <p id="t-meta">—</p>
+    </div>
+    <div class="progress">
+      <input type="range" id="seek" min="0" max="100" step="0.1" value="0" aria-label="Posisi lagu">
+      <div class="times"><span id="cur">0:00</span><span id="total">0:00</span></div>
+    </div>
+    <div class="controls">
+      <button class="ctl" id="shuffle" aria-label="Acak" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M17 3l4 4-4 4V8h-2.6l-3 4 3 4H17v-3l4 4-4 4v-3h-3.6l-3.9-5.2L5.6 18H3v-2h1.6l3.6-4.8L4.6 6H3V4h2.6l3.9 5.2L13.4 4H17z"/></svg></button>
+      <button class="ctl" id="prev" aria-label="Sebelumnya"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+      <button class="ctl play" id="play" aria-label="Putar"><svg viewBox="0 0 24 24" id="play-icon"><path d="M7 4v16l13-8z"/></svg></button>
+      <button class="ctl" id="next" aria-label="Berikutnya"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+      <button class="ctl" id="repeat" aria-label="Ulangi" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2z"/></svg></button>
+    </div>
+    <label class="volume">🔈<input type="range" id="volume" min="0" max="1" step="0.01" value="0.7" aria-label="Volume">🔊</label>
+    <p class="hint"><kbd>Spasi</kbd> putar/jeda · <kbd>←</kbd><kbd>→</kbd> geser 5 detik · <kbd>N</kbd> lagu berikutnya</p>
+  </section>
+
+  <aside class="list">
+    <h2>Daftar Putar</h2>
+    <div id="tracks"></div>
+  </aside>
+</div>
+
+<script>
+  // Semua lagu dibangkitkan dengan Web Audio dari tangga nada pentatonis (slendro/pelog sederhana),
+  // jadi tidak ada file audio yang perlu diunduh.
+  const SCALES = {
+    slendro: [0, 2, 5, 7, 9],
+    pelog: [0, 1, 3, 7, 8],
+    mayor: [0, 2, 4, 7, 9],
+    minor: [0, 3, 5, 7, 10]
+  };
+  const tracks = [
+    { title: 'Fajar di Dieng', artist: 'Orkes Sintetis', scale: 'slendro', root: 62, bpm: 92, seed: 11, wave: 'triangle', colors: ['#f7b733', '#fc4a1a'] },
+    { title: 'Ombak Parangtritis', artist: 'Gamelan Digital', scale: 'pelog', root: 60, bpm: 76, seed: 23, wave: 'sine', colors: ['#00c6ff', '#0072ff'] },
+    { title: 'Pasar Malam', artist: 'Chiptune Nusantara', scale: 'mayor', root: 67, bpm: 128, seed: 5, wave: 'square', colors: ['#ff4ecd', '#7c5cff'] },
+    { title: 'Gerimis Sore', artist: 'Orkes Sintetis', scale: 'minor', root: 57, bpm: 70, seed: 42, wave: 'sine', colors: ['#5f7ea3', '#283e51'] },
+    { title: 'Lari Pagi Senayan', artist: 'Chiptune Nusantara', scale: 'slendro', root: 64, bpm: 140, seed: 77, wave: 'sawtooth', colors: ['#00c897', '#f6e05e'] }
+  ];
+  const BARS = 16, STEPS_PER_BAR = 8;
+  tracks.forEach(t => { t.duration = BARS * STEPS_PER_BAR * (60 / t.bpm / 2); t.notes = compose(t); });
+
+  function compose(t) {
+    let s = t.seed;
+    const r = () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
+    const scale = SCALES[t.scale];
+    const motif = Array.from({ length: STEPS_PER_BAR * 2 }, () => r() < .7 ? Math.floor(r() * 8) : null);
+    const progression = [0, 3, 4, 2].map(i => scale[i % scale.length]);
+    const notes = [];
+    for (let bar = 0; bar < BARS; bar++) {
+      const chord = progression[bar % 4];
+      const variation = bar >= 8 ? 1 : 0;
+      for (let st = 0; st < STEPS_PER_BAR; st++) {
+        const step = bar * STEPS_PER_BAR + st;
+        const m = motif[(bar % 2) * STEPS_PER_BAR + st];
+        if (m !== null) {
+          const deg = m + variation * 2;
+          const midi = t.root + scale[deg % scale.length] + 12 * Math.floor(deg / scale.length) + (bar % 4 === 3 ? -2 : 0);
+          notes.push({ step, midi, len: r() < .3 ? 2 : 1, kind: 'lead' });
+        }
+        if (st % 4 === 0) notes.push({ step, midi: t.root - 24 + chord, len: 3, kind: 'bass' });
+        if (st % 2 === 1) notes.push({ step, kind: 'hat' });
+        if (st === 0 || (st === 4 && t.bpm > 100)) notes.push({ step, kind: 'kick' });
+      }
+    }
+    return notes;
+  }
+
+  let ctx, master, analyser, noiseBuf;
+  let idx = 0, playing = false, startedAt = 0, offset = 0, nextNote = 0, timer = null, shuffle = false, repeat = false;
+  const live = new Set();
+
+  function ensureAudio() {
+    if (ctx) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain();
+    master.gain.value = +document.getElementById('volume').value;
+    analyser = ctx.createAnalyser();
+    analyser.fftSize = 256;
+    master.connect(analyser); analyser.connect(ctx.destination);
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate * .2, ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+
+  const stepDur = () => 60 / tracks[idx].bpm / 2;
+  const freq = midi => 440 * Math.pow(2, (midi - 69) / 12);
+
+  function playNote(n, when) {
+    const t = tracks[idx], dur = stepDur() * (n.len || 1);
+    const g = ctx.createGain();
+    g.connect(master);
+    let src;
+    if (n.kind === 'hat') {
+      src = ctx.createBufferSource(); src.buffer = noiseBuf;
+      const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000;
+      src.connect(hp); hp.connect(g);
+      g.gain.setValueAtTime(.08, when); g.gain.exponentialRampToValueAtTime(.001, when + .05);
+    } else if (n.kind === 'kick') {
+      src = ctx.createOscillator(); src.connect(g);
+      src.frequency.setValueAtTime(150, when); src.frequency.exponentialRampToValueAtTime(40, when + .15);
+      g.gain.setValueAtTime(.6, when); g.gain.exponentialRampToValueAtTime(.001, when + .2);
+    } else {
+      src = ctx.createOscillator(); src.connect(g);
+      src.type = n.kind === 'bass' ? 'triangle' : t.wave;
+      src.frequency.value = freq(n.midi);
+      const peak = n.kind === 'bass' ? .25 : (t.wave === 'square' || t.wave === 'sawtooth' ? .07 : .18);
+      g.gain.setValueAtTime(0, when);
+      g.gain.linearRampToValueAtTime(peak, when + .01);
+      g.gain.exponentialRampToValueAtTime(.001, when + dur * .95);
+    }
+    src.start(when); src.stop(when + Math.max(dur, .25));
+    live.add(src);
+    src.onended = () => live.delete(src);
+  }
+
+  function schedule() {
+    const t = tracks[idx], sd = stepDur();
+    while (nextNote < t.notes.length) {
+      const n = t.notes[nextNote];
+      const when = startedAt + n.step * sd;
+      if (when > ctx.currentTime + .15) break;
+      if (when >= ctx.currentTime - .01) playNote(n, Math.max(when, ctx.currentTime));
+      nextNote++;
+    }
+    if (position() >= t.duration) ended();
+  }
+
+  function position() { return playing ? ctx.currentTime - startedAt : offset; }
+
+  function start(from) {
+    ensureAudio();
+    if (ctx.state === 'suspended') ctx.resume();
+    stopSources();
+    offset = from;
+    startedAt = ctx.currentTime - from;
+    const sd = stepDur();
+    nextNote = tracks[idx].notes.findIndex(n => n.step * sd >= from - .001);
+    if (nextNote < 0) nextNote = tracks[idx].notes.length;
+    playing = true;
+    clearInterval(timer);
+    timer = setInterval(schedule, 25);
+    schedule();
+    updateState();
+  }
+  function pause() {
+    if (!playing) return;
+    offset = position();
+    playing = false;
+    clearInterval(timer);
+    stopSources();
+    updateState();
+  }
+  function stopSources() { live.forEach(s => { try { s.stop(); } catch (e) {} }); live.clear(); }
+  function ended() {
+    if (repeat) return start(0);
+    next(true);
+  }
+
+  function load(i, autoplay) {
+    pause();
+    idx = (i + tracks.length) % tracks.length;
+    offset = 0;
+    const t = tracks[idx];
+    document.getElementById('t-title').textContent = t.title;
+    document.getElementById('t-meta').textContent = `${t.artist} · ${t.scale} · ${t.bpm} BPM`;
+    document.getElementById('total').textContent = mmss(t.duration);
+    document.getElementById('disc').style.background = `conic-gradient(from 0deg, ${t.colors[0]}, ${t.colors[1]}, ${t.colors[0]})`;
+    document.title = t.title + ' — Gending';
+    renderList();
+    if (autoplay) start(0); else updateState();
+  }
+  function next(auto) {
+    if (shuffle && tracks.length > 1) {
+      let j; do { j = Math.floor(Math.random() * tracks.length); } while (j === idx);
+      return load(j, true);
+    }
+    if (auto && idx === tracks.length - 1 && !repeat) { load(0, false); return; }
+    load(idx + 1, true);
+  }
+  function prev() { if (position() > 3) start(0); else load(idx - 1, true); }
+
+  const mmss = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+
+  function updateState() {
+    document.getElementById('app').classList.toggle('playing', playing);
+    document.getElementById('app').classList.toggle('paused', !playing);
+    document.getElementById('play').setAttribute('aria-label', playing ? 'Jeda' : 'Putar');
+    document.getElementById('play-icon').innerHTML = playing ? '<path d="M6 4h4v16H6zm8 0h4v16h-4z"/>' : '<path d="M7 4v16l13-8z"/>';
+  }
+
+  function renderList() {
+    document.getElementById('tracks').innerHTML = tracks.map((t, i) => `
+      <button class="track ${i === idx ? 'active' : ''}" data-i="${i}">
+        <span class="thumb" style="background:linear-gradient(135deg,${t.colors[0]},${t.colors[1]})">${i === idx ? '<span class="eq"><i></i><i></i><i></i></span>' : ''}</span>
+        <span><span class="tname">${t.title}</span><span class="tmeta">${t.artist}</span></span>
+        <span class="dur">${mmss(t.duration)}</span>
+      </button>`).join('');
+  }
+  document.getElementById('tracks').addEventListener('click', e => {
+    const b = e.target.closest('.track');
+    if (b) +b.dataset.i === idx ? (playing ? pause() : start(offset)) : load(+b.dataset.i, true);
+  });
+
+  document.getElementById('play').addEventListener('click', () => playing ? pause() : start(offset >= tracks[idx].duration ? 0 : offset));
+  document.getElementById('next').addEventListener('click', () => next(false));
+  document.getElementById('prev').addEventListener('click', prev);
+  const toggleBtn = (id, get, set) => document.getElementById(id).addEventListener('click', e => {
+    set(!get()); e.currentTarget.classList.toggle('on', get()); e.currentTarget.setAttribute('aria-pressed', get());
+  });
+  toggleBtn('shuffle', () => shuffle, v => shuffle = v);
+  toggleBtn('repeat', () => repeat, v => repeat = v);
+
+  const seek = document.getElementById('seek');
+  let seeking = false;
+  seek.addEventListener('input', () => { seeking = true; document.getElementById('cur').textContent = mmss(seek.value / 100 * tracks[idx].duration); });
+  seek.addEventListener('change', () => {
+    seeking = false;
+    const to = seek.value / 100 * tracks[idx].duration;
+    if (playing) start(to); else offset = to;
+  });
+  document.getElementById('volume').addEventListener('input', e => { if (master) master.gain.value = +e.target.value; });
+
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
+    if (e.code === 'Space') { e.preventDefault(); document.getElementById('play').click(); }
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      if (e.target.type === 'range') return;
+      const to = Math.min(Math.max(position() + (e.key === 'ArrowRight' ? 5 : -5), 0), tracks[idx].duration - .1);
+      if (playing) start(to); else offset = to;
+    } else if (e.key.toLowerCase() === 'n') next(false);
+  });
+
+  // Visualizer melingkar
+  const cv = document.getElementById('viz'), g2 = cv.getContext('2d');
+  const bins = new Uint8Array(128);
+  function draw(ts) {
+    g2.clearRect(0, 0, 600, 600);
+    if (analyser && playing) analyser.getByteFrequencyData(bins);
+    else for (let i = 0; i < bins.length; i++) bins[i] = 30 + 20 * Math.sin(ts / 600 + i / 6);
+    const c = 300, r0 = 130;
+    g2.lineWidth = 6; g2.lineCap = 'round';
+    for (let i = 0; i < 64; i++) {
+      const v = bins[i * 1.5 | 0] / 255;
+      const a = i / 64 * Math.PI * 2 - Math.PI / 2;
+      const r1 = r0 + 8, r2 = r0 + 12 + v * 130;
+      g2.strokeStyle = `rgba(255,255,255,${.35 + v * .6})`;
+      g2.beginPath();
+      g2.moveTo(c + Math.cos(a) * r1, c + Math.sin(a) * r1);
+      g2.lineTo(c + Math.cos(a) * r2, c + Math.sin(a) * r2);
+      g2.stroke();
+    }
+    if (!seeking) {
+      const p = Math.min(position(), tracks[idx].duration);
+      seek.value = p / tracks[idx].duration * 100;
+      document.getElementById('cur').textContent = mmss(p);
+    }
+    requestAnimationFrame(draw);
+  }
+
+  load(0, false);
+  requestAnimationFrame(draw);
+</script>
+</body>
+</html>

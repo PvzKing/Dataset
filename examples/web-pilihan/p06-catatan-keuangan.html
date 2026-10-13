@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dompetku — Catatan Keuangan Pribadi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root { --bg: #f5f6fb; --card: #fff; --text: #171a2c; --muted: #6b7090; --line: #e6e8f2; --in: #10b981; --out: #ef4444; --accent: #4f46e5; }
+  [data-theme="dark"] { --bg: #0e1020; --card: #171a2f; --text: #eef0ff; --muted: #9ba0c4; --line: #272b47; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); transition: background .3s; }
+  button, input, select { font: inherit; color: inherit; }
+  .wrap { width: min(1180px, 100% - 32px); margin: 0 auto; padding: 24px 0 60px; }
+  header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
+  header h1 { font-size: 1.5rem; letter-spacing: -.02em; display: flex; align-items: center; gap: 10px; }
+  .mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, var(--accent), var(--in)); box-shadow: inset 0 -9px 0 rgba(0,0,0,.18); position: relative; }
+  .mark::after { content: ""; position: absolute; right: 5px; top: 11px; width: 7px; height: 7px; border-radius: 50%; background: #fff; }
+  .head-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .month { display: flex; align-items: center; gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
+  .month button { border: 0; background: none; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; }
+  .month button:hover { background: var(--bg); }
+  .month span { min-width: 130px; text-align: center; font-weight: 600; }
+  .icon-btn { border: 1px solid var(--line); background: var(--card); height: 44px; padding: 0 14px; border-radius: 12px; cursor: pointer; }
+
+  .summary { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 20px; min-width: 0; }
+  .card small { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: .75rem; letter-spacing: .06em; }
+  .card .big { font-size: clamp(1.05rem, 4.4vw, 2rem); font-weight: 800; letter-spacing: -.02em; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .balance .big { font-size: clamp(1.6rem, 6vw, 2.4rem); }
+  .balance { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; border: 0; }
+  .balance small { color: rgba(255,255,255,.8); }
+  .in { color: var(--in); } .out { color: var(--out); }
+  .budget-line { margin-top: 12px; font-size: .85rem; }
+  .meter { height: 8px; border-radius: 9px; background: rgba(255,255,255,.25); margin-top: 6px; overflow: hidden; }
+  .meter i { display: block; height: 100%; background: #fff; border-radius: 9px; transition: width .4s; }
+  .meter.warn i { background: #fbbf24; } .meter.over i { background: #f87171; }
+
+  .grid { display: grid; grid-template-columns: 360px 1fr; gap: 18px; align-items: start; }
+  form { display: grid; gap: 12px; }
+  .type { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg); border-radius: 12px; padding: 4px; }
+  .type button { border: 0; background: none; padding: 10px; border-radius: 9px; cursor: pointer; font-weight: 600; color: var(--muted); }
+  .type button.active[data-t="out"] { background: var(--card); color: var(--out); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .type button.active[data-t="in"] { background: var(--card); color: var(--in); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  label { display: grid; gap: 5px; font-size: .85rem; color: var(--muted); }
+  input, select { padding: 11px 13px; border: 1px solid var(--line); border-radius: 11px; background: var(--bg); color: var(--text); width: 100%; min-width: 0; }
+  input:focus, select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  .amount { font-size: 1.4rem; font-weight: 700; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .primary { background: var(--accent); color: #fff; border: 0; padding: 13px; border-radius: 12px; cursor: pointer; font-weight: 700; }
+  .err { color: var(--out); font-size: .85rem; min-height: 1em; }
+
+  .chart-card { display: grid; grid-template-columns: 200px 1fr; gap: 20px; align-items: center; margin-bottom: 18px; }
+  .donut { position: relative; width: 200px; height: 200px; }
+  .donut svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .donut .label { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+  .donut .label b { font-size: 1.05rem; }
+  .donut .label small { text-transform: none; letter-spacing: 0; }
+  .legend { list-style: none; display: grid; gap: 8px; }
+  .legend li { display: grid; grid-template-columns: 14px 1fr auto; gap: 10px; align-items: center; font-size: .9rem; }
+  .legend i { width: 14px; height: 14px; border-radius: 4px; }
+  .legend span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .tx-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tx-head input { max-width: 220px; padding: 8px 12px; }
+  .tx { list-style: none; }
+  .tx li { display: grid; grid-template-columns: 42px 1fr auto auto; gap: 12px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line); }
+  .tx .ic { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-size: 1.2rem; background: var(--bg); }
+  .tx .d small { color: var(--muted); display: block; font-size: .8rem; }
+  .tx .amt { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tx .del { border: 0; background: none; cursor: pointer; color: var(--muted); width: 30px; height: 30px; border-radius: 8px; }
+  .tx .del:hover { background: var(--bg); color: var(--out); }
+  .tx .empty { display: block; text-align: center; color: var(--muted); padding: 30px 0; border: 0; }
+
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .summary { grid-template-columns: 1fr 1fr; } .summary .balance { grid-column: 1 / -1; } }
+  @media (max-width: 520px) { .chart-card { grid-template-columns: 1fr; justify-items: center; } .legend { width: 100%; } .tx li { grid-template-columns: 38px 1fr auto; } .tx .del { grid-column: 3; grid-row: 1; justify-self: end; align-self: start; } .tx .amt { grid-column: 2 / 4; justify-self: end; margin-top: -8px; } .month span { min-width: 110px; } }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button, input, select { font-family: "Albert Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .card .big, .tx .amt, .legend span:last-child, .donut .label b, .amount { font-family: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace; letter-spacing: -.02em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="mark" aria-hidden="true"></span>Dompetku</h1>
+    <div class="head-actions">
+      <div class="month"><button id="prev-m" aria-label="Bulan sebelumnya">‹</button><span id="month-label"></span><button id="next-m" aria-label="Bulan berikutnya">›</button></div>
+      <button class="icon-btn" id="export">⬇ CSV</button>
+      <button class="icon-btn" id="theme" aria-label="Ganti tema">🌙</button>
+    </div>
+  </header>
+
+  <section class="summary">
+    <div class="card balance">
+      <small>Sisa bulan ini</small>
+      <div class="big" id="balance">Rp0</div>
+      <div class="budget-line"><span id="budget-text"></span>
+        <div class="meter" id="meter"><i id="meter-fill"></i></div>
+      </div>
+    </div>
+    <div class="card"><small>Pemasukan</small><div class="big in" id="income">Rp0</div></div>
+    <div class="card"><small>Pengeluaran</small><div class="big out" id="expense">Rp0</div></div>
+  </section>
+
+  <div class="grid">
+    <section class="card">
+      <form id="form" novalidate>
+        <div class="type" role="group" aria-label="Jenis transaksi">
+          <button type="button" data-t="out" class="active">Pengeluaran</button>
+          <button type="button" data-t="in">Pemasukan</button>
+        </div>
+        <label>Jumlah (Rp)<input id="amount" class="amount" inputmode="numeric" placeholder="0" autocomplete="off"></label>
+        <label>Keterangan<input id="note" placeholder="mis. Makan siang"></label>
+        <div class="row2">
+          <label>Kategori<select id="cat"></select></label>
+          <label>Tanggal<input id="date" type="date"></label>
+        </div>
+        <div class="err" id="err"></div>
+        <button class="primary" type="submit">Simpan Transaksi</button>
+      </form>
+      <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+      <label>Batas pengeluaran bulanan (Rp)<input id="budget" inputmode="numeric"></label>
+    </section>
+
+    <section>
+      <div class="card chart-card">
+        <div class="donut"><svg viewBox="0 0 42 42" id="donut"></svg><div class="label"><small>Pengeluaran</small><b id="donut-total">Rp0</b></div></div>
+        <ul class="legend" id="legend"></ul>
+      </div>
+      <div class="card">
+        <div class="tx-head"><b>Transaksi</b><input id="search" type="search" placeholder="Cari transaksi…" aria-label="Cari transaksi"></div>
+        <ul class="tx" id="tx"></ul>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+  const CATS = {
+    out: [['Makan', '🍜', '#f97316'], ['Transport', '🛵', '#3b82f6'], ['Belanja', '🛍️', '#ec4899'], ['Tagihan', '💡', '#eab308'], ['Hiburan', '🎬', '#8b5cf6'], ['Kesehatan', '💊', '#14b8a6'], ['Lainnya', '📦', '#94a3b8']],
+    in: [['Gaji', '💼', '#10b981'], ['Bonus', '🎁', '#22c55e'], ['Usaha', '🏪', '#84cc16'], ['Lainnya', '💵', '#94a3b8']]
+  };
+  const rp = n => (n < 0 ? '−' : '') + 'Rp' + Math.abs(Math.round(n)).toLocaleString('id-ID');
+  const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const load = (k, def) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch (e) { return def; } };
+  const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+
+  const today = new Date();
+  let view = new Date(today.getFullYear(), today.getMonth(), 1);
+  let type = 'out';
+  let txs = load('dompet-tx', null);
+  if (!txs) {
+    const m = iso(today).slice(0, 8);
+    txs = [
+      { id: 1, t: 'in', amt: 8500000, note: 'Gaji bulanan', cat: 'Gaji', date: m + '01' },
+      { id: 2, t: 'out', amt: 2500000, note: 'Sewa kos', cat: 'Tagihan', date: m + '02' },
+      { id: 3, t: 'out', amt: 45000, note: 'Nasi padang', cat: 'Makan', date: m + '03' },
+      { id: 4, t: 'out', amt: 350000, note: 'Token listrik & internet', cat: 'Tagihan', date: m + '03' },
+      { id: 5, t: 'out', amt: 120000, note: 'Bensin seminggu', cat: 'Transport', date: m + '04' },
+      { id: 6, t: 'out', amt: 275000, note: 'Kemeja kerja', cat: 'Belanja', date: m + '05' },
+      { id: 7, t: 'out', amt: 100000, note: 'Nonton bioskop', cat: 'Hiburan', date: m + '06' }
+    ];
+  }
+  let budget = load('dompet-budget', 5000000);
+  let theme = load('dompet-theme', 'light');
+
+  function setType(t) {
+    type = t;
+    document.querySelectorAll('.type button').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+    document.getElementById('cat').innerHTML = CATS[t].map(c => `<option>${c[0]}</option>`).join('');
+  }
+  document.querySelector('.type').addEventListener('click', e => { if (e.target.dataset.t) setType(e.target.dataset.t); });
+
+  // Input angka dengan pemisah ribuan otomatis
+  function moneyInput(el) {
+    el.addEventListener('input', () => {
+      const digits = el.value.replace(/\D/g, '').replace(/^0+/, '');
+      el.value = digits ? (+digits).toLocaleString('id-ID') : '';
+    });
+  }
+  const parseMoney = s => +String(s).replace(/\D/g, '') || 0;
+  moneyInput(document.getElementById('amount'));
+  moneyInput(document.getElementById('budget'));
+
+  document.getElementById('form').addEventListener('submit', e => {
+    e.preventDefault();
+    const amt = parseMoney(document.getElementById('amount').value);
+    const note = document.getElementById('note').value.trim();
+    const date = document.getElementById('date').value;
+    const err = document.getElementById('err');
+    if (!amt) return err.textContent = 'Masukkan jumlah lebih dari 0.';
+    if (!date) return err.textContent = 'Pilih tanggal transaksi.';
+    err.textContent = '';
+    txs.push({ id: Date.now(), t: type, amt, note: note || document.getElementById('cat').value, cat: document.getElementById('cat').value, date });
+    store('dompet-tx', txs);
+    const d = new Date(date + 'T00:00');
+    view = new Date(d.getFullYear(), d.getMonth(), 1);
+    document.getElementById('amount').value = '';
+    document.getElementById('note').value = '';
+    render();
+  });
+
+  document.getElementById('budget').addEventListener('change', e => { budget = parseMoney(e.target.value); store('dompet-budget', budget); render(); });
+
+  document.getElementById('tx').addEventListener('click', e => {
+    const b = e.target.closest('.del'); if (!b) return;
+    txs = txs.filter(t => t.id !== +b.dataset.id);
+    store('dompet-tx', txs); render();
+  });
+  document.getElementById('search').addEventListener('input', render);
+  document.getElementById('prev-m').addEventListener('click', () => { view.setMonth(view.getMonth() - 1); render(); });
+  document.getElementById('next-m').addEventListener('click', () => { view.setMonth(view.getMonth() + 1); render(); });
+
+  function applyTheme() {
+    document.documentElement.dataset.theme = theme;
+    document.getElementById('theme').textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+  document.getElementById('theme').addEventListener('click', () => { theme = theme === 'dark' ? 'light' : 'dark'; store('dompet-theme', theme); applyTheme(); });
+
+  const catInfo = (t, name) => CATS[t].find(c => c[0] === name) || CATS[t][CATS[t].length - 1];
+
+  function render() {
+    const key = iso(view).slice(0, 7);
+    document.getElementById('month-label').textContent = view.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+    const month = txs.filter(t => t.date.startsWith(key));
+    const inc = month.filter(t => t.t === 'in').reduce((s, t) => s + t.amt, 0);
+    const exp = month.filter(t => t.t === 'out').reduce((s, t) => s + t.amt, 0);
+    document.getElementById('income').textContent = rp(inc);
+    document.getElementById('expense').textContent = rp(exp);
+    document.getElementById('balance').textContent = rp(inc - exp);
+    const pct = budget ? exp / budget * 100 : 0;
+    document.getElementById('budget-text').textContent = budget ? `${Math.round(pct)}% dari batas ${rp(budget)}${pct > 100 ? ' — melebihi batas!' : ''}` : 'Belum ada batas pengeluaran';
+    document.getElementById('meter-fill').style.width = Math.min(pct, 100) + '%';
+    document.getElementById('meter').className = 'meter' + (pct > 100 ? ' over' : pct > 80 ? ' warn' : '');
+    document.getElementById('budget').value = budget ? budget.toLocaleString('id-ID') : '';
+
+    // Donat per kategori: tiap busur memakai stroke-dasharray pada lingkaran keliling 100
+    const byCat = {};
+    month.filter(t => t.t === 'out').forEach(t => byCat[t.cat] = (byCat[t.cat] || 0) + t.amt);
+    const entries = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+    let acc = 0, svg = '<circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--line)" stroke-width="6"/>';
+    entries.forEach(([c, v]) => {
+      const p = v / exp * 100;
+      svg += `<circle cx="21" cy="21" r="15.915" fill="none" stroke="${catInfo('out', c)[2]}" stroke-width="6" stroke-dasharray="${Math.max(p - .6, .1)} ${100 - Math.max(p - .6, .1)}" stroke-dashoffset="${-acc}"><title>${c}: ${rp(v)}</title></circle>`;
+      acc += p;
+    });
+    document.getElementById('donut').innerHTML = svg;
+    document.getElementById('donut-total').textContent = rp(exp);
+    document.getElementById('legend').innerHTML = entries.length ? entries.map(([c, v]) =>
+      `<li><i style="background:${catInfo('out', c)[2]}"></i><span>${catInfo('out', c)[1]} ${c}</span><span>${rp(v)} · ${Math.round(v / exp * 100)}%</span></li>`).join('')
+      : '<li style="display:block;color:var(--muted)">Belum ada pengeluaran bulan ini.</li>';
+
+    const q = document.getElementById('search').value.trim().toLowerCase();
+    const list = month.filter(t => !q || (t.note + t.cat).toLowerCase().includes(q)).sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+    const ul = document.getElementById('tx');
+    ul.innerHTML = list.length ? '' : '<li class="empty">Tidak ada transaksi.</li>';
+    list.forEach(t => {
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="ic">${catInfo(t.t, t.cat)[1]}</span><span class="d"><b></b><small>${t.cat} · ${new Date(t.date + 'T00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</small></span>
+        <span class="amt ${t.t}">${t.t === 'in' ? '+' : '−'}${rp(t.amt)}</span><button class="del" data-id="${t.id}" aria-label="Hapus transaksi">✕</button>`;
+      li.querySelector('b').textContent = t.note;
+      ul.appendChild(li);
+    });
+  }
+
+  document.getElementById('export').addEventListener('click', () => {
+    const rows = [['Tanggal', 'Jenis', 'Kategori', 'Keterangan', 'Jumlah']].concat(
+      txs.slice().sort((a, b) => a.date.localeCompare(b.date)).map(t => [t.date, t.t === 'in' ? 'Pemasukan' : 'Pengeluaran', t.cat, t.note, t.t === 'in' ? t.amt : -t.amt]));
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }));
+    a.download = 'dompetku.csv';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+
+  // Di dalam pratinjau (iframe) unduhan dan dialog cetak diblokir, jadi tombolnya disembunyikan.
+  if (window.self !== window.top) document.getElementById('export').style.display = 'none';
+  document.getElementById('date').value = iso(today);
+  setType('out');
+  applyTheme();
+  render();
+</script>
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dapur Nusantara — Resep Masakan Rumahan</title>
+<style>
+  :root { --bg: #fffaf3; --card: #fff; --text: #2b1d12; --muted: #6f5d4e; --accent: #c2410c; --soft: #ffedd5; --line: #f0e3d3; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  button, input { font: inherit; color: inherit; }
+  h1, h2, h3, .logo { font-family: Georgia, "Times New Roman", serif; font-weight: 400; line-height: 1.2; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .wrap { width: min(1160px, 100% - 32px); margin: 0 auto; }
+  .pill { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+  .muted { color: var(--muted); }
+
+  header .wrap { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 20px 0; }
+  .logo { font-size: 1.5rem; color: var(--accent); }
+  #fav-toggle[aria-pressed="true"] { background: var(--soft); border-color: var(--accent); }
+
+  .hero { padding: 48px 0 16px; text-align: center; }
+  .hero h1 { font-size: clamp(2.2rem, 6vw, 4rem); }
+  .hero p { margin: 14px auto 24px; max-width: 520px; }
+  .hero label { display: block; margin-bottom: 8px; }
+  #q { width: min(620px, 100%); padding: 14px 20px; cursor: text; }
+  #count { text-align: center; margin-bottom: 16px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 20px; padding-bottom: 60px; }
+  .card { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; transition: transform .25s; }
+  .card:hover { transform: translateY(-4px); }
+  .plate { aspect-ratio: 16 / 9; display: grid; place-items: center; font-size: 4rem; background: var(--soft); }
+  .heart { position: absolute; z-index: 1; top: 10px; right: 10px; width: 40px; height: 40px; padding: 0; }
+  .card-body { padding: 14px 18px 18px; }
+  .open { border: 0; background: none; font-size: 1.25rem; text-align: left; cursor: pointer; }
+  /* Seluruh kartu bisa diklik lewat tombol judul */
+  .open::after { content: ""; position: absolute; inset: 0; }
+  .open:focus-visible { outline: none; }
+  .open:focus-visible::after { outline: 3px solid var(--accent); outline-offset: -3px; border-radius: 20px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .9rem; }
+
+  dialog { border: 0; border-radius: 24px; width: min(860px, 100% - 24px); max-height: 92vh; margin: auto; padding: 28px; color: var(--text); background: var(--bg); }
+  dialog::backdrop { background: rgba(40, 20, 0, .55); }
+  dialog h2 { font-size: clamp(1.6rem, 4vw, 2.3rem); padding-right: 48px; }
+  #close { position: absolute; top: 16px; right: 16px; width: 42px; height: 42px; padding: 0; }
+  .modal-body { display: grid; grid-template-columns: 300px 1fr; gap: 28px; margin-top: 20px; }
+  .modal-body h3 { font-size: 1.2rem; margin-bottom: 10px; }
+  .box { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+  .stepper { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .stepper button { width: 34px; height: 34px; padding: 0; }
+  .ing { list-style: none; }
+  .ing label { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--line); cursor: pointer; }
+  .ing input { accent-color: var(--accent); }
+  .ing input:checked + span { text-decoration: line-through; color: var(--muted); }
+  .steps { padding-left: 22px; }
+  .steps li { padding: 0 0 14px 6px; cursor: pointer; }
+  .steps li.done { color: var(--muted); text-decoration: line-through; }
+  .timer-btn { padding: 0 10px; border-color: var(--accent); color: var(--accent); font-size: .85rem; }
+  /* Popover tampil di top layer, di atas dialog resep */
+  #timer-bar { inset: auto auto 20px 50%; transform: translateX(-50%); margin: 0; border: 0; max-width: calc(100% - 24px); padding: 10px 18px; border-radius: 999px; background: var(--text); color: var(--bg); }
+  #timer-bar:popover-open { display: flex; align-items: center; gap: 12px; }
+  #timer-stop { background: none; }
+  #timer-left { white-space: nowrap; }
+  @media (max-width: 720px) {
+    dialog { padding: 24px 18px; }
+    .modal-body { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="logo">Dapur Nusantara</div>
+    <button class="pill" id="fav-toggle" aria-pressed="false">♥ Favorit <b id="fav-count">0</b></button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Masak enak,<br>seperti di rumah nenek.</h1>
+    <p class="muted">Resep rumahan Nusantara dengan takaran yang menyesuaikan jumlah porsi.</p>
+    <label for="q" class="muted">Cari nama resep, daerah, atau bahan</label>
+    <input id="q" class="pill" type="search" placeholder="mis. santan">
+  </section>
+  <p id="count" class="muted" aria-live="polite"></p>
+  <section class="grid" id="grid" aria-label="Daftar resep"></section>
+</main>
+
+<dialog id="modal" aria-labelledby="m-title">
+  <button class="pill" id="close" aria-label="Tutup">✕</button>
+  <h2 id="m-title"></h2>
+  <p class="muted" id="m-meta"></p>
+  <div class="modal-body">
+    <section class="box">
+      <h3>Bahan</h3>
+      <div class="stepper">
+        <button class="pill" id="minus" aria-label="Kurangi porsi">−</button>
+        <span id="portions" aria-live="polite"></span>
+        <button class="pill" id="plus" aria-label="Tambah porsi">+</button>
+      </div>
+      <ul class="ing" id="m-ing"></ul>
+    </section>
+    <section>
+      <h3>Cara membuat</h3>
+      <ol class="steps" id="m-steps"></ol>
+    </section>
+  </div>
+</dialog>
+
+<div id="timer-bar" role="status" popover="manual">
+  <span>⏲ <b id="timer-left"></b></span>
+  <span id="timer-label"></span>
+  <button class="pill" id="timer-stop">Batal</button>
+</div>
+
+<script>
+  // Takaran ditulis untuk `serves` porsi. Angka [n] di akhir langkah = timer n menit.
+  const recipes = [
+    { id: 'rendang', name: 'Rendang Daging', region: 'Sumatera Barat', time: 240, level: 'Sulit', emoji: '🍛', serves: 6,
+      ing: [[1, 'kg', 'daging sapi'], [1500, 'ml', 'santan kental'], [12, 'butir', 'bawang merah'], [8, 'siung', 'bawang putih'], [150, 'g', 'cabai merah'], [2, 'batang', 'serai'], [4, 'lembar', 'daun jeruk']],
+      steps: ['Haluskan bawang dan cabai, lalu didihkan bersama santan, serai, dan daun jeruk.', 'Masukkan daging, masak hingga santan menyusut. [90]', 'Kecilkan api, aduk sesekali hingga kering dan kehitaman. [120]'] },
+    { id: 'nasgor', name: 'Nasi Goreng Kampung', region: 'Jawa', time: 15, level: 'Mudah', emoji: '🍳', serves: 1,
+      ing: [[1, 'piring', 'nasi putih dingin'], [3, 'butir', 'bawang merah'], [3, 'buah', 'cabai rawit'], [0.5, 'sdt', 'terasi'], [1, 'sdm', 'kecap manis'], [1, 'butir', 'telur']],
+      steps: ['Ulek bawang, cabai, dan terasi.', 'Tumis bumbu hingga harum, orak-arik telur di sisi wajan.', 'Masukkan nasi dan kecap, aduk dengan api besar. [3]'] },
+    { id: 'soto', name: 'Soto Ayam Lamongan', region: 'Jawa Timur', time: 75, level: 'Sedang', emoji: '🍜', serves: 4,
+      ing: [[1, 'ekor', 'ayam kampung'], [2, 'liter', 'air'], [6, 'butir', 'bawang merah'], [4, 'siung', 'bawang putih'], [3, 'cm', 'kunyit'], [100, 'g', 'soun'], [4, 'butir', 'telur rebus']],
+      steps: ['Rebus ayam hingga empuk, lalu suwir. [40]', 'Tumis bumbu halus hingga harum, masukkan ke kaldu.', 'Tata soun, ayam, dan telur, lalu siram kuah panas.'] },
+    { id: 'gado', name: 'Gado-Gado', region: 'DKI Jakarta', time: 30, level: 'Mudah', emoji: '🥗', serves: 2,
+      ing: [[150, 'g', 'kacang tanah goreng'], [2, 'buah', 'cabai rawit'], [30, 'g', 'gula merah'], [100, 'g', 'kol'], [100, 'g', 'tauge'], [2, 'potong', 'tahu goreng']],
+      steps: ['Rebus sebentar kol dan tauge, tiriskan. [3]', 'Ulek kacang, cabai, dan gula merah, encerkan dengan air panas.', 'Tata sayuran dan tahu, lalu siram saus kacang.'] },
+    { id: 'cendol', name: 'Es Cendol', region: 'Jawa Barat', time: 35, level: 'Mudah', emoji: '🍧', serves: 4,
+      ing: [[100, 'g', 'tepung hunkwe'], [500, 'ml', 'air pandan'], [400, 'ml', 'santan'], [150, 'g', 'gula aren'], [2, 'gelas', 'es batu']],
+      steps: ['Masak tepung hunkwe dan air pandan hingga meletup-letup. [8]', 'Cetak adonan ke dalam air es dengan saringan cendol.', 'Tata cendol, sirup gula aren, santan, dan es batu.'] },
+    { id: 'pempek', name: 'Pempek Kapal Selam', region: 'Sumatera Selatan', time: 90, level: 'Sulit', emoji: '🐟', serves: 4,
+      ing: [[500, 'g', 'ikan tenggiri giling'], [250, 'g', 'tepung sagu'], [200, 'ml', 'air es'], [4, 'butir', 'telur'], [250, 'g', 'gula batok'], [10, 'buah', 'cabai rawit']],
+      steps: ['Campur ikan, air es, dan sagu hingga bisa dibentuk.', 'Bentuk mangkuk, isi telur, rapatkan, lalu rebus hingga mengapung. [10]', 'Rebus gula batok dan cabai halus untuk cuko. [20]'] },
+    { id: 'betutu', name: 'Ayam Betutu', region: 'Bali', time: 180, level: 'Sedang', emoji: '🍗', serves: 4,
+      ing: [[1, 'ekor', 'ayam kampung'], [10, 'butir', 'bawang merah'], [6, 'siung', 'bawang putih'], [5, 'cm', 'kencur'], [5, 'cm', 'kunyit'], [10, 'buah', 'cabai merah']],
+      steps: ['Haluskan bumbu, tumis hingga matang, lalu lumuri ayam.', 'Bungkus dengan daun pisang, kukus hingga empuk. [120]', 'Panggang hingga kulit kecokelatan. [20]'] },
+    { id: 'klepon', name: 'Klepon', region: 'Jawa Tengah', time: 40, level: 'Mudah', emoji: '🟢', serves: 4,
+      ing: [[250, 'g', 'tepung ketan'], [200, 'ml', 'air daun pandan'], [100, 'g', 'gula merah sisir'], [150, 'g', 'kelapa parut kukus']],
+      steps: ['Uleni tepung ketan dengan air pandan hingga kalis.', 'Bentuk bola berisi gula merah.', 'Rebus hingga mengapung, lalu gulingkan di kelapa parut. [5]'] },
+    { id: 'sayur-asem', name: 'Sayur Asem', region: 'Jawa Barat', time: 40, level: 'Mudah', emoji: '🍲', serves: 4,
+      ing: [[1.5, 'liter', 'air'], [1, 'buah', 'jagung manis'], [100, 'g', 'kacang panjang'], [1, 'buah', 'labu siam'], [2, 'sdm', 'asam jawa'], [2, 'sdm', 'gula merah']],
+      steps: ['Didihkan air, masukkan jagung. [10]', 'Tambahkan sayuran lain, asam jawa, dan gula. [10]', 'Koreksi rasa, sajikan hangat.'] }
+  ];
+  const $ = id => document.getElementById(id);
+  let onlyFav = false, favs = new Set(), current = null, portions = 1, timerId = null;
+  try { favs = new Set(JSON.parse(localStorage.getItem('dapur-fav') || '[]')); } catch (e) {}
+
+  function saveFavs() {
+    try { localStorage.setItem('dapur-fav', JSON.stringify([...favs])); } catch (e) {}
+  }
+  const fmtTime = m => m >= 60 ? `${Math.floor(m / 60)} jam${m % 60 ? ` ${m % 60} mnt` : ''}` : `${m} mnt`;
+
+  function render() {
+    const q = $('q').value.trim().toLowerCase();
+    const list = recipes.filter(r => (!onlyFav || favs.has(r.id)) &&
+      (!q || r.name.toLowerCase().includes(q) || r.region.toLowerCase().includes(q) || r.ing.some(i => i[2].includes(q))));
+    $('count').textContent = `${list.length} resep${onlyFav ? ' favorit' : ''}${q ? ` untuk “${q}”` : ''}`;
+    $('grid').innerHTML = list.map(r => `
+      <article class="card">
+        <div class="plate" aria-hidden="true">${r.emoji}</div>
+        <button class="pill heart" data-fav="${r.id}" aria-label="Favoritkan ${r.name}" aria-pressed="${favs.has(r.id)}">${favs.has(r.id) ? '❤️' : '🤍'}</button>
+        <div class="card-body">
+          <h3><button class="open" data-id="${r.id}">${r.name}</button></h3>
+          <p class="meta muted"><span>⏱ ${fmtTime(r.time)}</span><span>${r.level}</span><span>📍 ${r.region}</span></p>
+        </div>
+      </article>`).join('');
+    $('fav-count').textContent = favs.size;
+  }
+
+  $('grid').addEventListener('click', e => {
+    const fav = e.target.closest('[data-fav]');
+    const open = e.target.closest('.open');
+    if (fav) {
+      const id = fav.dataset.fav;
+      favs.has(id) ? favs.delete(id) : favs.add(id);
+      saveFavs();
+      render();
+    } else if (open) {
+      openRecipe(open.dataset.id);
+    }
+  });
+  $('q').addEventListener('input', render);
+  $('fav-toggle').addEventListener('click', e => {
+    onlyFav = !onlyFav;
+    e.currentTarget.setAttribute('aria-pressed', onlyFav);
+    render();
+  });
+
+  // Bulatkan takaran ke pecahan yang lazim di dapur
+  function fmtQty(n) {
+    if (n >= 10) return String(Math.round(n));
+    const whole = Math.floor(n), frac = n - whole;
+    const fractions = [[0, ''], [.25, '¼'], [.33, '⅓'], [.5, '½'], [.67, '⅔'], [.75, '¾'], [1, '']];
+    const [value, sign] = fractions.reduce((a, b) => Math.abs(b[0] - frac) < Math.abs(a[0] - frac) ? b : a);
+    const w = whole + (value === 1 ? 1 : 0);
+    return (w || '') + sign || '0';
+  }
+
+  function openRecipe(id) {
+    current = recipes.find(r => r.id === id);
+    portions = current.serves;
+    $('m-title').textContent = `${current.emoji} ${current.name}`;
+    $('m-meta').textContent = `⏱ ${fmtTime(current.time)} · ${current.level} · ${current.region}`;
+    $('m-steps').innerHTML = current.steps.map(s => {
+      const m = s.match(/ \[(\d+)\]$/);
+      const text = m ? s.slice(0, m.index) : s;
+      return `<li>${text}${m ? ` <button class="pill timer-btn" data-min="${m[1]}">⏲ ${m[1]} mnt</button>` : ''}</li>`;
+    }).join('');
+    renderIng();
+    $('modal').showModal();
+    moveTimerBar($('modal'));
+  }
+  function renderIng() {
+    $('portions').textContent = portions + ' porsi';
+    const k = portions / current.serves;
+    $('m-ing').innerHTML = current.ing.map(([qty, unit, name]) =>
+      `<li><label><input type="checkbox"><span><b>${fmtQty(qty * k)} ${unit}</b> ${name}</span></label></li>`).join('');
+  }
+  $('minus').addEventListener('click', () => { if (portions > 1) { portions--; renderIng(); } });
+  $('plus').addEventListener('click', () => { if (portions < 20) { portions++; renderIng(); } });
+  $('close').addEventListener('click', () => $('modal').close());
+  $('modal').addEventListener('close', () => moveTimerBar(document.body));
+  $('m-steps').addEventListener('click', e => {
+    const btn = e.target.closest('.timer-btn');
+    if (btn) startTimer(+btn.dataset.min, current.name);
+    else e.target.closest('li')?.classList.toggle('done');
+  });
+
+  // Isi luar dialog modal tidak bisa diklik, jadi bar timer ikut pindah ke dalam dialog
+  function moveTimerBar(parent) {
+    const bar = $('timer-bar'), shown = bar.matches(':popover-open');
+    parent.append(bar);
+    if (shown) bar.showPopover();
+  }
+
+  function startTimer(min, label) {
+    clearInterval(timerId);
+    const end = Date.now() + min * 60000;
+    $('timer-label').textContent = label;
+    $('timer-bar').hidePopover();
+    $('timer-bar').showPopover();
+    const tick = () => {
+      const left = Math.max(0, end - Date.now());
+      $('timer-left').textContent = `${Math.floor(left / 60000)}:${String(Math.floor(left / 1000) % 60).padStart(2, '0')}`;
+      if (!left) {
+        clearInterval(timerId);
+        $('timer-left').textContent = 'Waktunya cek masakan!';
+      }
+    };
+    tick();
+    timerId = setInterval(tick, 500);
+  }
+  $('timer-stop').addEventListener('click', () => {
+    clearInterval(timerId);
+    $('timer-bar').hidePopover();
+  });
+
+  render();
+</script>
+</body>
+</html>

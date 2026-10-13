@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Pecah Bata — Game Arkade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@500;700&display=swap">
+<style>
+  :root { --bg: #0b1026; --panel: #141b3d; --text: #eef1ff; --muted: #8e97c7; --accent: #ffcc33; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: radial-gradient(circle at 50% 0%, #1f2a66, var(--bg) 60%); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 16px; }
+  button { font: inherit; color: inherit; }
+  .hud { width: min(720px, 100%); display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .title { font-weight: 900; font-size: clamp(1.1rem, 4vw, 1.6rem); letter-spacing: .04em; }
+  .title span { color: var(--accent); }
+  .stats { display: flex; gap: 6px; }
+  .stat { background: var(--panel); border-radius: 10px; padding: 4px 10px; text-align: center; min-width: 58px; }
+  .stat small { display: block; font-size: .62rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+  .stat b { font-variant-numeric: tabular-nums; }
+  .stage { position: relative; width: min(720px, 100%); aspect-ratio: 3 / 4; max-height: calc(100vh - 150px); }
+  @media (min-width: 700px) { .stage { aspect-ratio: 4 / 3; } }
+  canvas { width: 100%; height: 100%; display: block; border-radius: 16px; background: linear-gradient(180deg, #10173a, #0a0f27); box-shadow: 0 0 0 2px #26306a, 0 30px 60px -20px rgba(0,0,0,.7); touch-action: none; cursor: none; }
+  .overlay { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; text-align: center; padding: 20px; background: rgba(8, 11, 30, .72); border-radius: 16px; backdrop-filter: blur(3px); }
+  .overlay[hidden] { display: none; }
+  .overlay h1 { font-size: clamp(2rem, 8vw, 3.4rem); font-weight: 900; letter-spacing: .02em; line-height: 1; }
+  .overlay h1 span { color: var(--accent); }
+  .overlay p { color: var(--muted); max-width: 380px; }
+  .btn { background: var(--accent); color: #2a1d00; border: 0; border-radius: 12px; padding: 12px 26px; font-weight: 800; cursor: pointer; font-size: 1.05rem; }
+  .keys { font-size: .85rem; color: var(--muted); }
+  .bar { width: min(720px, 100%); display: flex; justify-content: space-between; margin-top: 10px; gap: 8px; }
+  .bar button { background: var(--panel); border: 0; border-radius: 10px; padding: 8px 14px; cursor: pointer; color: var(--muted); }
+  .legend { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; font-size: .8rem; color: var(--muted); }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button { font-family: "Chakra Petch", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .title, .overlay h1, .stat b { font-family: "Press Start 2P", ui-monospace, Menlo, Consolas, monospace; font-weight: 400; }
+  .title { font-size: clamp(.8rem, 3vw, 1.1rem); } .overlay h1 { font-size: clamp(1.4rem, 6vw, 2.4rem); line-height: 1.3; } .stat b { font-size: .75rem; }
+</style>
+</head>
+<body>
+<div class="hud">
+  <div class="title">PECAH <span>BATA</span></div>
+  <div class="stats">
+    <div class="stat"><small>Skor</small><b id="score">0</b></div>
+    <div class="stat"><small>Level</small><b id="level">1</b></div>
+    <div class="stat"><small>Nyawa</small><b id="lives">❤❤❤</b></div>
+  </div>
+</div>
+<div class="stage">
+  <canvas id="game" aria-label="Area permainan Pecah Bata"></canvas>
+  <div class="overlay" id="overlay">
+    <h1>PECAH <span>BATA</span></h1>
+    <p id="ov-text">Pantulkan bola, hancurkan semua bata, dan kumpulkan power-up. Skor tertinggi: <b id="hi">0</b></p>
+    <button class="btn" id="start">▶ Mulai</button>
+    <div class="legend"><span><i style="background:#4ade80"></i>Papan lebar</span><span><i style="background:#60a5fa"></i>Multi-bola</span><span><i style="background:#f472b6"></i>Bola lambat</span><span><i style="background:#facc15"></i>+1 nyawa</span></div>
+    <div class="keys">Mouse/jari untuk menggerakkan · ← → atau A D · Spasi untuk meluncurkan · P untuk jeda</div>
+  </div>
+</div>
+<div class="bar"><button id="pause">⏸ Jeda</button><button id="sound" aria-pressed="true">🔊 Suara</button></div>
+
+<script>
+  const cv = document.getElementById('game'), g = cv.getContext('2d');
+  const $ = id => document.getElementById(id);
+  let W, H, scale;
+  const COLORS = ['#f87171', '#fb923c', '#facc15', '#4ade80', '#38bdf8', '#a78bfa'];
+  const POWERS = { wide: '#4ade80', multi: '#60a5fa', slow: '#f472b6', life: '#facc15' };
+  // Pola level: angka = kekuatan bata (jumlah pukulan), 0 = kosong
+  const LEVELS = [
+    ['1111111111', '1111111111', '1111111111', '1111111111', '1111111111'],
+    ['0022222200', '0211111120', '2111111112', '2112112112', '0211111120', '0022222200'],
+    ['3030303030', '0303030303', '2222222222', '1111111111', '2020202020', '0101010101'],
+    ['3333333333', '3000000003', '3022222203', '3021111203', '3022222203', '3000000003', '3333333333']
+  ];
+  let state = 'menu', score = 0, lives = 3, level = 0, bricks = [], balls = [], drops = [], parts = [];
+  let paddle = { x: 0, w: 0, target: null }, wideUntil = 0, slowUntil = 0, keys = {}, sound = true, hi = 0;
+  try { hi = +localStorage.getItem('pecah-hi') || 0; } catch (e) {}
+  $('hi').textContent = hi;
+
+  function resize() {
+    const r = cv.getBoundingClientRect();
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    cv.width = r.width * dpr; cv.height = r.height * dpr;
+    W = r.width; H = r.height; scale = W / 600;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (bricks.length) layoutBricks();
+    paddle.x = Math.min(Math.max(paddle.x || W / 2, 0), W);
+  }
+
+  function layoutBricks() {
+    const cols = 10, pad = 6 * scale, top = 60 * scale;
+    const bw = (W - pad * (cols + 1)) / cols, bh = Math.max(14, 22 * scale);
+    bricks.forEach(b => { b.x = pad + b.c * (bw + pad); b.y = top + b.r * (bh + pad); b.w = bw; b.h = bh; });
+  }
+  function loadLevel(n) {
+    const map = LEVELS[n % LEVELS.length], bonus = Math.floor(n / LEVELS.length);
+    bricks = [];
+    map.forEach((row, r) => [...row].forEach((ch, c) => { const hp = +ch; if (hp) bricks.push({ r, c, hp: Math.min(hp + bonus, 4), max: Math.min(hp + bonus, 4) }); }));
+    layoutBricks();
+    drops = []; resetBall();
+    $('level').textContent = n + 1;
+  }
+  const paddleW = () => (performance.now() < wideUntil ? 150 : 96) * scale;
+  const ballSpeed = () => (5.2 + level * .5) * scale * (performance.now() < slowUntil ? .6 : 1);
+  function resetBall() { balls = [{ x: paddle.x, y: H - 40 * scale, vx: 0, vy: 0, stuck: true, r: Math.max(5, 7 * scale) }]; }
+  function launch() {
+    balls.forEach(b => { if (b.stuck) { const a = -Math.PI / 2 + (Math.random() - .5) * .8; b.vx = Math.cos(a); b.vy = Math.sin(a); b.stuck = false; } });
+  }
+
+  // Efek suara kecil dengan Web Audio (dibuat setelah interaksi pertama)
+  let actx;
+  function beep(f, d = .06, type = 'square') {
+    if (!sound || !actx) return;
+    const o = actx.createOscillator(), v = actx.createGain();
+    o.type = type; o.frequency.value = f; v.gain.setValueAtTime(.06, actx.currentTime); v.gain.exponentialRampToValueAtTime(.001, actx.currentTime + d);
+    o.connect(v); v.connect(actx.destination); o.start(); o.stop(actx.currentTime + d);
+  }
+
+  function start() {
+    if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+    if (state === 'menu' || state === 'over') { score = 0; lives = 3; level = 0; loadLevel(0); }
+    if (state === 'won') { level++; loadLevel(level); }
+    state = 'play';
+    $('overlay').hidden = true;
+    updateHud();
+  }
+  function showOverlay(title, text, btn) {
+    $('overlay').hidden = false;
+    $('overlay').querySelector('h1').innerHTML = title;
+    $('ov-text').innerHTML = text;
+    $('start').textContent = btn;
+  }
+  function updateHud() {
+    $('score').textContent = score;
+    $('lives').textContent = lives > 0 ? '❤'.repeat(Math.min(lives, 5)) + (lives > 5 ? '+' : '') : '—';
+    if (score > hi) { hi = score; try { localStorage.setItem('pecah-hi', hi); } catch (e) {} }
+  }
+
+  function burst(x, y, color) { for (let i = 0; i < 10; i++) parts.push({ x, y, vx: (Math.random() - .5) * 6, vy: (Math.random() - .7) * 6, life: 1, color }); }
+
+  function update(dt) {
+    // Papan mengikuti target pointer atau tombol panah
+    paddle.w = paddleW();
+    if (keys.left) paddle.x -= 9 * scale * dt;
+    if (keys.right) paddle.x += 9 * scale * dt;
+    if (paddle.target !== null) paddle.x += (paddle.target - paddle.x) * Math.min(1, .35 * dt);
+    paddle.x = Math.min(Math.max(paddle.x, paddle.w / 2), W - paddle.w / 2);
+    const py = H - 28 * scale, ph = Math.max(10, 12 * scale);
+
+    balls.forEach(b => {
+      if (b.stuck) { b.x = paddle.x; b.y = py - b.r - 1; return; }
+      const sp = ballSpeed();
+      const steps = Math.ceil(sp * dt / (b.r * .8));
+      for (let s = 0; s < steps; s++) {
+        b.x += b.vx * sp * dt / steps; b.y += b.vy * sp * dt / steps;
+        if (b.x < b.r) { b.x = b.r; b.vx = Math.abs(b.vx); beep(300); }
+        if (b.x > W - b.r) { b.x = W - b.r; b.vx = -Math.abs(b.vx); beep(300); }
+        if (b.y < b.r) { b.y = b.r; b.vy = Math.abs(b.vy); beep(300); }
+        // Pantulan papan: sudut ditentukan oleh titik kena
+        if (b.vy > 0 && b.y + b.r >= py && b.y + b.r <= py + ph + b.vy * sp && Math.abs(b.x - paddle.x) <= paddle.w / 2 + b.r) {
+          const hit = (b.x - paddle.x) / (paddle.w / 2);
+          const a = -Math.PI / 2 + hit * Math.PI / 3;
+          b.vx = Math.cos(a); b.vy = Math.sin(a); b.y = py - b.r;
+          beep(220, .05, 'triangle');
+        }
+        for (const br of bricks) {
+          if (br.hp <= 0) continue;
+          const cx = Math.max(br.x, Math.min(b.x, br.x + br.w)), cy = Math.max(br.y, Math.min(b.y, br.y + br.h));
+          if ((b.x - cx) ** 2 + (b.y - cy) ** 2 > b.r * b.r) continue;
+          const overlapX = Math.min(b.x + b.r - br.x, br.x + br.w - (b.x - b.r));
+          const overlapY = Math.min(b.y + b.r - br.y, br.y + br.h - (b.y - b.r));
+          if (overlapX < overlapY) b.vx = b.x < br.x + br.w / 2 ? -Math.abs(b.vx) : Math.abs(b.vx);
+          else b.vy = b.y < br.y + br.h / 2 ? -Math.abs(b.vy) : Math.abs(b.vy);
+          br.hp--;
+          score += 10 * (level + 1);
+          beep(440 + br.hp * 120);
+          if (br.hp <= 0) {
+            burst(br.x + br.w / 2, br.y + br.h / 2, COLORS[br.r % COLORS.length]);
+            if (Math.random() < .14) { const types = Object.keys(POWERS); drops.push({ x: br.x + br.w / 2, y: br.y, type: types[Math.floor(Math.random() * types.length)] }); }
+          }
+          updateHud();
+          break;
+        }
+      }
+      if (b.y - b.r > H) b.dead = true;
+    });
+    balls = balls.filter(b => !b.dead);
+    if (!balls.length) {
+      lives--; updateHud(); beep(110, .3, 'sawtooth');
+      if (lives <= 0) { state = 'over'; showOverlay('GAME <span>OVER</span>', `Skor kamu <b>${score}</b>. Skor tertinggi: <b>${hi}</b>`, '↻ Main Lagi'); return; }
+      resetBall();
+    }
+    drops.forEach(d => {
+      d.y += 2.6 * scale * dt;
+      if (d.y > py - 8 && d.y < py + ph && Math.abs(d.x - paddle.x) < paddle.w / 2 + 10) {
+        d.got = true; beep(660, .12, 'sine');
+        if (d.type === 'wide') wideUntil = performance.now() + 12000;
+        if (d.type === 'slow') slowUntil = performance.now() + 8000;
+        if (d.type === 'life') { lives++; updateHud(); }
+        if (d.type === 'multi') {
+          const src = balls.find(b => !b.stuck) || balls[0];
+          [-.5, .5].forEach(off => { const a = Math.atan2(src.vy || -1, src.vx) + off; balls.push({ x: src.x, y: src.y, vx: Math.cos(a), vy: Math.sin(a), stuck: false, r: src.r }); });
+        }
+      }
+    });
+    drops = drops.filter(d => !d.got && d.y < H + 20);
+    parts.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += .25 * dt; p.life -= .03 * dt; });
+    parts = parts.filter(p => p.life > 0);
+    if (bricks.every(b => b.hp <= 0)) {
+      state = 'won';
+      score += lives * 100; updateHud();
+      showOverlay(`LEVEL ${level + 1} <span>SELESAI!</span>`, `Bonus nyawa +${lives * 100}. Skor: <b>${score}</b>`, '▶ Level Berikutnya');
+    }
+  }
+
+  function roundRect(x, y, w, h, r) { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); }
+  function draw() {
+    g.clearRect(0, 0, W, H);
+    bricks.forEach(b => {
+      if (b.hp <= 0) return;
+      g.fillStyle = COLORS[b.r % COLORS.length];
+      g.globalAlpha = .45 + .55 * b.hp / b.max;
+      roundRect(b.x, b.y, b.w, b.h, 4); g.fill();
+      g.globalAlpha = 1;
+      if (b.max > 1) { g.fillStyle = 'rgba(0,0,0,.35)'; g.font = `700 ${Math.max(10, 12 * scale)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(b.hp, b.x + b.w / 2, b.y + b.h / 2 + 1); }
+    });
+    parts.forEach(p => { g.globalAlpha = Math.max(0, p.life); g.fillStyle = p.color; g.fillRect(p.x, p.y, 3, 3); });
+    g.globalAlpha = 1;
+    drops.forEach(d => { g.fillStyle = POWERS[d.type]; g.beginPath(); g.arc(d.x, d.y, 9 * Math.max(scale, .8), 0, Math.PI * 2); g.fill(); g.fillStyle = '#0b1026'; g.font = `800 ${11 * Math.max(scale, .8)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText({ wide: '↔', multi: '•••', slow: '⏬', life: '♥' }[d.type], d.x, d.y + 1); });
+    const py = H - 28 * scale, ph = Math.max(10, 12 * scale);
+    const grad = g.createLinearGradient(0, py, 0, py + ph);
+    grad.addColorStop(0, performance.now() < wideUntil ? '#86efac' : '#fde68a'); grad.addColorStop(1, performance.now() < wideUntil ? '#16a34a' : '#f59e0b');
+    g.fillStyle = grad; roundRect(paddle.x - paddle.w / 2, py, paddle.w, ph, ph / 2); g.fill();
+    balls.forEach(b => {
+      g.shadowColor = performance.now() < slowUntil ? '#f472b6' : '#fff'; g.shadowBlur = 14;
+      g.fillStyle = '#fff'; g.beginPath(); g.arc(b.x, b.y, b.r, 0, Math.PI * 2); g.fill();
+      g.shadowBlur = 0;
+    });
+    if (state === 'play' && balls.some(b => b.stuck)) {
+      g.fillStyle = 'rgba(238,241,255,.7)'; g.font = `600 ${Math.max(12, 15 * scale)}px system-ui`; g.textAlign = 'center';
+      g.fillText('Klik / ketuk / Spasi untuk meluncurkan', W / 2, H * .62);
+    }
+    if (state === 'paused') { g.fillStyle = 'rgba(8,11,30,.6)'; g.fillRect(0, 0, W, H); g.fillStyle = '#fff'; g.font = `800 ${28 * Math.max(scale, .8)}px system-ui`; g.textAlign = 'center'; g.fillText('JEDA', W / 2, H / 2); }
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min((now - last) / 16.67, 3); last = now;
+    if (state === 'play') update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function togglePause() {
+    if (state === 'play') state = 'paused'; else if (state === 'paused') { state = 'play'; last = performance.now(); }
+    $('pause').textContent = state === 'paused' ? '▶ Lanjut' : '⏸ Jeda';
+  }
+  const toX = e => e.clientX - cv.getBoundingClientRect().left;
+  cv.addEventListener('pointermove', e => { paddle.target = toX(e); });
+  cv.addEventListener('pointerdown', e => { paddle.target = toX(e); if (state === 'play') launch(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') { keys.left = true; paddle.target = null; }
+    if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') { keys.right = true; paddle.target = null; }
+    if (e.code === 'Space') { e.preventDefault(); if (state === 'play') launch(); else if (!$('overlay').hidden) start(); }
+    if (e.key.toLowerCase() === 'p' || e.key === 'Escape') togglePause();
+  });
+  document.addEventListener('keyup', e => {
+    if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') keys.left = false;
+    if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') keys.right = false;
+  });
+  $('start').addEventListener('click', start);
+  $('pause').addEventListener('click', togglePause);
+  $('sound').addEventListener('click', e => { sound = !sound; e.currentTarget.textContent = sound ? '🔊 Suara' : '🔇 Bisu'; e.currentTarget.setAttribute('aria-pressed', sound); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') togglePause(); });
+  window.addEventListener('resize', resize);
+  resize();
+  loadLevel(0);
+  requestAnimationFrame(loop);
+</script>
+</body>
+</html>

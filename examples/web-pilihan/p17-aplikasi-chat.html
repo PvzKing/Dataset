@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Obrolan — Aplikasi Chat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+  :root { --bg: #e7ece9; --side: #ffffff; --chat: #efeae2; --me: #d9fdd3; --them: #ffffff; --text: #111b21; --muted: #667781; --line: #e9edef; --accent: #00a884; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
+  button, input, textarea { font: inherit; color: inherit; }
+  .app { height: 100%; max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 360px 1fr; background: var(--side); box-shadow: 0 0 30px rgba(0,0,0,.08); }
+  .list { border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  .list-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: #f0f2f5; }
+  .list-head h1 { font-size: 1.2rem; }
+  .me-av { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; }
+  .search { padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  .search input { width: 100%; border: 0; background: #f0f2f5; padding: 9px 14px; border-radius: 10px; }
+  .search input:focus { outline: 2px solid var(--accent); }
+  .chats { overflow-y: auto; flex: 1; }
+  .contact { display: grid; grid-template-columns: 48px 1fr auto; gap: 12px; align-items: center; padding: 10px 14px; cursor: pointer; border: 0; background: none; width: 100%; text-align: left; border-bottom: 1px solid var(--line); }
+  .contact:hover { background: #f5f6f6; }
+  .contact.active { background: #f0f2f5; }
+  .av { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; font-size: 1.4rem; position: relative; }
+  .av.online::after { content: ""; position: absolute; right: 1px; bottom: 1px; width: 12px; height: 12px; border-radius: 50%; background: #25d366; border: 2px solid #fff; }
+  .contact .name { font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .contact .prev { color: var(--muted); font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .contact .meta { text-align: right; font-size: .75rem; color: var(--muted); display: grid; gap: 4px; justify-items: end; }
+  .badge { background: var(--accent); color: #fff; border-radius: 999px; min-width: 20px; height: 20px; padding: 0 6px; display: grid; place-items: center; font-weight: 700; font-size: .72rem; }
+  .contact > span:nth-child(2) { min-width: 0; }
+
+  .chat { display: flex; flex-direction: column; min-height: 0; min-width: 0; background: var(--chat); background-image: radial-gradient(rgba(0,0,0,.035) 1px, transparent 1px); background-size: 16px 16px; }
+  .chat-head { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #f0f2f5; border-left: 1px solid var(--line); }
+  .chat-head .av { width: 40px; height: 40px; font-size: 1.1rem; }
+  .chat-head small { color: var(--muted); display: block; font-size: .8rem; }
+  .back { display: none; border: 0; background: none; font-size: 1.4rem; cursor: pointer; width: 34px; }
+  .msgs { flex: 1; overflow-y: auto; padding: 16px 6%; display: flex; flex-direction: column; gap: 4px; }
+  .day { align-self: center; background: #fff; color: var(--muted); font-size: .75rem; padding: 4px 12px; border-radius: 8px; margin: 10px 0; box-shadow: 0 1px 1px rgba(0,0,0,.06); }
+  .msg { max-width: min(75%, 520px); padding: 6px 10px 18px; border-radius: 10px; position: relative; box-shadow: 0 1px 1px rgba(0,0,0,.08); font-size: .95rem; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; animation: pop .18s ease; min-width: 76px; }
+  @keyframes pop { from { transform: scale(.94); opacity: 0; } }
+  .msg.me { align-self: flex-end; background: var(--me); border-top-right-radius: 2px; }
+  .msg.them { align-self: flex-start; background: var(--them); border-top-left-radius: 2px; }
+  .msg time { position: absolute; right: 8px; bottom: 3px; font-size: .68rem; color: var(--muted); }
+  .msg .tick { color: #53bdeb; margin-left: 2px; }
+  .msg .tick.grey { color: var(--muted); }
+  .msg .react { position: absolute; bottom: -12px; left: 8px; background: #fff; border-radius: 999px; padding: 0 5px; font-size: .8rem; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+  .msg.me .react { left: auto; right: 8px; }
+  .msg.has-react { margin-bottom: 12px; }
+  .typing { align-self: flex-start; background: #fff; border-radius: 10px; padding: 10px 14px; display: none; gap: 4px; }
+  .typing.show { display: flex; }
+  .typing i { width: 7px; height: 7px; border-radius: 50%; background: #9aa5ac; animation: dot 1.2s infinite; }
+  .typing i:nth-child(2) { animation-delay: .2s; } .typing i:nth-child(3) { animation-delay: .4s; }
+  @keyframes dot { 30% { transform: translateY(-4px); opacity: 1; } 0%, 60%, 100% { opacity: .5; } }
+  .composer { display: flex; gap: 8px; align-items: end; padding: 10px 14px; background: #f0f2f5; position: relative; }
+  .composer textarea { flex: 1; resize: none; border: 0; border-radius: 10px; padding: 11px 14px; max-height: 120px; min-height: 44px; background: #fff; line-height: 1.4; min-width: 0; }
+  .composer textarea:focus { outline: none; }
+  .round { width: 44px; height: 44px; border-radius: 50%; border: 0; background: none; cursor: pointer; font-size: 1.3rem; flex-shrink: 0; }
+  .send { background: var(--accent); color: #fff; font-size: 1.05rem; }
+  .send:disabled { opacity: .5; cursor: default; }
+  .emoji-panel { position: absolute; bottom: 64px; left: 14px; background: #fff; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.18); padding: 10px; display: none; grid-template-columns: repeat(8, 36px); gap: 2px; z-index: 5; max-width: calc(100% - 28px); }
+  .emoji-panel.open { display: grid; }
+  .emoji-panel button { border: 0; background: none; font-size: 1.3rem; cursor: pointer; border-radius: 8px; height: 36px; }
+  .emoji-panel button:hover { background: #f0f2f5; }
+  .empty { margin: auto; text-align: center; color: var(--muted); padding: 30px; }
+  .empty b { display: block; font-size: 1.4rem; color: var(--text); margin: 10px 0 6px; }
+
+  @media (max-width: 760px) {
+    .app { grid-template-columns: 1fr; }
+    .chat { display: none; }
+    .app.in-chat .list { display: none; }
+    .app.in-chat .chat { display: flex; }
+    .back { display: block; }
+    .msgs { padding: 12px 10px; }
+    .emoji-panel { grid-template-columns: repeat(7, 36px); }
+  }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button, input, textarea { font-family: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="list">
+    <div class="list-head"><h1>Obrolan</h1><div class="me-av" title="Profil Anda">KA</div></div>
+    <div class="search"><input id="search" type="search" placeholder="Cari atau mulai obrolan baru" aria-label="Cari kontak"></div>
+    <div class="chats" id="chats"></div>
+  </aside>
+  <section class="chat" id="chat">
+    <div class="chat-head">
+      <button class="back" id="back" aria-label="Kembali">←</button>
+      <div class="av" id="head-av"></div>
+      <div><b id="head-name"></b><small id="head-status"></small></div>
+    </div>
+    <div class="msgs" id="msgs" aria-live="polite"></div>
+    <form class="composer" id="composer">
+      <div class="emoji-panel" id="emoji-panel"></div>
+      <button type="button" class="round" id="emoji-btn" aria-label="Emoji">😊</button>
+      <textarea id="input" rows="1" placeholder="Ketik pesan" aria-label="Ketik pesan"></textarea>
+      <button type="submit" class="round send" id="send" aria-label="Kirim" disabled>➤</button>
+    </form>
+  </section>
+</div>
+
+<script>
+  const now = Date.now(), MIN = 6e4;
+  const contacts = [
+    { id: 'ibu', name: 'Ibu ❤️', av: '👩', bg: '#ffe4e6', online: true, bot: ['Sudah makan belum, Nak?', 'Jangan lupa istirahat ya.', 'Ibu masak opor, pulang kapan?', 'Iya, hati-hati di jalan.'],
+      msgs: [{ me: false, t: 'Nak, minggu depan jadi pulang?', at: now - 90 * MIN }, { me: true, t: 'Insyaallah jadi, Bu. Naik kereta Jumat sore.', at: now - 85 * MIN }, { me: false, t: 'Alhamdulillah. Nanti Ibu masakin rendang 😊', at: now - 80 * MIN, react: '❤️' }] },
+    { id: 'tim', name: 'Tim Proyek Website', av: '💻', bg: '#dbeafe', online: false, bot: ['Siap, nanti saya cek.', 'Deploy sudah jalan di staging 🚀', 'Meeting jam 2 ya, jangan telat.', 'Mantap, makasih!'],
+      msgs: [{ me: false, t: 'Desain halaman checkout sudah final belum?', at: now - 26 * 60 * MIN }, { me: true, t: 'Sudah, link Figma saya kirim sebentar lagi.', at: now - 25 * 60 * MIN }, { me: false, t: 'Oke, besok kita review bareng klien ya', at: now - 40 * MIN }], unread: 2 },
+    { id: 'budi', name: 'Budi Santoso', av: '🧑', bg: '#dcfce7', online: true, bot: ['Wkwk iya bener', 'Gas lah 😆', 'Nanti malam futsal jadi?', 'Lagi di jalan nih'],
+      msgs: [{ me: false, t: 'Bro, nonton timnas Selasa nanti?', at: now - 3 * 60 * MIN }], unread: 1 },
+    { id: 'kurir', name: 'Kurir Paket', av: '📦', bg: '#fef3c7', online: false, bot: ['Baik, paket saya titip ke satpam ya.', 'Posisi sudah dekat, 10 menit lagi sampai.'],
+      msgs: [{ me: false, t: 'Selamat siang, paket atas nama Kirana sudah di depan gerbang.', at: now - 2 * 24 * 60 * MIN }] },
+    { id: 'dosen', name: 'Pak Hendra (Dosen PA)', av: '👨‍🏫', bg: '#ede9fe', online: false, bot: ['Baik, silakan datang ke ruang dosen hari Kamis.', 'Draf bab 2 sudah saya baca, nanti kita diskusikan.'],
+      msgs: [{ me: true, t: 'Selamat pagi Pak, mohon izin bimbingan skripsi minggu ini.', at: now - 4 * 24 * 60 * MIN }] }
+  ];
+  let activeId = null, botTimer;
+  const $ = id => document.getElementById(id);
+  const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const hhmm = t => new Date(t).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  function dayLabel(t) {
+    const d = new Date(t), today = new Date(); today.setHours(0, 0, 0, 0);
+    const diff = Math.round((today - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
+    return diff === 0 ? 'Hari ini' : diff === 1 ? 'Kemarin' : d.toLocaleDateString('id-ID', { weekday: diff < 7 ? 'long' : undefined, day: 'numeric', month: 'long' });
+  }
+  const listTime = t => { const l = dayLabel(t); return l === 'Hari ini' ? hhmm(t) : l === 'Kemarin' ? 'Kemarin' : new Date(t).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' }); };
+
+  function renderList() {
+    const q = $('search').value.trim().toLowerCase();
+    const list = contacts.filter(c => !q || c.name.toLowerCase().includes(q) || c.msgs.some(m => m.t.toLowerCase().includes(q)))
+      .sort((a, b) => b.msgs[b.msgs.length - 1].at - a.msgs[a.msgs.length - 1].at);
+    $('chats').innerHTML = list.map(c => {
+      const last = c.msgs[c.msgs.length - 1];
+      return `<button class="contact ${c.id === activeId ? 'active' : ''}" data-id="${c.id}">
+        <span class="av ${c.online ? 'online' : ''}" style="background:${c.bg}">${c.av}</span>
+        <span><span class="name">${esc(c.name)}</span><span class="prev">${last.me ? '✓✓ ' : ''}${esc(last.t)}</span></span>
+        <span class="meta"><span>${listTime(last.at)}</span>${c.unread ? `<span class="badge">${c.unread}</span>` : ''}</span></button>`;
+    }).join('') || '<p style="padding:20px;color:var(--muted)">Tidak ditemukan.</p>';
+  }
+
+  function renderChat() {
+    const c = contacts.find(x => x.id === activeId);
+    if (!c) {
+      $('head-av').style.display = 'none';
+      $('head-name').textContent = ''; $('head-status').textContent = '';
+      $('msgs').innerHTML = '<div class="empty">💬<b>Obrolan</b>Pilih kontak di sebelah kiri untuk mulai mengobrol.</div>';
+      $('composer').style.display = 'none';
+      return;
+    }
+    $('composer').style.display = '';
+    $('head-av').style.display = '';
+    $('head-av').textContent = c.av; $('head-av').style.background = c.bg;
+    $('head-name').textContent = c.name;
+    $('head-status').textContent = c.online ? 'online' : 'terakhir dilihat ' + listTime(c.msgs[c.msgs.length - 1].at);
+    let html = '', lastDay = '';
+    c.msgs.forEach((m, i) => {
+      const d = dayLabel(m.at);
+      if (d !== lastDay) { html += `<div class="day">${d}</div>`; lastDay = d; }
+      html += `<div class="msg ${m.me ? 'me' : 'them'} ${m.react ? 'has-react' : ''}" data-i="${i}" title="Klik dua kali untuk memberi reaksi">${esc(m.t)}<time>${hhmm(m.at)}${m.me ? `<span class="tick ${m.read ? '' : 'grey'}">✓✓</span>` : ''}</time>${m.react ? `<span class="react">${m.react}</span>` : ''}</div>`;
+    });
+    html += '<div class="typing" id="typing"><i></i><i></i><i></i></div>';
+    $('msgs').innerHTML = html;
+    $('msgs').scrollTop = $('msgs').scrollHeight;
+  }
+
+  function open(id) {
+    activeId = id;
+    const c = contacts.find(x => x.id === id);
+    c.unread = 0;
+    c.msgs.forEach(m => { if (m.me) m.read = true; });
+    $('app').classList.add('in-chat');
+    clearTimeout(botTimer);
+    renderList(); renderChat();
+    $('input').focus();
+  }
+
+  function send(text) {
+    const c = contacts.find(x => x.id === activeId);
+    c.msgs.push({ me: true, t: text, at: Date.now(), read: false });
+    renderList(); renderChat();
+    // Balasan otomatis: tampilkan "mengetik…" lalu kirim balasan
+    clearTimeout(botTimer);
+    const replyTo = c.id;
+    botTimer = setTimeout(() => {
+      if (activeId !== replyTo) return;
+      c.msgs.forEach(m => { if (m.me) m.read = true; });
+      renderChat();
+      $('head-status').textContent = 'sedang mengetik…';
+      $('typing').classList.add('show');
+      $('msgs').scrollTop = $('msgs').scrollHeight;
+      botTimer = setTimeout(() => {
+        const reply = /halo|hai|pagi|siang|sore|malam/i.test(text) ? `Halo juga! ${c.bot[0]}` : /\?$/.test(text.trim()) ? c.bot[Math.floor(Math.random() * c.bot.length)] : c.bot[(c.msgs.length) % c.bot.length];
+        c.msgs.push({ me: false, t: reply, at: Date.now() });
+        if (activeId === replyTo) { renderChat(); } else c.unread = (c.unread || 0) + 1;
+        renderList();
+      }, 1100 + Math.random() * 800);
+    }, 600);
+  }
+
+  $('chats').addEventListener('click', e => { const b = e.target.closest('.contact'); if (b) open(b.dataset.id); });
+  $('search').addEventListener('input', renderList);
+  $('back').addEventListener('click', () => { $('app').classList.remove('in-chat'); activeId = null; renderList(); renderChat(); });
+  const input = $('input');
+  input.addEventListener('input', () => {
+    $('send').disabled = !input.value.trim();
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+  input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('composer').requestSubmit(); } });
+  $('composer').addEventListener('submit', e => {
+    e.preventDefault();
+    const t = input.value.trim(); if (!t) return;
+    input.value = ''; input.style.height = 'auto'; $('send').disabled = true;
+    $('emoji-panel').classList.remove('open');
+    send(t);
+  });
+  $('msgs').addEventListener('dblclick', e => {
+    const m = e.target.closest('.msg'); if (!m) return;
+    const c = contacts.find(x => x.id === activeId), msg = c.msgs[+m.dataset.i];
+    const cycle = [undefined, '❤️', '👍', '😂'];
+    msg.react = cycle[(cycle.indexOf(msg.react) + 1) % cycle.length];
+    renderChat();
+  });
+  const EMOJI = '😀😂🥹😍😘😎🤔😴😭😡👍🙏👏🔥🎉❤️💯🙌🤝✨🍜☕🛵📦🎓💻⚽🌧️'.match(/\p{Extended_Pictographic}️?/gu);
+  $('emoji-panel').innerHTML = EMOJI.map(e => `<button type="button">${e}</button>`).join('');
+  $('emoji-btn').addEventListener('click', () => $('emoji-panel').classList.toggle('open'));
+  $('emoji-panel').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const s = input.selectionStart ?? input.value.length;
+    input.value = input.value.slice(0, s) + b.textContent + input.value.slice(input.selectionEnd ?? s);
+    input.dispatchEvent(new Event('input'));
+    input.focus();
+  });
+  document.addEventListener('click', e => { if (!e.target.closest('#emoji-panel, #emoji-btn')) $('emoji-panel').classList.remove('open'); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') $('emoji-panel').classList.remove('open'); });
+
+  renderList();
+  if (matchMedia('(min-width: 761px)').matches) open('ibu'); else renderChat();
+</script>
+</body>
+</html>

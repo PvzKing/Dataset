@@ -37,6 +37,7 @@ REPO = "https://raw.githubusercontent.com/PvzKing/Dataset/main"
 ROOT_REPO = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path.cwd()
 KERJA = Path("/content")
 OUT = Path("/content/drive/MyDrive/finetune-id")
+JUMLAH_SAMPEL = 117  # jumlah sampel data/train.jsonl yang diharapkan saat melatih v4
 V3_BAWAAN = str(OUT / "v3" / "qwen3.5-4b-own-4bit" / "lora-adapter")
 EVALPLUS = "evalplus @ git+https://github.com/evalplus/evalplus@26d6d00bb1fd0fa37f39c99d5290da67891d1c5e"
 SCRIPTS = {
@@ -216,7 +217,7 @@ def langkah_langkah(k, opsional=False):
                 "selesai": bool(run) and ringkasan_ada(k, folder, run) and ringkasan_ada(k, folder, nama_dasar(k, run))}
 
     daftar = [langkah_uji(*u[:2], u[2], u[3], u[4], "v3", k.v3, run_v3) for u in uji[:3]]
-    daftar.append({"kunci": "latih-v4", "judul": "Latih v4-pilot", "menit": 70, "butuh_v4": False, "opsional": False,
+    daftar.append({"kunci": "latih-v4", "judul": "Latih v4-pilot", "menit": 85, "butuh_v4": False, "opsional": False,
                    "argv": [script(k, "train_unsloth.py"), "train", "--out", str(k.out / "v4-pilot")],
                    "selesai": v4 is not None})
     daftar += [langkah_uji(*u[:2], u[2], u[3], u[4], "v4", v4, run_v4) for u in uji]
@@ -512,8 +513,8 @@ def ringkas_training(k, ekor, kunci="latih-v4"):
     folder, run, latih = (("v4-pilot", "qwen3.5-4b-own-4bit", "Latih v4-pilot") if k.mode == "pilot"
                           else ("v4", "qwen3.5-4b-own", "Latih v4"))
     m = re.search(r"data valid: (\d+) sampel", ekor)
-    if m and int(m[1]) != 102:
-        print(f"\n⚠️ Training memakai {m[1]} sampel, bukan 102. Hapus finetune-id/{folder}/train.jsonl di Drive, "
+    if m and int(m[1]) != JUMLAH_SAMPEL:
+        print(f"\n⚠️ Training memakai {m[1]} sampel, bukan {JUMLAH_SAMPEL}. Hapus finetune-id/{folder}/train.jsonl di Drive, "
               f"hapus folder {folder}/{run}, lalu jalankan langkah '{latih}' lagi.")
     m = re.search(r"(\d+) sampel dipakai, (\d+) dibuang", ekor)
     if m and int(m[2]):
@@ -539,10 +540,11 @@ def latih_demo(k, kunci="latih-v4"):
     (folder / "adapter_config.json").write_text(json.dumps({"demo": True}))
     (run / "status.json").write_text(json.dumps({
         "stage": "done", "max_seq_len": k.konteks,
-        "data": {"samples": 102, "dropped": [], "longest": 6216, "total_steps": 39},
+        "data": {"samples": JUMLAH_SAMPEL, "dropped": [], "longest": 6231, "total_steps": 45},
         "result": {"train_runtime_min": 0.1, "train_loss": 0.5},
         "tests": {"bengkel": {"tokens": 5200, "finished": True}, "absensi": {"tokens": 7400, "finished": True}}}))
-    teks = (f"data valid: 102 sampel dari demo\n102 sampel dipakai, 0 dibuang karena > {k.konteks} token []\n"
+    teks = (f"data valid: {JUMLAH_SAMPEL} sampel dari demo\n"
+            f"{JUMLAH_SAMPEL} sampel dipakai, 0 dibuang karena > {k.konteks} token []\n"
             "[status] trained: adapter tersimpan\n")
     print(teks)
     return 0, teks

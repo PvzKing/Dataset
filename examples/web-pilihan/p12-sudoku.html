@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sudoku — Asah Otak Setiap Hari</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+  :root { --bg: #eef2f7; --paper: #fff; --ink: #1e293b; --given: #0f172a; --user: #2563eb; --muted: #64748b; --line: #cbd5e1; --thick: #334155; --sel: #bfdbfe; --peer: #e8eef8; --same: #c7d2fe; --err: #dc2626; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+  button, select { font: inherit; color: inherit; }
+  .wrap { width: min(980px, 100% - 24px); margin: 0 auto; padding: 22px 0 40px; display: grid; grid-template-columns: auto 1fr; gap: 26px; align-items: start; }
+  header { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  h1 { font-size: 1.8rem; letter-spacing: -.02em; }
+  .info { display: flex; gap: 14px; color: var(--muted); align-items: center; flex-wrap: wrap; }
+  .info b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  select { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); }
+  .board { --s: min(540px, 100vw - 24px); width: var(--s); height: var(--s); display: grid; grid-template-columns: repeat(9, 1fr); background: var(--paper); border: 3px solid var(--thick); border-radius: 10px; overflow: hidden; user-select: none; box-shadow: 0 20px 40px -26px rgba(15, 23, 42, .5); }
+  .cell { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); display: grid; place-items: center; font-size: calc(var(--s) / 16); cursor: pointer; position: relative; background: none; border-top: 0; border-left: 0; padding: 0; color: var(--user); font-weight: 500; }
+  .cell:nth-child(9n) { border-right: 0; }
+  .cell:nth-child(9n+3), .cell:nth-child(9n+6) { border-right: 2px solid var(--thick); }
+  .cell:nth-child(n+19):nth-child(-n+27), .cell:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--thick); }
+  .cell:nth-child(n+73) { border-bottom: 0; }
+  .cell.given { color: var(--given); font-weight: 700; }
+  .cell.peer { background: var(--peer); }
+  .cell.same { background: var(--same); }
+  .cell.sel { background: var(--sel); }
+  .cell.err { color: var(--err); }
+  .cell.err::after { content: ""; position: absolute; inset: 3px; border-radius: 4px; background: rgba(220, 38, 38, .1); }
+  .cell.flash { animation: flash .6s; }
+  @keyframes flash { 50% { background: #bbf7d0; } }
+  .notes { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; height: 100%; padding: 2px; }
+  .notes span { font-size: calc(var(--s) / 40); color: var(--muted); display: grid; place-items: center; font-weight: 600; }
+  .side { display: grid; gap: 16px; min-width: 0; }
+  .tools { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .tool { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 10px 4px; cursor: pointer; display: grid; gap: 2px; justify-items: center; font-size: .8rem; color: var(--muted); }
+  .tool b { font-size: 1.3rem; color: var(--ink); }
+  .tool.on { border-color: var(--user); color: var(--user); background: #eff6ff; }
+  .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .num { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 10px 0; cursor: pointer; font-size: 1.6rem; font-weight: 600; color: var(--user); position: relative; }
+  .num small { position: absolute; top: 4px; right: 8px; font-size: .7rem; color: var(--muted); font-weight: 500; }
+  .num:disabled { opacity: .3; cursor: default; }
+  .num:hover:not(:disabled), .tool:hover { border-color: var(--user); }
+  .new { background: var(--user); color: #fff; border: 0; border-radius: 14px; padding: 13px; font-weight: 700; cursor: pointer; }
+  .msg { min-height: 1.4em; color: var(--muted); font-size: .9rem; }
+  .msg.win { color: #15803d; font-weight: 700; font-size: 1.05rem; }
+  .keys { font-size: .8rem; color: var(--muted); }
+  @media (max-width: 860px) { .wrap { grid-template-columns: 1fr; justify-items: center; } .side { width: min(540px, 100%); } .pad { grid-template-columns: repeat(9, 1fr); gap: 4px; } .num { font-size: 1.2rem; padding: 8px 0; border-radius: 10px; } .num small { display: none; } .keys { display: none; } }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button, select { font-family: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Sudoku</h1>
+    <div class="info">
+      <select id="level" aria-label="Tingkat kesulitan"><option value="38">Mudah</option><option value="30" selected>Sedang</option><option value="25">Sulit</option></select>
+      <span>⏱ <b id="time">0:00</b></span>
+      <span>Salah <b id="mistakes">0</b>/3</span>
+    </div>
+  </header>
+  <div class="board" id="board" role="grid" aria-label="Papan sudoku"></div>
+  <aside class="side">
+    <div class="tools">
+      <button class="tool" id="undo"><b>↶</b>Urungkan</button>
+      <button class="tool" id="erase"><b>⌫</b>Hapus</button>
+      <button class="tool" id="notes-btn" aria-pressed="false"><b>✎</b>Catatan</button>
+      <button class="tool" id="hint"><b>💡</b>Petunjuk</button>
+    </div>
+    <div class="pad" id="pad"></div>
+    <button class="new" id="new">Permainan Baru</button>
+    <p class="msg" id="msg" role="status"></p>
+    <p class="keys">Keyboard: angka 1–9 untuk mengisi, panah untuk berpindah, N untuk mode catatan, Backspace untuk menghapus.</p>
+  </aside>
+</div>
+
+<script>
+  let solution, puzzle, cells, notes, selected = 0, noteMode = false, history = [], mistakes = 0, seconds = 0, timer, over = false;
+  const $ = id => document.getElementById(id);
+  const row = i => Math.floor(i / 9), col = i => i % 9, box = i => Math.floor(row(i) / 3) * 3 + Math.floor(col(i) / 3);
+  const peers = i => [...Array(81).keys()].filter(j => j !== i && (row(j) === row(i) || col(j) === col(i) || box(j) === box(i)));
+  const PEERS = [...Array(81).keys()].map(peers);
+
+  function shuffled(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+  // Isi papan penuh secara acak dengan backtracking
+  function fill(g) {
+    const i = g.indexOf(0);
+    if (i < 0) return true;
+    for (const n of shuffled([1, 2, 3, 4, 5, 6, 7, 8, 9])) {
+      if (PEERS[i].every(j => g[j] !== n)) { g[i] = n; if (fill(g)) return true; }
+    }
+    g[i] = 0; return false;
+  }
+  // Hitung jumlah solusi (berhenti di 2) untuk memastikan teka-teki punya satu jawaban
+  function countSolutions(g, limit = 2) {
+    let best = -1, bestOpts = null;
+    for (let i = 0; i < 81; i++) {
+      if (g[i]) continue;
+      const opts = [];
+      for (let n = 1; n <= 9; n++) if (PEERS[i].every(j => g[j] !== n)) opts.push(n);
+      if (!opts.length) return 0;
+      if (!bestOpts || opts.length < bestOpts.length) { best = i; bestOpts = opts; if (opts.length === 1) break; }
+    }
+    if (best < 0) return 1;
+    let total = 0;
+    for (const n of bestOpts) { g[best] = n; total += countSolutions(g, limit - total); if (total >= limit) break; }
+    g[best] = 0;
+    return total;
+  }
+  function generate(clues) {
+    const full = Array(81).fill(0); fill(full);
+    const p = full.slice();
+    let filled = 81;
+    for (const i of shuffled([...Array(81).keys()])) {
+      if (filled <= clues) break;
+      const keep = p[i]; p[i] = 0;
+      if (countSolutions(p.slice()) !== 1) p[i] = keep; else filled--;
+    }
+    return { full, p };
+  }
+
+  function newGame() {
+    const { full, p } = generate(+$('level').value);
+    solution = full; puzzle = p; cells = p.slice();
+    notes = Array.from({ length: 81 }, () => new Set());
+    history = []; mistakes = 0; seconds = 0; over = false;
+    selected = cells.indexOf(0);
+    clearInterval(timer);
+    timer = setInterval(() => { if (!over && !document.hidden) { seconds++; $('time').textContent = fmt(seconds); } }, 1000);
+    $('time').textContent = '0:00'; $('mistakes').textContent = 0;
+    $('msg').className = 'msg'; $('msg').textContent = '';
+    render();
+  }
+  const fmt = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+
+  function render() {
+    const selVal = cells[selected];
+    $('board').innerHTML = cells.map((v, i) => {
+      const cls = ['cell'];
+      if (puzzle[i]) cls.push('given');
+      if (i === selected) cls.push('sel');
+      else if (selVal && v === selVal) cls.push('same');
+      else if (PEERS[selected].includes(i)) cls.push('peer');
+      if (v && !puzzle[i] && v !== solution[i]) cls.push('err');
+      const inner = v ? v : notes[i].size ? `<div class="notes">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<span>${notes[i].has(n) ? n : ''}</span>`).join('')}</div>` : '';
+      return `<button class="${cls.join(' ')}" data-i="${i}" role="gridcell" aria-label="Baris ${row(i) + 1} kolom ${col(i) + 1}${v ? ', ' + v : ', kosong'}">${inner}</button>`;
+    }).join('');
+    const counts = Array(10).fill(0);
+    cells.forEach((v, i) => { if (v && v === solution[i]) counts[v]++; });
+    $('pad').innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button class="num" data-n="${n}" ${counts[n] >= 9 ? 'disabled' : ''}>${n}<small>${9 - counts[n]}</small></button>`).join('');
+  }
+
+  function input(n) {
+    if (over || puzzle[selected]) return;
+    if (noteMode && n) {
+      if (cells[selected]) return;
+      history.push({ i: selected, v: cells[selected], notes: new Set(notes[selected]) });
+      notes[selected].has(n) ? notes[selected].delete(n) : notes[selected].add(n);
+      return render();
+    }
+    if (cells[selected] === n) return;
+    history.push({ i: selected, v: cells[selected], notes: new Set(notes[selected]) });
+    cells[selected] = n;
+    notes[selected].clear();
+    if (n && n !== solution[selected]) {
+      mistakes++;
+      $('mistakes').textContent = mistakes;
+      if (mistakes >= 3) { over = true; $('msg').textContent = '😵 Tiga kesalahan. Coba permainan baru!'; }
+    } else if (n) {
+      PEERS[selected].forEach(j => notes[j].delete(n)); // hapus catatan angka yang sama di sel sebaris/sekolom/sekotak
+    }
+    render();
+    if (n === solution[selected]) flashGroups(selected);
+    if (cells.every((v, i) => v === solution[i])) {
+      over = true;
+      $('msg').className = 'msg win';
+      $('msg').textContent = `🎉 Selesai dalam ${fmt(seconds)} dengan ${mistakes} kesalahan!`;
+    }
+  }
+  // Animasi saat satu baris/kolom/kotak lengkap
+  function flashGroups(i) {
+    [row, col, box].forEach(f => {
+      const group = [...Array(81).keys()].filter(j => f(j) === f(i));
+      if (group.every(j => cells[j] === solution[j])) group.forEach(j => $('board').children[j].classList.add('flash'));
+    });
+  }
+
+  $('board').addEventListener('click', e => { const c = e.target.closest('.cell'); if (c) { selected = +c.dataset.i; render(); } });
+  $('pad').addEventListener('click', e => { const b = e.target.closest('.num'); if (b) input(+b.dataset.n); });
+  $('erase').addEventListener('click', () => { if (!puzzle[selected] && (cells[selected] || notes[selected].size)) { history.push({ i: selected, v: cells[selected], notes: new Set(notes[selected]) }); cells[selected] = 0; notes[selected].clear(); render(); } });
+  $('undo').addEventListener('click', () => { const h = history.pop(); if (!h || over) return; cells[h.i] = h.v; notes[h.i] = h.notes; selected = h.i; render(); });
+  $('notes-btn').addEventListener('click', toggleNotes);
+  function toggleNotes() { noteMode = !noteMode; $('notes-btn').classList.toggle('on', noteMode); $('notes-btn').setAttribute('aria-pressed', noteMode); }
+  $('hint').addEventListener('click', () => {
+    if (over) return;
+    let i = !puzzle[selected] && cells[selected] !== solution[selected] ? selected : cells.findIndex((v, k) => v !== solution[k]);
+    if (i < 0) return;
+    selected = i;
+    const wasNote = noteMode; noteMode = false;
+    input(solution[i]);
+    noteMode = wasNote;
+    seconds += 30;
+    $('msg').textContent = 'Petunjuk dipakai: +30 detik.';
+  });
+  $('new').addEventListener('click', newGame);
+  $('level').addEventListener('change', newGame);
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'SELECT') return;
+    if (/^[1-9]$/.test(e.key)) return input(+e.key);
+    const moves = { ArrowUp: -9, ArrowDown: 9, ArrowLeft: -1, ArrowRight: 1 };
+    if (moves[e.key] !== undefined) {
+      e.preventDefault();
+      const r = row(selected), c = col(selected);
+      if ((e.key === 'ArrowLeft' && c === 0) || (e.key === 'ArrowRight' && c === 8) || (e.key === 'ArrowUp' && r === 0) || (e.key === 'ArrowDown' && r === 8)) return;
+      selected += moves[e.key]; render();
+    }
+    if (e.key === 'Backspace' || e.key === 'Delete') $('erase').click();
+    if (e.key.toLowerCase() === 'n') toggleNotes();
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') $('undo').click();
+  });
+  newGame();
+</script>
+</body>
+</html>

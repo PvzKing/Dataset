@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalkulator Pesangon — Estimasi Hak Akibat PHK</title>
+<style>
+  :root { --bg: #f6f4ef; --paper: #fffdf8; --ink: #1c1a17; --muted: #6b645a; --line: #e4ddd0; --navy: #1f2a44; --gold: #b08d57; --green: #2f6b4f; --red: #a33b2b; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
+  body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.55; }
+  button, input, select { font: inherit; color: inherit; }
+  h1, h2, .total b { font-family: Georgia, serif; font-weight: 400; }
+  :focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+  .wrap { width: min(1100px, 100% - 32px); margin: 0 auto; }
+  header { background: var(--navy); color: #fff; padding: 32px 0 80px; }
+  header h1 { font-size: clamp(1.8rem, 5vw, 2.8rem); }
+  header p { color: #c9cfdd; max-width: 680px; }
+  main { display: grid; grid-template-columns: 400px 1fr; gap: 22px; align-items: start; margin-top: -50px; padding-bottom: 48px; }
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 24px; min-width: 0; }
+  h2 { margin-bottom: 14px; }
+  fieldset { border: 0; margin-bottom: 16px; }
+  legend { font-weight: 700; font-size: .8rem; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+  label { display: grid; gap: 4px; font-size: .9rem; color: var(--muted); margin-bottom: 10px; }
+  input, select { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); }
+  .row2, .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .seg button { border: 1px solid var(--line); background: none; padding: 9px; border-radius: 10px; cursor: pointer; font-weight: 600; transition: background .2s; }
+  .seg [aria-pressed="true"] { background: var(--navy); color: #fff; }
+  .hint, td small { display: block; font-size: .8rem; color: var(--muted); }
+  .err { color: var(--red); }
+  .check { display: flex; gap: 8px; color: var(--ink); }
+  .check input { width: auto; }
+  .total { border-bottom: 1px solid var(--line); padding-bottom: 14px; }
+  .total b { display: block; font-size: clamp(1.8rem, 5vw, 2.6rem); color: var(--navy); overflow-wrap: anywhere; }
+  .total span, .notes, .disclaimer { color: var(--muted); font-size: .86rem; }
+  .basis { background: #f3efe6; border-left: 4px solid var(--gold); padding: 12px 14px; margin: 14px 0; }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .num { text-align: right; white-space: nowrap; font-weight: 600; }
+  tr.zero td { color: #a49d92; }
+  tr.sum td { font-weight: 700; }
+  tr.tax td { color: var(--red); }
+  tr.net td { color: var(--green); font-weight: 700; }
+  .notes { margin: 16px 0; padding-left: 18px; }
+  .disclaimer { padding: 12px 14px; border: 1px dashed var(--muted); border-radius: 10px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Kalkulator Pesangon</h1>
+    <p>Perkiraan hak minimal pekerja saat PHK menurut UU 13/2003 jo. UU 6/2023 dan PP 35/2021.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <form class="card" id="form" novalidate>
+    <h2>Data Pekerja</h2>
+    <fieldset>
+      <legend>Jenis hubungan kerja</legend>
+      <div class="seg" id="kind">
+        <button type="button" data-k="pkwtt" aria-pressed="true">Tetap (PKWTT)</button>
+        <button type="button" data-k="pkwt" aria-pressed="false">Kontrak (PKWT)</button>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Masa kerja</legend>
+      <div class="row2">
+        <label>Mulai bekerja<input type="date" id="start"></label>
+        <label>Tanggal berakhir / PHK<input type="date" id="end"></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Upah per bulan</legend>
+      <div class="row2">
+        <label>Upah pokok (Rp)<input id="base" inputmode="numeric" placeholder="0"></label>
+        <label>Tunjangan tetap (Rp)<input id="allow" inputmode="numeric" placeholder="0"></label>
+      </div>
+      <p class="hint">Tunjangan tidak tetap (makan/transport per kehadiran) tidak dihitung.</p>
+    </fieldset>
+    <fieldset id="reason-set">
+      <legend>Alasan PHK</legend>
+      <label>Alasan<select id="reason"></select></label>
+    </fieldset>
+    <fieldset id="uph-set">
+      <legend>Uang penggantian hak &amp; uang pisah</legend>
+      <div class="row2">
+        <label>Sisa cuti (hari)<input id="leave" type="number" min="0" max="30" value="0"></label>
+        <label>Hari kerja/minggu<select id="workdays"><option value="6">6 hari (÷25)</option><option value="5">5 hari (÷21)</option></select></label>
+      </div>
+      <label>Ongkos pulang ke tempat diterima bekerja (Rp)<input id="travel" inputmode="numeric" placeholder="0"></label>
+      <label id="pisah-label">Uang pisah sesuai PK/PP/PKB (Rp)<input id="pisah" inputmode="numeric" placeholder="0"></label>
+    </fieldset>
+    <label class="check"><input type="checkbox" id="tax" checked> Hitung perkiraan PPh 21 final</label>
+    <p class="err" id="err" role="alert"></p>
+  </form>
+
+  <section class="card" aria-labelledby="total-label" aria-live="polite">
+    <div class="total"><small id="total-label">Perkiraan hak minimal</small><b id="total">Rp0</b><span id="total-sub"></span></div>
+    <div class="basis" id="basis"></div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Komponen</th><th>Perhitungan</th><th class="num">Jumlah</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <ol class="notes" id="notes-pkwtt">
+      <li>Upah dasar = upah pokok + tunjangan tetap (Pasal 157 UU 13/2003 jo. UU 6/2023).</li>
+      <li>Sejak Putusan MK No. 168/PUU-XXI/2023, besaran pesangon adalah jumlah <b>paling sedikit</b>.</li>
+    </ol>
+    <ol class="notes" id="notes-pkwt">
+      <li>PKWT diperpanjang: kompensasi dibayar per jangka waktu (sebelum dan sesudah perpanjangan).</li>
+      <li>Pihak yang mengakhiri PKWT lebih awal wajib membayar ganti rugi upah sampai batas waktu perjanjian (Pasal 62 UU 13/2003).</li>
+    </ol>
+    <p class="disclaimer">⚖️ Hasil ini estimasi hak <b>minimal</b> menurut peraturan, bukan nasihat hukum. PK/PP/PKB bisa mengatur lebih baik; konsultasikan kasus konkret dengan advokat atau mediator Disnaker.</p>
+  </section>
+</main>
+
+<script>
+  // Pasal 40 ayat (2) dan (3) PP 35/2021: [masa kerja minimal (tahun), bulan upah]
+  const PESANGON = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9]];
+  const UPMK = [[0, 0], [3, 2], [6, 3], [9, 4], [12, 5], [15, 6], [18, 7], [21, 8], [24, 10]];
+
+  // [id, alasan, pengali pesangon, pengali UPMK, pasal PP 35/2021, berhak uang pisah]
+  const COMPANY = [
+    ['efisiensi-rugi', 'Efisiensi karena perusahaan merugi', 0.5, 1, '43 ayat (1)'],
+    ['efisiensi-cegah', 'Efisiensi untuk mencegah kerugian', 1, 1, '43 ayat (2)'],
+    ['merger', 'Penggabungan/peleburan/pemisahan perusahaan', 1, 1, '41'],
+    ['tutup-rugi', 'Perusahaan tutup karena rugi 2 tahun', 0.5, 1, '44 ayat (1)'],
+    ['tutup', 'Perusahaan tutup bukan karena rugi', 1, 1, '44 ayat (2)'],
+    ['fm-tutup', 'Keadaan memaksa, perusahaan tutup', 0.5, 1, '45 ayat (1)'],
+    ['fm', 'Keadaan memaksa, perusahaan tidak tutup', 0.75, 1, '45 ayat (2)'],
+    ['pkpu-rugi', 'PKPU karena perusahaan merugi', 0.5, 1, '46 ayat (1)'],
+    ['pkpu', 'PKPU bukan karena rugi', 1, 1, '46 ayat (2)'],
+    ['pailit', 'Perusahaan pailit', 0.5, 1, '47']
+  ];
+  const WORKER = [
+    ['permohonan', 'Permohonan PHK karena pengusaha berbuat tercela', 1, 1, '48'],
+    ['resign', 'Mengundurkan diri atas kemauan sendiri', 0, 0, '50', true],
+    ['mangkir', 'Mangkir 5 hari kerja, sudah dipanggil 2 kali', 0, 0, '51', true],
+    ['pelanggaran', 'Melanggar PK/PP/PKB setelah surat peringatan', 0.5, 1, '52 ayat (1)'],
+    ['mendesak', 'Pelanggaran bersifat mendesak', 0, 0, '52 ayat (2)', true],
+    ['sakit', 'Sakit berkepanjangan/cacat kerja > 12 bulan', 2, 1, '55'],
+    ['pensiun', 'Memasuki usia pensiun', 1.75, 1, '56'],
+    ['meninggal', 'Meninggal dunia (dibayar ke ahli waris)', 2, 1, '57']
+  ];
+  const toReason = ([id, text, p, u, pasal, pisah = false]) => ({ id, text, p, u, pisah, pasal: `Pasal ${pasal} PP 35/2021` });
+  const GROUPS = [['Alasan dari sisi perusahaan', COMPANY], ['Alasan dari sisi pekerja', WORKER]];
+  const REASONS = [...COMPANY, ...WORKER].map(toReason);
+
+  const $ = id => document.getElementById(id);
+  const rupiah = new Intl.NumberFormat('id-ID');
+  const rp = n => 'Rp' + rupiah.format(Math.round(n));
+  const num = s => Number(String(s).replace(/\D/g, '')) || 0;
+  const times = x => x.toLocaleString('id-ID');
+  let kind = 'pkwtt';
+
+  for (const [label, list] of GROUPS) {
+    const group = document.createElement('optgroup');
+    group.label = label;
+    list.forEach(([id, text]) => group.append(new Option(text, id)));
+    $('reason').append(group);
+  }
+
+  // Format ribuan saat mengetik
+  ['base', 'allow', 'travel', 'pisah'].forEach(id => $(id).addEventListener('input', e => {
+    const digits = e.target.value.replace(/\D/g, '').replace(/^0+/, '');
+    e.target.value = digits ? rupiah.format(Number(digits)) : '';
+  }));
+
+  // Masa kerja dalam tahun & bulan penuh
+  function tenure(a, b) {
+    let m = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+    if (b.getDate() < a.getDate()) m--;
+    return { years: Math.floor(m / 12), months: m % 12, totalMonths: m };
+  }
+
+  // Bulan upah dari baris terakhir yang batas masa kerjanya tercapai
+  const pick = (table, years) => table.filter(([min]) => years >= min).pop()[1];
+
+  // PPh 21 final atas pesangon (PP 68/2009), tarif berlapis
+  function pphPesangon(gross) {
+    const layers = [[50e6, 0], [50e6, 0.05], [400e6, 0.15], [Infinity, 0.25]];
+    let left = gross;
+    let tax = 0;
+    for (const [size, rate] of layers) {
+      const part = Math.min(left, size);
+      tax += part * rate;
+      left -= part;
+      if (left <= 0) break;
+    }
+    return tax;
+  }
+
+  function calc() {
+    const start = new Date($('start').value + 'T00:00');
+    const end = new Date($('end').value + 'T00:00');
+    const wage = num($('base').value) + num($('allow').value);
+    const reason = REASONS.find(r => r.id === $('reason').value);
+    $('reason-set').hidden = $('uph-set').hidden = kind === 'pkwt';
+    $('pisah-label').hidden = !reason.pisah;
+    $('notes-pkwtt').hidden = kind === 'pkwt';
+    $('notes-pkwt').hidden = kind === 'pkwtt';
+
+    if (!(end > start)) return render(null, 'Isi tanggal mulai dan tanggal berakhir dengan benar.');
+    const t = tenure(start, end);
+    if (!wage) return render(null, 'Masukkan upah pokok (dan tunjangan tetap jika ada).');
+
+    // Setiap baris: [komponen, dasar hukum, cara hitung, jumlah]
+    const rows = [];
+    let basis;
+    if (kind === 'pkwt') {
+      // Uang kompensasi: masa kerja (bulan) ÷ 12 × upah, untuk PKWT minimal 1 bulan
+      const months = t.totalMonths;
+      rows.push(['Uang kompensasi PKWT', 'Pasal 61A UU 13/2003 jo. UU 6/2023; Pasal 15–16 PP 35/2021',
+        months >= 1 ? `${months} bulan ÷ 12 × ${rp(wage)}` : 'Masa kerja kurang dari 1 bulan',
+        months >= 1 ? months / 12 * wage : 0]);
+      basis = '<b>Pekerja kontrak (PKWT)</b> tidak berhak pesangon, tetapi berhak <b>uang kompensasi</b> saat PKWT berakhir.';
+    } else {
+      const pes = pick(PESANGON, t.years);
+      const upmk = pick(UPMK, t.years);
+      rows.push(['Uang pesangon', 'Pasal 40 ayat (2) PP 35/2021',
+        reason.p ? `${times(reason.p)} × ${pes} bulan × ${rp(wage)}` : 'Tidak berhak untuk alasan ini',
+        reason.p * pes * wage]);
+      rows.push(['Uang penghargaan masa kerja (UPMK)', 'Pasal 40 ayat (3) PP 35/2021',
+        !reason.u ? 'Tidak berhak untuk alasan ini' : upmk ? `${reason.u} × ${upmk} bulan × ${rp(wage)}` : 'Masa kerja kurang dari 3 tahun',
+        reason.u * upmk * wage]);
+      if (reason.pisah) {
+        rows.push(['Uang pisah', reason.pasal + '; besarnya diatur PK/PP/PKB', 'Sesuai PK/PP/PKB', num($('pisah').value)]);
+      }
+      basis = `<b>${reason.text}.</b><br>Dasar hukum: ${reason.pasal}. ` + (reason.p
+        ? `Pesangon <b>${times(reason.p)} kali</b> Pasal 40 ayat (2) dan UPMK ${reason.u} kali Pasal 40 ayat (3).`
+        : 'Tanpa pesangon dan UPMK; tetap berhak UPH dan uang pisah.');
+
+      // Uang penggantian hak (UPH), hanya untuk pekerja tetap
+      const leave = Math.max(0, Number($('leave').value) || 0);
+      const divisor = $('workdays').value === '5' ? 21 : 25;
+      rows.push(['UPH: cuti tahunan yang belum diambil', 'Pasal 40 ayat (4) huruf a PP 35/2021; upah sehari menurut PP 36/2021',
+        leave ? `${leave} hari × (${rp(wage)} ÷ ${divisor})` : 'Tidak ada sisa cuti',
+        leave * wage / divisor]);
+      rows.push(['UPH: ongkos pulang', 'Pasal 40 ayat (4) huruf b PP 35/2021', 'Ke tempat diterima bekerja', num($('travel').value)]);
+    }
+    render({ rows, basis, t, wage });
+  }
+
+  function render(res, error = '') {
+    $('err').textContent = error;
+    if (!res) {
+      $('rows').innerHTML = '';
+      $('total').textContent = 'Rp0';
+      $('total-sub').textContent = '';
+      $('basis').textContent = 'Lengkapi data untuk melihat perhitungan.';
+      return;
+    }
+    const gross = res.rows.reduce((sum, row) => sum + row[3], 0);
+    let html = res.rows.map(([name, law, how, value]) =>
+      `<tr class="${value ? '' : 'zero'}"><td><b>${name}</b><small>${law}</small></td><td>${how}</td><td class="num">${rp(value)}</td></tr>`).join('');
+    html += `<tr class="sum"><td colspan="2">Jumlah bruto</td><td class="num">${rp(gross)}</td></tr>`;
+    if ($('tax').checked && kind === 'pkwtt') {
+      const tax = pphPesangon(gross);
+      html += `<tr class="tax"><td colspan="2">Perkiraan PPh 21 final atas pesangon<small>Tarif berlapis 0% s.d. Rp50 jt; 5% > Rp50–100 jt; 15% > Rp100–500 jt; 25% > Rp500 jt (PP 68/2009)</small></td><td class="num">−${rp(tax)}</td></tr>`;
+      html += `<tr class="net"><td colspan="2">Perkiraan diterima bersih</td><td class="num">${rp(gross - tax)}</td></tr>`;
+    }
+    $('rows').innerHTML = html;
+    $('total').textContent = rp(gross);
+    $('total-sub').textContent = `Masa kerja ${res.t.years} th ${res.t.months} bln · upah ${rp(res.wage)}/bulan`;
+    $('basis').innerHTML = res.basis;
+  }
+
+  $('kind').addEventListener('click', e => {
+    const button = e.target.closest('button');
+    if (!button) return;
+    kind = button.dataset.k;
+    for (const b of $('kind').children) b.setAttribute('aria-pressed', b === button);
+    calc();
+  });
+  $('form').addEventListener('input', calc);
+  $('form').addEventListener('submit', e => e.preventDefault());
+
+  // Contoh awal: masa kerja 6 tahun 4 bulan, upah Rp7 juta, efisiensi karena rugi
+  const today = new Date();
+  const iso = d => d.toISOString().slice(0, 10);
+  $('end').value = iso(today);
+  $('start').value = iso(new Date(today.getFullYear() - 6, today.getMonth() - 4, Math.min(today.getDate(), 28)));
+  $('base').value = rupiah.format(6000000);
+  $('allow').value = rupiah.format(1000000);
+  $('leave').value = 5;
+  calc();
+</script>
+</body>
+</html>

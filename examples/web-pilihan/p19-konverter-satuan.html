@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ukur — Konverter Satuan Lengkap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;700;900&family=Red+Hat+Mono:wght@500;600&display=swap">
+<style>
+  :root { --bg: #fdf8f3; --card: #ffffff; --ink: #2a2118; --muted: #8a7b6c; --line: #efe4d8; --accent: #e8590c; --accent-soft: #fff0e6; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.5; }
+  button, input, select { font: inherit; color: inherit; }
+  .wrap { width: min(980px, 100% - 32px); margin: 0 auto; padding: 32px 0 60px; }
+  h1 { font-size: clamp(2rem, 6vw, 3.2rem); letter-spacing: -.04em; line-height: 1; }
+  h1 span { color: var(--accent); }
+  .lead { color: var(--muted); margin: 8px 0 24px; }
+  .cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; margin-bottom: 18px; }
+  .cat { background: var(--card); border: 1.5px solid var(--line); border-radius: 14px; padding: 12px 6px; cursor: pointer; display: grid; gap: 2px; justify-items: center; font-size: .85rem; font-weight: 600; transition: border-color .2s, transform .2s; }
+  .cat span { font-size: 1.5rem; }
+  .cat:hover { transform: translateY(-2px); }
+  .cat.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+
+  .conv { background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 22px; box-shadow: 0 24px 50px -36px rgba(120, 60, 0, .5); }
+  .row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: end; }
+  .field { display: grid; gap: 6px; min-width: 0; }
+  .field label { font-size: .8rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+  .field input { font-size: clamp(1.4rem, 4vw, 2rem); font-weight: 700; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 14px; width: 100%; min-width: 0; background: var(--bg); }
+  .field input:focus, .field select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  .field select { padding: 11px 12px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--card); width: 100%; min-width: 0; }
+  .swap { width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-size: 1.3rem; cursor: pointer; margin-bottom: 60px; transition: transform .3s; }
+  .swap:hover { transform: rotate(180deg); }
+  .formula { margin-top: 16px; padding: 12px 14px; background: var(--accent-soft); border-radius: 12px; font-size: .92rem; display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .formula code { font-family: ui-monospace, Menlo, monospace; font-size: .88rem; overflow-wrap: anywhere; }
+  .copy { border: 1px solid var(--accent); background: none; color: var(--accent); border-radius: 999px; padding: 5px 12px; cursor: pointer; font-size: .85rem; font-weight: 600; }
+  .note { margin-top: 12px; font-size: .85rem; color: var(--muted); border-left: 3px solid var(--accent); padding-left: 10px; }
+
+  .lower { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; margin-top: 18px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 18px; min-width: 0; }
+  .card h2 { font-size: 1rem; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .all { list-style: none; display: grid; gap: 2px; max-height: 340px; overflow-y: auto; }
+  .all li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 8px; border-radius: 8px; font-size: .93rem; cursor: pointer; }
+  .all li:hover { background: var(--bg); }
+  .all li.cur { background: var(--accent-soft); font-weight: 700; }
+  .all li b { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+  .hist { list-style: none; display: grid; gap: 6px; font-size: .9rem; }
+  .hist li { padding: 8px 10px; border-radius: 10px; background: var(--bg); cursor: pointer; overflow-wrap: anywhere; }
+  .hist li small { color: var(--muted); display: block; }
+  .clear { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: .85rem; }
+  .empty { color: var(--muted); font-size: .9rem; }
+  @media (max-width: 720px) {
+    .row { grid-template-columns: 1fr; }
+    .swap { margin: 0 auto; transform: rotate(90deg); }
+    .swap:hover { transform: rotate(270deg); }
+    .lower { grid-template-columns: 1fr; }
+  }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button, input, select { font-family: "Red Hat Display", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .field input, .all li b, .formula code { font-family: "Red Hat Mono", ui-monospace, Menlo, Consolas, monospace; }
+  h1 { font-weight: 900; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Ukur<span>.</span></h1>
+  <p class="lead">Konversi satuan sehari-hari, termasuk satuan tradisional Indonesia seperti ons, kuintal, tumbak, dan bata.</p>
+  <div class="cats" id="cats" role="tablist"></div>
+
+  <div class="conv">
+    <div class="row">
+      <div class="field"><label for="from-v">Dari</label><input id="from-v" inputmode="decimal" value="1" autocomplete="off"><select id="from-u" aria-label="Satuan asal"></select></div>
+      <button class="swap" id="swap" aria-label="Tukar satuan">⇄</button>
+      <div class="field"><label for="to-v">Ke</label><input id="to-v" inputmode="decimal" autocomplete="off"><select id="to-u" aria-label="Satuan tujuan"></select></div>
+    </div>
+    <div class="formula"><code id="formula"></code><button class="copy" id="copy">Salin hasil</button></div>
+    <p class="note" id="note" hidden></p>
+  </div>
+
+  <div class="lower">
+    <div class="card"><h2>Semua satuan <small style="color:var(--muted);font-weight:400" id="all-sub"></small></h2><ul class="all" id="all"></ul></div>
+    <div class="card"><h2>Riwayat <button class="clear" id="clear-hist">Hapus</button></h2><ul class="hist" id="hist"></ul></div>
+  </div>
+</div>
+
+<script>
+  // Faktor ke satuan dasar tiap kategori. Suhu memakai fungsi to/from.
+  const CATS = {
+    panjang: { icon: '📏', name: 'Panjang', base: 'm', units: { mm: ['Milimeter', .001], cm: ['Sentimeter', .01], m: ['Meter', 1], km: ['Kilometer', 1000], inci: ['Inci', .0254], kaki: ['Kaki (ft)', .3048], yard: ['Yard', .9144], mil: ['Mil', 1609.344], mil_laut: ['Mil laut', 1852] } },
+    massa: { icon: '⚖️', name: 'Massa', base: 'kg', units: { mg: ['Miligram', 1e-6], g: ['Gram', .001], ons: ['Ons', .1], kg: ['Kilogram', 1], kuintal: ['Kuintal', 100], ton: ['Ton', 1000], lb: ['Pon (lb)', .45359237], oz: ['Ounce (oz)', .028349523125] } },
+    suhu: { icon: '🌡️', name: 'Suhu', base: 'C', units: {
+      C: ['Celsius', c => c, c => c], F: ['Fahrenheit', f => (f - 32) * 5 / 9, c => c * 9 / 5 + 32], K: ['Kelvin', k => k - 273.15, c => c + 273.15], R: ['Réaumur', r => r * 5 / 4, c => c * 4 / 5] } },
+    luas: { icon: '🏡', name: 'Luas Tanah', base: 'm2', note: 'Satuan tradisional (tumbak, bata, ubin, bau) berbeda-beda antardaerah; angka di sini memakai nilai yang umum dipakai di Jawa. Dalam sertipikat hak atas tanah, luas resmi selalu dinyatakan dalam meter persegi (m²) hasil pengukuran BPN.',
+      units: { m2: ['Meter persegi (m²)', 1], are: ['Are', 100], ha: ['Hektare', 10000], km2: ['Kilometer persegi', 1e6], tumbak: ['Tumbak (Jabar)', 14], bata: ['Bata', 14], ubin: ['Ubin', 14], bau: ['Bau', 7096.5], ft2: ['Kaki persegi', .09290304], acre: ['Acre', 4046.8564224] } },
+    volume: { icon: '🧴', name: 'Volume', base: 'l', units: { ml: ['Mililiter', .001], l: ['Liter', 1], m3: ['Meter kubik', 1000], sdt: ['Sendok teh', .005], sdm: ['Sendok makan', .015], gelas: ['Gelas (240 ml)', .24], gal_us: ['Galon AS', 3.785411784], galon_air: ['Galon air minum (19 l)', 19] } },
+    kecepatan: { icon: '🏎️', name: 'Kecepatan', base: 'ms', units: { ms: ['Meter/detik', 1], kmj: ['Kilometer/jam', 1 / 3.6], mph: ['Mil/jam', .44704], knot: ['Knot', 1852 / 3600] } },
+    waktu: { icon: '⏱️', name: 'Waktu', base: 's', units: { ms: ['Milidetik', .001], s: ['Detik', 1], min: ['Menit', 60], jam: ['Jam', 3600], hari: ['Hari', 86400], minggu: ['Minggu', 604800], bulan: ['Bulan (30 hari)', 2592000], tahun: ['Tahun (365 hari)', 31536000] } },
+    data: { icon: '💾', name: 'Data', base: 'B', units: { bit: ['Bit', .125], B: ['Byte', 1], KB: ['Kilobyte (1000)', 1e3], MB: ['Megabyte', 1e6], GB: ['Gigabyte', 1e9], TB: ['Terabyte', 1e12], KiB: ['Kibibyte (1024)', 1024], MiB: ['Mebibyte', 1048576], GiB: ['Gibibyte', 1073741824] } }
+  };
+  const DEFAULTS = { panjang: ['km', 'm'], massa: ['kg', 'ons'], suhu: ['C', 'F'], luas: ['tumbak', 'm2'], volume: ['l', 'gelas'], kecepatan: ['kmj', 'ms'], waktu: ['jam', 'min'], data: ['GB', 'MB'] };
+  let cat = 'panjang', history = [];
+  try { history = JSON.parse(localStorage.getItem('ukur-hist') || '[]'); } catch (e) {}
+  const $ = id => document.getElementById(id);
+
+  // Terima koma atau titik sebagai pemisah desimal
+  // "1.250,5" (format Indonesia) dan "1250.5" sama-sama diterima
+  const parse = s => {
+    s = String(s).trim().replace(/\s/g, '');
+    if (/^-?\d{1,3}(\.\d{3})+(,\d*)?$/.test(s) || s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+    return s === '' || s === '-' ? NaN : Number(s);
+  };
+  function fmt(n) {
+    if (!isFinite(n)) return '';
+    const a = Math.abs(n);
+    if (a !== 0 && (a < 1e-6 || a >= 1e15)) return n.toExponential(4).replace('.', ',');
+    return n.toLocaleString('id-ID', { maximumFractionDigits: a < 1 ? 8 : 6 });
+  }
+  function convert(v, from, to, c = cat) {
+    const u = CATS[c].units;
+    if (c === 'suhu') return u[to][2](u[from][1](v));
+    return v * u[from][1] / u[to][1];
+  }
+
+  $('cats').innerHTML = Object.entries(CATS).map(([k, c]) => `<button class="cat ${k === cat ? 'active' : ''}" data-cat="${k}" role="tab" aria-selected="${k === cat}"><span>${c.icon}</span>${c.name}</button>`).join('');
+  $('cats').addEventListener('click', e => { const b = e.target.closest('.cat'); if (b) setCat(b.dataset.cat); });
+
+  function setCat(k, from, to) {
+    cat = k;
+    document.querySelectorAll('.cat').forEach(b => { b.classList.toggle('active', b.dataset.cat === k); b.setAttribute('aria-selected', b.dataset.cat === k); });
+    const opts = Object.entries(CATS[k].units).map(([id, u]) => `<option value="${id}">${u[0]}</option>`).join('');
+    $('from-u').innerHTML = opts; $('to-u').innerHTML = opts;
+    $('from-u').value = from || DEFAULTS[k][0]; $('to-u').value = to || DEFAULTS[k][1];
+    $('note').hidden = !CATS[k].note; $('note').textContent = CATS[k].note || '';
+    update('from');
+  }
+
+  function update(dir) {
+    const fu = $('from-u').value, tu = $('to-u').value, u = CATS[cat].units;
+    if (dir === 'from') {
+      const v = parse($('from-v').value);
+      $('to-v').value = isNaN(v) ? '' : fmt(convert(v, fu, tu));
+    } else {
+      const v = parse($('to-v').value);
+      $('from-v').value = isNaN(v) ? '' : fmt(convert(v, tu, fu));
+    }
+    const one = convert(1, fu, tu);
+    $('formula').textContent = cat === 'suhu' ? `${$('from-v').value || 0} ${u[fu][0]} = ${$('to-v').value || 0} ${u[tu][0]}` : `1 ${u[fu][0]} = ${fmt(one)} ${u[tu][0]}`;
+    renderAll();
+  }
+
+  function renderAll() {
+    const v = parse($('from-v').value), fu = $('from-u').value;
+    $('all-sub').textContent = isNaN(v) ? '' : `untuk ${fmt(v)} ${CATS[cat].units[fu][0]}`;
+    $('all').innerHTML = isNaN(v) ? '<li class="empty">Masukkan angka.</li>' : Object.entries(CATS[cat].units).map(([id, u]) =>
+      `<li class="${id === $('to-u').value ? 'cur' : ''}" data-u="${id}"><span>${u[0]}</span><b>${fmt(convert(v, fu, id))}</b></li>`).join('');
+  }
+
+  function pushHistory() {
+    const v = $('from-v').value, r = $('to-v').value;
+    if (!v || !r) return;
+    const u = CATS[cat].units, item = { cat, from: $('from-u').value, to: $('to-u').value, v, text: `${v} ${u[$('from-u').value][0]} = ${r} ${u[$('to-u').value][0]}` };
+    if (history[0] && history[0].text === item.text) return;
+    history.unshift(item);
+    history = history.slice(0, 8);
+    try { localStorage.setItem('ukur-hist', JSON.stringify(history)); } catch (e) {}
+    renderHist();
+  }
+  function renderHist() {
+    $('hist').innerHTML = history.length ? history.map((h, i) => `<li data-i="${i}">${h.text}<small>${CATS[h.cat].icon} ${CATS[h.cat].name}</small></li>`).join('') : '<li class="empty" style="background:none">Belum ada riwayat.</li>';
+  }
+
+  let ht;
+  const later = () => { clearTimeout(ht); ht = setTimeout(pushHistory, 1200); };
+  $('from-v').addEventListener('input', () => { update('from'); later(); });
+  $('to-v').addEventListener('input', () => { update('to'); later(); });
+  $('from-u').addEventListener('change', () => { update('from'); pushHistory(); });
+  $('to-u').addEventListener('change', () => { update('from'); pushHistory(); });
+  $('swap').addEventListener('click', () => {
+    const f = $('from-u').value; $('from-u').value = $('to-u').value; $('to-u').value = f;
+    $('from-v').value = $('to-v').value || $('from-v').value;
+    update('from');
+  });
+  $('all').addEventListener('click', e => { const li = e.target.closest('li[data-u]'); if (li) { $('to-u').value = li.dataset.u; update('from'); } });
+  $('hist').addEventListener('click', e => {
+    const li = e.target.closest('li[data-i]'); if (!li) return;
+    const h = history[+li.dataset.i];
+    $('from-v').value = h.v; setCat(h.cat, h.from, h.to);
+  });
+  $('clear-hist').addEventListener('click', () => { history = []; try { localStorage.removeItem('ukur-hist'); } catch (e) {} renderHist(); });
+  $('copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText($('to-v').value); $('copy').textContent = 'Tersalin ✓'; } catch (e) { $('copy').textContent = 'Gagal'; }
+    setTimeout(() => $('copy').textContent = 'Salin hasil', 1400);
+  });
+  renderHist();
+  setCat('panjang');
+</script>
+</body>
+</html>

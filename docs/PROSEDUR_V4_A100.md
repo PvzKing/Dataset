@@ -19,7 +19,7 @@ Buka **[panel interaktif A100](https://colab.research.google.com/github/PvzKing/
 Panel menjalankan perintah yang sama persis dengan bagian manual di bawah, dengan tambahan berikut:
 - **Melanjutkan sendiri setelah Colab terputus.** Jalankan sel 1 dan sel 2 lagi. Training dilanjutkan dari checkpoint terakhir, dan jawaban uji yang sudah tersimpan tidak diulang.
 - **Menurunkan batch uji sendiri saat VRAM habis**, lalu mengulang uji itu tanpa kehilangan jawaban yang sudah tersimpan.
-- **Memberi peringatan** kalau training tidak memakai 102 sampel atau ada sampel yang dibuang.
+- **Memberi peringatan** kalau training tidak memakai 117 sampel atau ada sampel yang dibuang.
 
 Bagian di bawah ini adalah **cara manual**, sel demi sel. Gunanya untuk memahami apa yang dikerjakan panel atau menjalankan uji dengan opsi lain. Versi notebook-nya: [notebook manual A100](https://colab.research.google.com/github/PvzKing/Dataset/blob/main/notebooks/v4_a100_colab.ipynb). Panduan untuk T4 gratis ada di [`PROSEDUR_V4.md`](PROSEDUR_V4.md).
 <!-- /hanya-md -->
@@ -34,7 +34,7 @@ Bagian di bawah ini adalah **cara manual**, sel demi sel. Gunanya untuk memahami
 | Presisi training | QLoRA 4-bit, dihitung dalam float32 | **LoRA 16-bit (bf16)**, yaitu cara yang disarankan Unsloth untuk Qwen3.5 |
 | Konteks training (`max_seq_len`) | 6.144 token | **16.384 token** |
 | Batas jawaban website uji (`max_new_tokens`) | 6.000 token | **12.000 token** |
-| Data | `data/train.jsonl` terbaru (102 sampel) | sama |
+| Data | `data/train.jsonl` terbaru (117 sampel) | sama |
 | Resep lain | 3 epoch, lr 1e-4, LoRA r16/alpha 32, batch efektif 8, seed 42 | sama |
 | Folder hasil uji | `finetune-id/eval-*` | **`finetune-id/a100/eval-*`**. Model dasar, v3-ulang, dan v4 diukur di A100 dengan pengaturan yang sama |
 
@@ -44,7 +44,7 @@ Gerbang G3 membandingkan website v4 dengan v3. Adapter v3 lama tidak dipakai, ka
 
 | | v4 | v3-ulang |
 |---|---|---|
-| Data | `data/train.jsonl` terbaru (102 sampel) | `train.jsonl` terakhir sebelum sampel Python ditambahkan: commit `3ed189d`, 79 sampel (web 24, tech 22, debug 12, math 11, sci 10) |
+| Data | `data/train.jsonl` terbaru (117 sampel) | `train.jsonl` terakhir sebelum sampel Python ditambahkan: commit `3ed189d`, 79 sampel (web 24, tech 22, debug 12, math 11, sci 10) |
 | Resep | LoRA 16-bit, konteks 16.384, 3 epoch, lr 1e-4, r16, seed 42 | sama persis |
 
 Karena resepnya sama, beda skor keduanya berasal dari **data**, yaitu 23 sampel yang hanya ada di v4: `py-001` sampai `py-020`, `tech-023`, `web-025`, dan `web-026`.
@@ -57,7 +57,7 @@ Hasil uji A100 disimpan di folder sendiri karena jawaban model dasar dipakai ula
 
 Ada tiga angka yang sering tertukar:
 
-1. **Konteks training (`max_seq_len` 16.384).** Ini panjang maksimum satu sampel latihan. Sampel yang lebih panjang **dibuang**, tidak dipotong. Sampel terpanjang di dataset sekarang ±6.200 token, jadi di 16.384 ke-102 sampel tetap ikut seluruhnya, sama seperti di T4. **Isi pelajarannya baru berubah kalau dataset ditambah sampel panjang**, misalnya proyek multi-file, website besar, atau percakapan perbaikan bug yang panjang. Sampel seperti itu akan terbuang di T4 tapi terpakai di sini. Pengaturan ini menyiapkan jalannya.
+1. **Konteks training (`max_seq_len` 16.384).** Ini panjang maksimum satu sampel latihan. Sampel yang lebih panjang **dibuang**, tidak dipotong. Sampel terpanjang di dataset sekarang ±6.200 token, jadi di 16.384 ke-117 sampel tetap ikut seluruhnya, sama seperti di T4. **Isi pelajarannya baru berubah kalau dataset ditambah sampel panjang**, misalnya proyek multi-file, website besar, atau percakapan perbaikan bug yang panjang. Sampel seperti itu akan terbuang di T4 tapi terpakai di sini. Pengaturan ini menyiapkan jalannya.
 2. **Batas jawaban (`max_new_tokens` 12.000).** Ini dipakai saat model menjawab: website uji setelah training dan Web-eval. Dengan batas lebih tinggi, website panjang tidak terpotong di tengah.
 3. **Jendela konteks model saat dipakai.** Ini bawaan Qwen3.5-4B, yang menurut model card-nya jauh di atas 16.384 token. LoRA tidak memperkecilnya. Yang menentukan mutu jawaban panjang adalah apakah model pernah dilatih dengan contoh panjang (poin 1).
 
@@ -158,10 +158,10 @@ Sel ini memuat tokenizer saja, tanpa model, dan menghitung panjang setiap sampel
 | Baris yang muncul | Arti |
 |---|---|
 | `folder hasil: /content/drive/MyDrive/finetune-id/v4/qwen3.5-4b-own` | tanpa akhiran `-4bit`, jadi 16-bit. Folder lain tidak tersentuh |
-| `data valid: 102 sampel dari ...` | **wajib 102.** Angka lain berarti `train.jsonl` lama terpakai (lihat Bagian H) |
+| `data valid: 117 sampel dari ...` | **wajib 117.** Angka lain berarti `train.jsonl` lama terpakai (lihat Bagian H) |
 | `sampel terpanjang: ... (6,2xx)` | sampel terpanjang saat ini |
-| `102 sampel dipakai, 0 dibuang karena > 16384 token []` | semua sampel ikut dilatih |
-| `3 epoch = 39 step, ±... token dilatih` | 102 sampel ÷ 8 per step = 13 step per epoch, dikali 3 epoch |
+| `117 sampel dipakai, 0 dibuang karena > 16384 token []` | semua sampel ikut dilatih |
+| `3 epoch = 45 step, ±... token dilatih` | 117 sampel ÷ 8 per step = 15 step per epoch (dibulatkan ke atas), dikali 3 epoch |
 | `perkiraan waktu (300–900 token/detik): ...` | perkiraan kasar untuk GPU ber-bf16, sekitar 15–40 menit |
 
 Kalau ada sampel yang dibuang, catat id-nya dan kirim ke chat sebelum lanjut.
@@ -183,9 +183,9 @@ Output penting, berurutan:
 | `folder hasil: .../finetune-id/v4/qwen3.5-4b-own` | folder baru untuk v4 |
 | banner Unsloth memuat `A100` dan `Bfloat16 = TRUE` | training berjalan di A100 dalam bf16 |
 | **tidak ada** baris `melanjutkan dari ...` | training dimulai dari model dasar, bukan dari adapter lain |
-| `data valid: 102 sampel` dan `102 sampel dipakai, 0 dibuang` | sama dengan Bagian B |
+| `data valid: 117 sampel` dan `117 sampel dipakai, 0 dibuang` | sama dengan Bagian B |
 | `cek masking: ... token sampel pertama ikut dilatih` | hanya jawaban asisten yang dilatih, bukan prompt |
-| progress bar sampai `39/39` dengan loss berkala | training berjalan |
+| progress bar sampai `45/45` dengan loss berkala | training berjalan |
 | `[status] trained: adapter tersimpan` | adapter v4 sudah ada di Drive |
 | dua jawaban website uji mengalir di layar, lalu `[status] done: selesai` | website uji dibuat dengan batas 12.000 token |
 
@@ -408,7 +408,7 @@ Hasilnya ada di `MyDrive/finetune-id/v4/qwen3.5-4b-own/gguf/`. `LATIH` harus sam
 | Sel 2 berhenti dengan `GPU sekarang: ...` | runtime bukan A100 | pilih A100 (A1 langkah 3), lalu jalankan Sel 1 dan Sel 2 lagi |
 | `CUDA out of memory` saat training | konteks 16.384 tidak muat di A100 40 GB | ulangi dengan `--max-seq-len 12288` (lihat C1) |
 | `CUDA out of memory` saat uji | batch terlalu besar | turunkan `--batch-size`, lalu ulangi perintah yang sama |
-| `data valid: 82 sampel` atau angka lain selain 102 | `train.jsonl` lama terpakai | hapus `MyDrive/finetune-id/v4/train.jsonl`, lalu ulangi Bagian B dan C |
+| `data valid: 102 sampel` atau angka lain selain 117 | `train.jsonl` lama terpakai | hapus `MyDrive/finetune-id/v4/train.jsonl`, lalu ulangi Bagian B dan C |
 | `data atau pengaturan berubah: hasil lama dipindah ke .../arsip/...` | pengaturan training berbeda dari run sebelumnya | wajar. Training dimulai dari awal, dan hasil lama tetap tersimpan di `arsip/` |
 | `adapter tidak ditemukan` | adapter belum dilatih, atau Drive belum di-mount | jalankan Sel 2. Uji v4 butuh Bagian C, uji v3-ulang butuh E1 |
 | `evalplus yang terpasang (0.3.1 dari PyPI)...` | EvalPlus versi PyPI terpasang | jalankan perintah `pip install --force-reinstall --no-deps ...` yang ditampilkan, Restart session, lalu Sel 2 |
