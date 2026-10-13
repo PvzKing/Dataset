@@ -163,7 +163,10 @@ Folder `data/bench-support/` berisi sampel latihan dari benchmark kode, terpisah
 
 Setiap solusi diverifikasi oleh `scripts/build_bench_support.py` dengan dua cara: tes resmi HumanEval, dan pemeriksaan silang dengan solusi asli HumanEval pada 111 ribu input tambahan HumanEval+. Lewat pemeriksaan ini ditemukan 15 solusi asli HumanEval yang keliru dan satu soal yang kedua solusi referensinya gagal. Rinciannya ada di `data/bench-support/README.md`.
 
-Kelompok ini dilatih **sendiri, tanpa `own`**, sebagai training lanjutan di atas adapter yang sudah dilatih dengan `own` (misalnya v3):
+Ada dua cara memakai kelompok ini:
+
+- **Dicampur dengan `own` dalam satu run dari model dasar (`--dataset own+bench`, dipakai V5).** Panduannya ada di [`docs/PANDUAN_V5_A100.md`](docs/PANDUAN_V5_A100.md). Adapter epoch 2 dan 3 disimpan, lalu yang dipakai dipilih dari uji yang bersih: MBPP+, IndoPy-dev, dan Web-eval.
+- **Dilatih sendiri, tanpa `own`**, sebagai training lanjutan di atas adapter yang sudah dilatih dengan `own` (misalnya v3). Cara ini dipakai percobaan bench-lanjut, yang skornya turun (lihat `data/bench-support/README.md`):
 
 ```bash
 python scripts/train_unsloth.py train --dataset bench \
@@ -196,7 +199,7 @@ Mulailah dengan **`own`**, lalu beralih ke `mix` jika hasilnya menunjukkan gejal
 
 ## Training di Google Colab
 
-**Panduan langkah demi langkah: [`docs/PANDUAN_TRAINING.md`](docs/PANDUAN_TRAINING.md).**
+**Panduan langkah demi langkah: [`docs/PANDUAN_TRAINING.md`](docs/PANDUAN_TRAINING.md).** Untuk GPU A100 dengan data own + HumanEval, checkpoint dan hasil di Google Drive, serta model bernama V5, pakai [`docs/PANDUAN_V5_A100.md`](docs/PANDUAN_V5_A100.md) atau [notebook-nya](notebooks/v5_a100_colab.ipynb).
 
 Seluruh proses training ada di satu file mandiri, [`scripts/train_unsloth.py`](scripts/train_unsloth.py), dengan pengaturan di blok `CONFIG`. File ini tidak butuh clone repo: jika `train.jsonl` tidak ditemukan, file itu diunduh dari repo publik ini. Ada dua cara memakainya, dan keduanya tidak perlu menghubungkan Colab ke GitHub:
 
@@ -415,6 +418,8 @@ docs/PANDUAN_TRAINING.md              panduan training lengkap untuk pengguna
 docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol training di Colab
 docs/RENCANA_PYTHON.md                rencana adapter v4: jago Python sekaligus jago membuat website
 docs/PROSEDUR_V4.md                   panduan Colab langkah demi langkah: ukur v3, latih v4-pilot, papan skor
+docs/PANDUAN_V5_A100.md               panduan Colab A100 untuk V5: own + HumanEval, checkpoint di Drive, pilih epoch, ekspor GGUF
+notebooks/v5_a100_colab.ipynb         notebook Colab V5 (dibangun dari PANDUAN_V5_A100.md)
 notebooks/v4_pilot_interaktif.ipynb   panel Colab interaktif v4-pilot: siapkan, jalankan otomatis, progres, laporan
 scripts/panel_v4.py                   logika panel (mode pilot dan a100): langkah, status dari Drive, saran saat gagal
 scripts/build_panel_notebook.py       membangun notebook panel interaktif
