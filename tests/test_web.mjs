@@ -16,8 +16,9 @@ const shots = path.join(here, 'screenshots');
 fs.mkdirSync(shots, { recursive: true });
 
 // WebGL lewat SwiftShader supaya game 3D (26-) tetap jalan di Chromium headless tanpa GPU.
-// Google Fonts boleh dimuat (web-pilihan memakainya, dengan font sistem sebagai cadangan); host lain tetap dilarang.
-const FONT_HOSTS = /^https:\/\/fonts\.(googleapis|gstatic)\.com\//;
+// Google Fonts hanya boleh di folder selain examples/web (web-pilihan memakainya, dengan font sistem sebagai cadangan).
+// Website di examples/web adalah data latihan, jadi tetap tanpa request eksternal sama sekali.
+const FONT_HOSTS = (process.env.WEB_DIR || 'web') === 'web' ? /^$/ : /^https:\/\/fonts\.(googleapis|gstatic)\.com\//;
 // Di lingkungan dengan proxy keluar (mis. container cloud), Chromium perlu diarahkan ke proxy itu agar font termuat.
 const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
 const browser = await chromium.launch({ proxy, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });

@@ -29,6 +29,7 @@ REPO = "https://raw.githubusercontent.com/PvzKing/Dataset/main"
 ROOT_REPO = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path.cwd()
 KERJA = Path("/content")
 OUT = Path("/content/drive/MyDrive/finetune-id")
+JUMLAH_SAMPEL = 117  # jumlah sampel data/train.jsonl yang diharapkan untuk v4-pilot
 V3_BAWAAN = str(OUT / "v3" / "qwen3.5-4b-own-4bit" / "lora-adapter")
 EVALPLUS = "evalplus @ git+https://github.com/evalplus/evalplus@26d6d00bb1fd0fa37f39c99d5290da67891d1c5e"
 SCRIPTS = {
@@ -161,7 +162,7 @@ def langkah_langkah(k, mbpp_v3=False):
                 "selesai": bool(run) and ringkasan_ada(k, folder, run) and ringkasan_ada(k, folder, nama_dasar(k, run))}
 
     daftar = [langkah_uji(*u[:2], u[2], u[3], u[4], "v3", k.v3, run_v3) for u in uji[:3]]
-    daftar.append({"kunci": "latih-v4", "judul": "Latih v4-pilot", "menit": 70, "butuh_v4": False, "opsional": False,
+    daftar.append({"kunci": "latih-v4", "judul": "Latih v4-pilot", "menit": 85, "butuh_v4": False, "opsional": False,
                    "argv": [script(k, "train_unsloth.py"), "train", "--out", str(k.out / "v4-pilot")],
                    "selesai": v4 is not None})
     daftar += [langkah_uji(*u[:2], u[2], u[3], u[4], "v4", v4, run_v4) for u in uji]
@@ -346,8 +347,8 @@ def ringkas_training(ekor):
     if baris:
         print("\nRingkasan training:\n  " + "\n  ".join(b.strip() for b in baris[-5:]))
     m = re.search(r"data valid: (\d+) sampel", ekor)
-    if m and int(m[1]) != 102:
-        print(f"\n⚠️ Training memakai {m[1]} sampel, bukan 102. Hapus finetune-id/v4-pilot/train.jsonl di Drive, "
+    if m and int(m[1]) != JUMLAH_SAMPEL:
+        print(f"\n⚠️ Training memakai {m[1]} sampel, bukan {JUMLAH_SAMPEL}. Hapus finetune-id/v4-pilot/train.jsonl di Drive, "
               "hapus folder v4-pilot/qwen3.5-4b-own-4bit, lalu jalankan langkah 'Latih v4-pilot' lagi.")
 
 
@@ -356,7 +357,8 @@ def latih_demo(k):
     folder = k.out / "v4-pilot" / "qwen3.5-4b-own-4bit" / "lora-adapter"
     folder.mkdir(parents=True, exist_ok=True)
     (folder / "adapter_config.json").write_text(json.dumps({"demo": True}))
-    teks = "data valid: 102 sampel dari demo\n102 sampel dipakai, 0 dibuang\n[status] trained: adapter tersimpan\n"
+    teks = (f"data valid: {JUMLAH_SAMPEL} sampel dari demo\n{JUMLAH_SAMPEL} sampel dipakai, 0 dibuang\n"
+            "[status] trained: adapter tersimpan\n")
     print(teks)
     return 0, teks
 

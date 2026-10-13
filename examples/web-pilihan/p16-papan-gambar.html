@@ -116,8 +116,9 @@
     if (old) ctx.putImageData(old, 0, 0);
   }
   function paintBg() {
+    // Kanvas dibiarkan transparan; warna putih dan pola latar berasal dari CSS supaya tetap terlihat di bawah coretan
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.clearRect(0, 0, cv.width, cv.height);
     ctx.restore();
     cv.style.backgroundImage = bg === 'grid' ? 'linear-gradient(#eceaf3 1px, transparent 1px), linear-gradient(90deg, #eceaf3 1px, transparent 1px)'
       : bg === 'dots' ? 'radial-gradient(#d4d0e2 1.2px, transparent 1.2px)' : 'none';

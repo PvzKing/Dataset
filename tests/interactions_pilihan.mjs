@@ -264,7 +264,7 @@ export default {
     const box = await page.locator('#canvas').boundingBox();
     const inked = () => page.evaluate(() => {
       const c = document.getElementById('canvas'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
-      for (let i = 0; i < d.length; i += 4) if (d[i] < 200) return true;
+      for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 0 && d[i] < 200) return true; // kanvas kosong = transparan
       return false;
     });
     expect(!(await inked()), 'canvas starts blank', out);

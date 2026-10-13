@@ -89,6 +89,7 @@
   body, button { font-family: "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   .name, .photo { font-family: "Newsreader", Georgia, "Times New Roman", serif; }
   .name { font-weight: 400; letter-spacing: -.025em; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>

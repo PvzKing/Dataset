@@ -63,6 +63,7 @@
   /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
   body, button, input { font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   .habit .meta, .ring b, .wd b { font-family: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
@@ -160,7 +161,7 @@
       }
       const s = streak(h);
       return `<div class="habit ${set.has(k) ? 'done' : ''}" style="--c:${h.color}">
-        <button class="check" data-toggle="${h.id}" aria-label="Tandai ${h.name}" aria-pressed="${set.has(k)}">${set.has(k) ? '✓' : h.emoji}</button>
+        <button class="check" data-toggle="${h.id}" aria-label="Tandai ${escapeHTML(h.name)}" aria-pressed="${set.has(k)}">${set.has(k) ? '✓' : h.emoji}</button>
         <div><h3>${escapeHTML(h.name)}</h3><div class="meta"><span class="streak">🔥 ${s} hari beruntun</span><span>Terbaik ${best(h)} hari</span><span>${h.done.length}× total</span></div></div>
         <button class="del" data-del="${h.id}" aria-label="Hapus ${escapeHTML(h.name)}">✕</button>
         <div class="heat">${cells}</div>

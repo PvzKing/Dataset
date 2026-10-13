@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pecah Bata — Game Arkade</title>
+<style>
+  :root { --bg: #0b1026; --panel: #141b3d; --text: #eef1ff; --muted: #8e97c7; --accent: #ffcc33; --mono: ui-monospace, Menlo, Consolas, monospace; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: radial-gradient(circle at 50% 0%, #1f2a66, var(--bg) 60%); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 16px; }
+  button { font: inherit; color: inherit; border: 0; cursor: pointer; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .hud, .stage, .bar { width: min(720px, 100%); }
+  .hud { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .title, .overlay h1, .stat b { font-family: var(--mono); font-weight: 400; }
+  .title { font-size: clamp(.8rem, 3vw, 1.1rem); }
+  .title span, .overlay h1 span { color: var(--accent); }
+  .stats { display: flex; gap: 6px; }
+  .stat { background: var(--panel); border-radius: 10px; padding: 4px 10px; text-align: center; min-width: 58px; }
+  .stat small { display: block; font-size: .62rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+  .stat b { font-size: .75rem; }
+  .stage { position: relative; aspect-ratio: 3 / 4; max-height: calc(100vh - 150px); }
+  @media (min-width: 700px) { .stage { aspect-ratio: 4 / 3; } }
+  canvas { width: 100%; height: 100%; display: block; border-radius: 16px; background: linear-gradient(#10173a, #0a0f27); box-shadow: 0 0 0 2px #26306a; touch-action: none; }
+  .overlay { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; padding: 20px; text-align: center; border-radius: 16px; background: rgba(8, 11, 30, .8); }
+  .overlay[hidden] { display: none; }
+  .overlay h1 { font-size: clamp(1.4rem, 6vw, 2.4rem); line-height: 1.3; }
+  .overlay p, .keys, .legend { color: var(--muted); }
+  .overlay p { max-width: 380px; }
+  .btn { background: var(--accent); color: #2a1d00; border-radius: 12px; padding: 12px 26px; font-weight: 800; }
+  .keys, .legend { font-size: .85rem; }
+  .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; list-style: none; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 4px; }
+  .bar { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; }
+  .bar button { background: var(--panel); border-radius: 10px; padding: 8px 14px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header class="hud">
+  <div class="title" aria-hidden="true">PECAH <span>BATA</span></div>
+  <div class="stats">
+    <div class="stat"><small>Skor</small><b id="score">0</b></div>
+    <div class="stat"><small>Level</small><b id="level">1</b></div>
+    <div class="stat"><small>Nyawa</small><b id="lives">❤❤❤</b></div>
+  </div>
+</header>
+<main class="stage">
+  <canvas id="game" role="img" aria-label="Area permainan Pecah Bata"></canvas>
+  <div class="overlay" id="overlay">
+    <h1>PECAH <span>BATA</span></h1>
+    <p id="ov-text" aria-live="polite">Pantulkan bola, hancurkan semua bata, dan kumpulkan power-up. Skor tertinggi: <b id="hi">0</b></p>
+    <button class="btn" id="start">▶ Mulai</button>
+    <ul class="legend">
+      <li><i style="background:#4ade80"></i>Papan lebar</li>
+      <li><i style="background:#60a5fa"></i>Multi-bola</li>
+      <li><i style="background:#f472b6"></i>Bola lambat</li>
+      <li><i style="background:#facc15"></i>+1 nyawa</li>
+    </ul>
+    <p class="keys">Mouse/jari untuk menggerakkan · ← → atau A D · Spasi untuk meluncurkan · P untuk jeda</p>
+  </div>
+</main>
+<div class="bar">
+  <button id="pause">⏸ Jeda</button>
+  <button id="sound" aria-pressed="true">🔊 Suara</button>
+</div>
+
+<script>
+  const cv = document.getElementById('game'), g = cv.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const FONT = 'ui-monospace, Menlo, Consolas, monospace';
+  const COLORS = ['#f87171', '#fb923c', '#facc15', '#4ade80', '#38bdf8', '#a78bfa'];
+  const POWERS = { wide: '#4ade80', multi: '#60a5fa', slow: '#f472b6', life: '#facc15' };
+  const ICONS = { wide: '↔', multi: '•••', slow: '⏬', life: '♥' };
+  // Pola level: angka = jumlah pukulan untuk memecah bata, 0 = kosong
+  const LEVELS = [
+    ['1111111111', '1111111111', '1111111111', '1111111111', '1111111111'],
+    ['0022222200', '0211111120', '2111111112', '2112112112', '0211111120', '0022222200'],
+    ['3030303030', '0303030303', '2222222222', '1111111111', '2020202020', '0101010101'],
+    ['3333333333', '3000000003', '3022222203', '3021111203', '3022222203', '3000000003', '3333333333']
+  ];
+  let W, H, scale;
+  let state = 'menu', score = 0, lives = 3, level = 0, bricks = [], balls = [], drops = [];
+  let paddle = { x: 0, w: 0, target: null }, wideUntil = 0, slowUntil = 0, keys = {}, sound = true, hi = 0;
+  try { hi = +localStorage.getItem('pecah-hi') || 0; } catch (e) {}
+  $('hi').textContent = hi;
+
+  function resize() {
+    const r = cv.getBoundingClientRect();
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    cv.width = r.width * dpr;
+    cv.height = r.height * dpr;
+    W = r.width;
+    H = r.height;
+    scale = W / 600;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    layoutBricks();
+    paddle.x = Math.min(Math.max(paddle.x || W / 2, 0), W);
+  }
+
+  function layoutBricks() {
+    const cols = 10, pad = 6 * scale, top = 60 * scale;
+    const bw = (W - pad * (cols + 1)) / cols, bh = Math.max(14, 22 * scale);
+    bricks.forEach(b => Object.assign(b, { x: pad + b.c * (bw + pad), y: top + b.r * (bh + pad), w: bw, h: bh }));
+  }
+  function loadLevel(n) {
+    // Setelah level 4 pola diulang dengan bata yang lebih kuat
+    const map = LEVELS[n % LEVELS.length], bonus = Math.floor(n / LEVELS.length);
+    bricks = [];
+    map.forEach((row, r) => [...row].forEach((ch, c) => {
+      const hp = Math.min(+ch + bonus, 4);
+      if (+ch) bricks.push({ r, c, hp, max: hp });
+    }));
+    layoutBricks();
+    drops = [];
+    resetBall();
+    $('level').textContent = n + 1;
+  }
+  const paddleW = () => (performance.now() < wideUntil ? 150 : 96) * scale;
+  const ballSpeed = () => (5.2 + level * .5) * scale * (performance.now() < slowUntil ? .6 : 1);
+  function resetBall() {
+    balls = [{ x: paddle.x, y: H - 40 * scale, vx: 0, vy: 0, stuck: true, r: Math.max(5, 7 * scale) }];
+  }
+  function launch() {
+    balls.filter(b => b.stuck).forEach(b => {
+      const a = -Math.PI / 2 + (Math.random() - .5) * .8;
+      b.vx = Math.cos(a);
+      b.vy = Math.sin(a);
+      b.stuck = false;
+    });
+  }
+
+  // Efek suara Web Audio; AudioContext dibuat setelah interaksi pertama
+  let actx;
+  function beep(freq, dur = .06, type = 'square') {
+    if (!sound || !actx) return;
+    const osc = actx.createOscillator(), vol = actx.createGain(), t = actx.currentTime;
+    osc.type = type;
+    osc.frequency.value = freq;
+    vol.gain.setValueAtTime(.06, t);
+    vol.gain.exponentialRampToValueAtTime(.001, t + dur);
+    osc.connect(vol).connect(actx.destination);
+    osc.start();
+    osc.stop(t + dur);
+  }
+
+  function start() {
+    if (!actx) {
+      try { actx = new AudioContext(); } catch (e) {}
+    }
+    if (state === 'won') loadLevel(++level);
+    else { score = 0; lives = 3; level = 0; loadLevel(0); }
+    state = 'play';
+    $('overlay').hidden = true;
+    updateHud();
+  }
+  function showOverlay(title, accent, text, btn) {
+    $('overlay').hidden = false;
+    $('overlay').querySelector('h1').innerHTML = `${title} <span>${accent}</span>`;
+    $('ov-text').textContent = text;
+    $('start').textContent = btn;
+  }
+  function updateHud() {
+    $('score').textContent = score;
+    $('lives').textContent = lives > 0 ? '❤'.repeat(Math.min(lives, 5)) + (lives > 5 ? '+' : '') : '—';
+    if (score > hi) {
+      hi = score;
+      try { localStorage.setItem('pecah-hi', hi); } catch (e) {}
+    }
+  }
+
+  function hitBrick(b) {
+    for (const br of bricks) {
+      if (br.hp <= 0) continue;
+      // Titik terdekat pada bata ke pusat bola
+      const cx = Math.max(br.x, Math.min(b.x, br.x + br.w)), cy = Math.max(br.y, Math.min(b.y, br.y + br.h));
+      if ((b.x - cx) ** 2 + (b.y - cy) ** 2 > b.r * b.r) continue;
+      const overlapX = Math.min(b.x + b.r - br.x, br.x + br.w - (b.x - b.r));
+      const overlapY = Math.min(b.y + b.r - br.y, br.y + br.h - (b.y - b.r));
+      if (overlapX < overlapY) b.vx = b.x < br.x + br.w / 2 ? -Math.abs(b.vx) : Math.abs(b.vx);
+      else b.vy = b.y < br.y + br.h / 2 ? -Math.abs(b.vy) : Math.abs(b.vy);
+      br.hp--;
+      score += 10 * (level + 1);
+      beep(440 + br.hp * 120);
+      if (br.hp <= 0 && Math.random() < .14) {
+        const types = Object.keys(POWERS);
+        drops.push({ x: br.x + br.w / 2, y: br.y, type: types[Math.floor(Math.random() * types.length)] });
+      }
+      updateHud();
+      return;
+    }
+  }
+
+  function applyPower(type) {
+    beep(660, .12, 'sine');
+    if (type === 'wide') wideUntil = performance.now() + 12000;
+    if (type === 'slow') slowUntil = performance.now() + 8000;
+    if (type === 'life') { lives++; updateHud(); }
+    if (type === 'multi') {
+      const src = balls.find(b => !b.stuck) || balls[0];
+      for (const off of [-.5, .5]) {
+        const a = Math.atan2(src.vy || -1, src.vx) + off;
+        balls.push({ x: src.x, y: src.y, vx: Math.cos(a), vy: Math.sin(a), stuck: false, r: src.r });
+      }
+    }
+  }
+
+  function update(dt) {
+    // Papan mengikuti pointer atau tombol panah
+    paddle.w = paddleW();
+    if (keys.left) paddle.x -= 9 * scale * dt;
+    if (keys.right) paddle.x += 9 * scale * dt;
+    if (paddle.target !== null) paddle.x += (paddle.target - paddle.x) * Math.min(1, .35 * dt);
+    paddle.x = Math.min(Math.max(paddle.x, paddle.w / 2), W - paddle.w / 2);
+    const py = H - 28 * scale, ph = Math.max(10, 12 * scale);
+
+    balls.forEach(b => {
+      if (b.stuck) {
+        b.x = paddle.x;
+        b.y = py - b.r - 1;
+        return;
+      }
+      // Gerak dipecah jadi langkah kecil supaya bola cepat tidak menembus bata
+      const sp = ballSpeed(), steps = Math.ceil(sp * dt / (b.r * .8));
+      for (let s = 0; s < steps; s++) {
+        b.x += b.vx * sp * dt / steps;
+        b.y += b.vy * sp * dt / steps;
+        if (b.x < b.r) {
+          b.x = b.r;
+          b.vx = Math.abs(b.vx);
+          beep(300);
+        }
+        if (b.x > W - b.r) {
+          b.x = W - b.r;
+          b.vx = -Math.abs(b.vx);
+          beep(300);
+        }
+        if (b.y < b.r) {
+          b.y = b.r;
+          b.vy = Math.abs(b.vy);
+          beep(300);
+        }
+        // Sudut pantulan ditentukan titik kena pada papan
+        if (b.vy > 0 && b.y + b.r >= py && b.y + b.r <= py + ph + b.vy * sp && Math.abs(b.x - paddle.x) <= paddle.w / 2 + b.r) {
+          const a = -Math.PI / 2 + (b.x - paddle.x) / (paddle.w / 2) * Math.PI / 3;
+          b.vx = Math.cos(a);
+          b.vy = Math.sin(a);
+          b.y = py - b.r;
+          beep(220, .05, 'triangle');
+        }
+        hitBrick(b);
+      }
+      if (b.y - b.r > H) b.dead = true;
+    });
+    balls = balls.filter(b => !b.dead);
+    if (!balls.length) {
+      lives--;
+      updateHud();
+      beep(110, .3, 'sawtooth');
+      if (lives <= 0) {
+        state = 'over';
+        showOverlay('GAME', 'OVER', `Skor kamu ${score}. Skor tertinggi: ${hi}`, '↻ Main Lagi');
+        return;
+      }
+      resetBall();
+    }
+
+    drops.forEach(d => {
+      d.y += 2.6 * scale * dt;
+      if (d.y > py - 8 && d.y < py + ph && Math.abs(d.x - paddle.x) < paddle.w / 2 + 10) {
+        d.got = true;
+        applyPower(d.type);
+      }
+    });
+    drops = drops.filter(d => !d.got && d.y < H + 20);
+
+    if (bricks.every(b => b.hp <= 0)) {
+      state = 'won';
+      score += lives * 100;
+      updateHud();
+      showOverlay(`LEVEL ${level + 1}`, 'SELESAI!', `Bonus nyawa +${lives * 100}. Skor: ${score}`, '▶ Level Berikutnya');
+    }
+  }
+
+  function text(str, x, y, size, color) {
+    g.fillStyle = color;
+    g.font = `${size}px ${FONT}`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(str, x, y);
+  }
+  function draw() {
+    const now = performance.now(), s = Math.max(scale, .8);
+    g.clearRect(0, 0, W, H);
+    bricks.forEach(b => {
+      if (b.hp <= 0) return;
+      g.fillStyle = COLORS[b.r % COLORS.length];
+      g.globalAlpha = .45 + .55 * b.hp / b.max;
+      g.beginPath();
+      g.roundRect(b.x, b.y, b.w, b.h, 4);
+      g.fill();
+      g.globalAlpha = 1;
+      if (b.max > 1) text(b.hp, b.x + b.w / 2, b.y + b.h / 2 + 1, Math.max(10, 12 * scale), 'rgba(0,0,0,.4)');
+    });
+    drops.forEach(d => {
+      g.fillStyle = POWERS[d.type];
+      g.beginPath();
+      g.arc(d.x, d.y, 9 * s, 0, Math.PI * 2);
+      g.fill();
+      text(ICONS[d.type], d.x, d.y + 1, 11 * s, '#0b1026');
+    });
+
+    const py = H - 28 * scale, ph = Math.max(10, 12 * scale);
+    g.fillStyle = now < wideUntil ? '#4ade80' : '#fbbf24';
+    g.beginPath();
+    g.roundRect(paddle.x - paddle.w / 2, py, paddle.w, ph, ph / 2);
+    g.fill();
+    g.fillStyle = now < slowUntil ? '#f472b6' : '#fff';
+    balls.forEach(b => {
+      g.beginPath();
+      g.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      g.fill();
+    });
+
+    if (state === 'play' && balls.some(b => b.stuck)) {
+      text('Klik / ketuk / Spasi untuk meluncurkan', W / 2, H * .62, Math.max(11, 14 * scale), 'rgba(238,241,255,.7)');
+    }
+    if (state === 'paused') {
+      g.fillStyle = 'rgba(8,11,30,.6)';
+      g.fillRect(0, 0, W, H);
+      text('JEDA', W / 2, H / 2, 28 * s, '#fff');
+    }
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min((now - last) / 16.67, 3);
+    last = now;
+    if (state === 'play') update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function togglePause() {
+    if (state === 'play') state = 'paused';
+    else if (state === 'paused') state = 'play';
+    $('pause').textContent = state === 'paused' ? '▶ Lanjut' : '⏸ Jeda';
+  }
+  const toX = e => e.clientX - cv.getBoundingClientRect().left;
+  cv.addEventListener('pointermove', e => { paddle.target = toX(e); });
+  cv.addEventListener('pointerdown', e => {
+    paddle.target = toX(e);
+    if (state === 'play') launch();
+  });
+  function setKey(e, down) {
+    const k = e.key.toLowerCase();
+    if (k === 'arrowleft' || k === 'a') keys.left = down;
+    else if (k === 'arrowright' || k === 'd') keys.right = down;
+    else return;
+    paddle.target = null;
+  }
+  document.addEventListener('keydown', e => {
+    setKey(e, true);
+    const k = e.key.toLowerCase();
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (state === 'play') launch();
+      else if (!$('overlay').hidden) start();
+    } else if (k === 'p' || k === 'escape') {
+      togglePause();
+    }
+  });
+  document.addEventListener('keyup', e => setKey(e, false));
+  $('start').addEventListener('click', start);
+  $('pause').addEventListener('click', togglePause);
+  $('sound').addEventListener('click', e => {
+    sound = !sound;
+    e.currentTarget.textContent = sound ? '🔊 Suara' : '🔇 Bisu';
+    e.currentTarget.setAttribute('aria-pressed', sound);
+  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') togglePause(); });
+  window.addEventListener('resize', resize);
+  resize();
+  loadLevel(0);
+  requestAnimationFrame(loop);
+</script>
+</body>
+</html>

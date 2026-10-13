@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jelajah Nusantara — Rencanakan Liburan Anda</title>
+<style>
+  :root { --bg: #f4f7f5; --card: #fff; --text: #10241b; --muted: #5b6f66; --accent: #0f766e; --line: #dfe8e3; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.55; }
+  button, input, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid #f59e0b; outline-offset: 2px; }
+  .wrap { width: min(1180px, 100% - 32px); margin: 0 auto; }
+
+  .hero { color: #fff; padding: 24px 0 110px; background: linear-gradient(180deg, #0c4a6e, #0f766e 70%, #14b8a6); }
+  .hero nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .hero nav b { font-size: 1.2rem; }
+  .hero nav a { color: #fff; text-decoration: none; padding: 8px 16px; border: 1px solid rgba(255, 255, 255, .5); border-radius: 999px; font-size: .9rem; white-space: nowrap; }
+  .hero h1 { margin-top: 60px; max-width: 640px; font-size: clamp(2.1rem, 6.5vw, 4.2rem); line-height: 1.05; letter-spacing: -.03em; }
+  .hero p { margin-top: 14px; max-width: 480px; font-size: 1.1rem; opacity: .9; }
+
+  .finder { margin-top: -70px; background: var(--card); border-radius: 20px; box-shadow: 0 30px 60px -30px rgba(16, 36, 27, .4); padding: 18px; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; }
+  .finder label { display: grid; gap: 4px; font-size: .8rem; font-weight: 600; color: var(--muted); min-width: 0; }
+  .finder input, .finder select { padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); width: 100%; font-weight: 400; }
+
+  .layout { display: grid; grid-template-columns: 1fr 360px; gap: 28px; margin: 40px auto 70px; align-items: start; }
+  .section-title { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+  .section-title span, .note, .meta { color: var(--muted); font-size: .9rem; }
+  .dests { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 18px; }
+  .dest { background: var(--card); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; transition: transform .2s; }
+  .dest:hover { transform: translateY(-3px); }
+  .pic { height: 120px; display: grid; place-items: center; font-size: 3rem; background: linear-gradient(135deg, var(--c), #14b8a6); }
+  .dest .body { padding: 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .dest .desc { flex: 1; font-size: .9rem; }
+  .dest .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; }
+  .add { border: 1px solid var(--accent); color: var(--accent); background: none; border-radius: 10px; padding: 8px 12px; cursor: pointer; font-weight: 600; white-space: nowrap; }
+  .add[aria-pressed="true"] { background: var(--accent); color: #fff; }
+
+  .planner { position: sticky; top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 22px; }
+  .trip { list-style: none; display: grid; gap: 10px; margin: 16px 0; }
+  .trip li { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: var(--bg); border-radius: 14px; padding: 10px 12px; }
+  .nights { display: flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--muted); }
+  .nights button { width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 8px; background: #fff; cursor: pointer; }
+  .rm { border: 0; background: none; color: #b91c1c; cursor: pointer; font-size: .85rem; }
+  .empty { text-align: center; padding: 24px 10px; margin: 16px 0; color: var(--muted); border: 2px dashed var(--line); border-radius: 16px; }
+  .people { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .people input { width: 72px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; }
+  .breakdown { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 6px; font-size: .9rem; }
+  .breakdown div { display: flex; justify-content: space-between; gap: 10px; }
+  .breakdown .total { font-size: 1.25rem; font-weight: 800; color: var(--accent); margin-top: 6px; }
+  .itinerary { margin-top: 14px; padding-left: 20px; font-size: .88rem; color: var(--muted); }
+  .share { width: 100%; margin-top: 14px; padding: 12px; border: 0; border-radius: 12px; background: #f59e0b; color: #3a2400; font-weight: 600; cursor: pointer; }
+  .share:disabled { opacity: .5; cursor: default; }
+  .note { margin-top: 12px; font-size: .8rem; }
+
+  @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } .planner { position: static; } }
+  @media (max-width: 720px) { .finder { grid-template-columns: 1fr 1fr; } .finder label:first-child { grid-column: 1 / -1; } }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .dest { transition: none; } .dest:hover { transform: none; } }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <nav aria-label="Navigasi utama"><b>🧭 Jelajah Nusantara</b><a href="#rencana">Rencana Saya</a></nav>
+    <h1>17.000 pulau.<br>Satu liburan impian.</h1>
+    <p>Pilih destinasi, atur lama menginap, dan lihat perkiraan biayanya langsung.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <form class="finder" id="finder" role="search">
+    <label>Cari destinasi<input id="q" type="search" placeholder="Pantai, gunung, budaya…"></label>
+    <label>Pulau<select id="island"><option value="">Semua pulau</option></select></label>
+    <label>Anggaran per malam
+      <select id="budget">
+        <option value="">Semua</option>
+        <option value="500000">≤ Rp500 ribu</option>
+        <option value="1000000">≤ Rp1 juta</option>
+        <option value="2000000">≤ Rp2 juta</option>
+      </select>
+    </label>
+  </form>
+
+  <div class="layout">
+    <section aria-labelledby="judul-destinasi">
+      <div class="section-title">
+        <h2 id="judul-destinasi">Destinasi pilihan</h2>
+        <span id="result-count" aria-live="polite"></span>
+      </div>
+      <div class="dests" id="dests"></div>
+    </section>
+
+    <aside class="planner" id="rencana" aria-labelledby="judul-rencana">
+      <h2 id="judul-rencana">Rencana Perjalanan</h2>
+      <ul class="trip" id="trip"></ul>
+      <p class="empty" id="trip-empty">🗺️<br>Belum ada destinasi.<br>Klik “+ Rencana” untuk memulai.</p>
+      <label class="people">Jumlah orang <input id="people" type="number" min="1" max="10" value="2"></label>
+      <div class="breakdown" aria-live="polite">
+        <div><span id="stay-label">Penginapan</span><span id="stay"></span></div>
+        <div><span id="fare-label">Tiket pesawat</span><span id="fare"></span></div>
+        <div><span>Makan &amp; transport lokal</span><span id="daily"></span></div>
+        <div class="total"><span>Total</span><span id="total"></span></div>
+        <div class="meta"><span>Per orang</span><span id="per-person"></span></div>
+      </div>
+      <ol class="itinerary" id="itinerary" aria-label="Garis besar jadwal"></ol>
+      <button class="share" id="share" type="button">Salin Ringkasan</button>
+      <p class="note" id="share-status" role="status"></p>
+      <p class="note">Semua harga adalah perkiraan: penginapan per kamar (2 orang) per malam, tiket pesawat pulang-pergi dari Jakarta, serta Rp300.000 per orang per hari untuk makan dan transport lokal.</p>
+    </aside>
+  </div>
+</main>
+
+<script>
+  // Harga contoh (perkiraan): stay = penginapan per kamar per malam, fare = tiket PP dari Jakarta per orang.
+  const dests = [
+    { id: 'raja-ampat', name: 'Raja Ampat', island: 'Papua', type: 'Laut', rating: 4.9, stay: 1800000, fare: 7200000, desc: 'Gugusan pulau karst dengan terumbu karang terkaya di dunia.' },
+    { id: 'bromo', name: 'Gunung Bromo', island: 'Jawa', type: 'Gunung', rating: 4.8, stay: 550000, fare: 1600000, desc: 'Matahari terbit di atas lautan pasir dan kawah yang masih aktif.' },
+    { id: 'labuan-bajo', name: 'Labuan Bajo', island: 'Nusa Tenggara', type: 'Laut', rating: 4.8, stay: 1200000, fare: 3400000, desc: 'Gerbang menuju Pulau Komodo, Padar, dan Pink Beach.' },
+    { id: 'toba', name: 'Danau Toba', island: 'Sumatera', type: 'Danau', rating: 4.7, stay: 450000, fare: 2400000, desc: 'Danau vulkanik terbesar di Asia Tenggara dengan Pulau Samosir di tengahnya.' },
+    { id: 'ubud', name: 'Ubud', island: 'Bali', type: 'Budaya', rating: 4.7, stay: 900000, fare: 1900000, desc: 'Sawah terasering, pura, dan pusat seni tradisional Bali.' },
+    { id: 'borobudur', name: 'Borobudur', island: 'Jawa', type: 'Budaya', rating: 4.8, stay: 600000, fare: 1300000, desc: 'Candi Buddha terbesar di dunia, warisan budaya UNESCO.' },
+    { id: 'derawan', name: 'Kepulauan Derawan', island: 'Kalimantan', type: 'Laut', rating: 4.6, stay: 700000, fare: 3000000, desc: 'Berenang bersama ubur-ubur tak menyengat di Danau Kakaban.' },
+    { id: 'bunaken', name: 'Bunaken', island: 'Sulawesi', type: 'Laut', rating: 4.6, stay: 650000, fare: 3200000, desc: 'Taman laut dengan dinding karang curam dan penyu hijau.' },
+    { id: 'kelimutu', name: 'Danau Kelimutu', island: 'Nusa Tenggara', type: 'Gunung', rating: 4.7, stay: 400000, fare: 3600000, desc: 'Tiga danau kawah yang warnanya berubah dari waktu ke waktu.' },
+    { id: 'toraja', name: 'Tana Toraja', island: 'Sulawesi', type: 'Budaya', rating: 4.6, stay: 500000, fare: 2800000, desc: 'Rumah adat tongkonan dan tradisi upacara Rambu Solo.' }
+  ];
+  const TYPES = {
+    Laut: { icon: '🏝️', color: '#0ea5e9' },
+    Gunung: { icon: '🌋', color: '#f97316' },
+    Danau: { icon: '🏞️', color: '#0284c7' },
+    Budaya: { icon: '🛕', color: '#a16207' }
+  };
+  const DAILY = 300000; // makan & transport lokal per orang per hari
+  const STORAGE_KEY = 'jelajah-trip';
+  const rupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
+  const $ = id => document.getElementById(id);
+  const findDest = id => dests.find(d => d.id === id);
+
+  let trip = [];
+  try {
+    trip = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]').filter(t => findDest(t.id));
+  } catch (e) {
+    trip = [];
+  }
+
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(trip)); } catch (e) { /* penyimpanan tidak tersedia */ }
+  }
+
+  [...new Set(dests.map(d => d.island))].sort().forEach(island => $('island').add(new Option(island)));
+
+  function renderDests() {
+    const q = $('q').value.trim().toLowerCase();
+    const island = $('island').value;
+    const budget = Number($('budget').value) || Infinity;
+    const list = dests.filter(d => (!island || d.island === island) && d.stay <= budget &&
+      (d.name + d.desc + d.type + d.island).toLowerCase().includes(q));
+    $('result-count').textContent = `${list.length} dari ${dests.length} destinasi`;
+    $('dests').innerHTML = list.map(d => {
+      const inTrip = trip.some(t => t.id === d.id);
+      const type = TYPES[d.type];
+      return `<article class="dest">
+        <div class="pic" style="--c: ${type.color}" aria-hidden="true">${type.icon}</div>
+        <div class="body">
+          <h3>${d.name}</h3>
+          <p class="meta">${d.type} · ${d.island} · ★ ${d.rating}</p>
+          <p class="desc">${d.desc}</p>
+          <div class="row">
+            <span><b>${rupiah.format(d.stay)}</b> <small class="meta">/malam*</small></span>
+            <button class="add" data-id="${d.id}" aria-pressed="${inTrip}">${inTrip ? '✓ Ditambahkan' : '+ Rencana'}</button>
+          </div>
+        </div>
+      </article>`;
+    }).join('') || '<p class="meta">Tidak ada destinasi yang cocok. Coba longgarkan filter.</p>';
+  }
+
+  function renderTrip() {
+    $('trip').innerHTML = trip.map(t => {
+      const d = findDest(t.id);
+      return `<li>
+        <div>
+          <b>${d.name}</b>
+          <div class="nights">
+            <button data-dec="${d.id}" aria-label="Kurangi malam di ${d.name}">−</button>
+            ${t.nights} malam
+            <button data-inc="${d.id}" aria-label="Tambah malam di ${d.name}">+</button>
+          </div>
+        </div>
+        <button class="rm" data-rm="${d.id}" aria-label="Hapus ${d.name} dari rencana">Hapus</button>
+      </li>`;
+    }).join('');
+    $('trip-empty').hidden = trip.length > 0;
+    $('share').disabled = !trip.length;
+
+    let day = 1;
+    $('itinerary').innerHTML = trip.map(t => {
+      const line = `<li>Hari ${day}–${day + t.nights}: ${findDest(t.id).name}</li>`;
+      day += t.nights;
+      return line;
+    }).join('');
+
+    // Rumus perkiraan: kamar berisi 2 orang, tiket PP per orang untuk tiap destinasi,
+    // biaya harian per orang untuk (total malam + 1) hari.
+    const people = Math.min(10, Math.max(1, Number($('people').value) || 1));
+    const nights = trip.reduce((sum, t) => sum + t.nights, 0);
+    const rooms = Math.ceil(people / 2);
+    const stay = trip.reduce((sum, t) => sum + findDest(t.id).stay * t.nights * rooms, 0);
+    const fare = trip.reduce((sum, t) => sum + findDest(t.id).fare, 0) * people;
+    const daily = trip.length ? DAILY * people * (nights + 1) : 0;
+    const total = stay + fare + daily;
+
+    $('stay-label').textContent = `Penginapan (${nights} malam, ${rooms} kamar)`;
+    $('fare-label').textContent = `Tiket pesawat (${people} orang)`;
+    $('stay').textContent = rupiah.format(stay);
+    $('fare').textContent = rupiah.format(fare);
+    $('daily').textContent = rupiah.format(daily);
+    $('total').textContent = rupiah.format(total);
+    $('per-person').textContent = rupiah.format(total / people);
+  }
+
+  // Daftar digambar ulang, jadi fokus keyboard dikembalikan ke tombol yang sama.
+  function update(focusSelector) {
+    save();
+    renderDests();
+    renderTrip();
+    document.querySelector(focusSelector)?.focus();
+  }
+
+  $('dests').addEventListener('click', e => {
+    const button = e.target.closest('.add');
+    if (!button) return;
+    const id = button.dataset.id;
+    if (trip.some(t => t.id === id)) trip = trip.filter(t => t.id !== id);
+    else trip.push({ id, nights: 2 });
+    update(`.add[data-id="${id}"]`);
+  });
+
+  $('trip').addEventListener('click', e => {
+    const { inc, dec, rm } = e.target.dataset;
+    const item = trip.find(t => t.id === (inc || dec || rm));
+    if (!item) return;
+    if (inc) item.nights = Math.min(14, item.nights + 1);
+    if (dec) item.nights = Math.max(1, item.nights - 1);
+    if (rm) trip = trip.filter(t => t !== item);
+    update(inc ? `[data-inc="${inc}"]` : dec ? `[data-dec="${dec}"]` : '#people');
+  });
+
+  $('finder').addEventListener('submit', e => e.preventDefault());
+  $('finder').addEventListener('input', renderDests);
+  $('people').addEventListener('input', renderTrip);
+
+  $('share').addEventListener('click', async () => {
+    const stops = trip.map(t => `${findDest(t.id).name} (${t.nights} malam)`).join(' → ');
+    const text = `Rencana liburan: ${stops}. Perkiraan total ${$('total').textContent} untuk ${$('people').value} orang.`;
+    try {
+      await navigator.clipboard.writeText(text);
+      $('share-status').textContent = 'Ringkasan disalin ke clipboard.';
+    } catch (e) {
+      $('share-status').textContent = text;
+    }
+  });
+
+  renderDests();
+  renderTrip();
+</script>
+</body>
+</html>

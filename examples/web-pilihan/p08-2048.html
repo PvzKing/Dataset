@@ -46,6 +46,7 @@
   .legend span { padding: 3px 8px; border-radius: 6px; font-size: .75rem; font-weight: 700; }
   /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
   body, button { font-family: "Rubik", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
@@ -59,7 +60,7 @@
   </div>
   <div class="row">
     <p>Gabungkan rempah sampai <b>2048 · Emas Hitam</b>!</p>
-    <div class="btns"><button class="btn" id="undo" disabled>↶</button><button class="btn" id="new">Baru</button></div>
+    <div class="btns"><button class="btn" id="undo" disabled aria-label="Urungkan langkah" title="Urungkan (Ctrl+Z)">↶</button><button class="btn" id="new">Baru</button></div>
   </div>
   <div class="board" id="board">
     <div class="grid">

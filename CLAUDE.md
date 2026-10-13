@@ -8,6 +8,7 @@ Repo ini berisi dataset instruct berbahasa Indonesia dan perangkat fine-tuning. 
 - **Mengubah sampel Python:** edit sumbernya di `data/python-src/<id>/`, bukan `train.jsonl`, lalu jalankan `python scripts/build_python_samples.py` dan `python scripts/decontaminate.py`.
 - **Mengubah `eval-suite/`:** jalankan `python eval-suite/indopy/cek_soal.py` dan `python eval-suite/web/uji_pemeriksa.py`. Isi `eval-suite/` adalah data uji: jangan dijadikan sampel latihan.
 - **Mengubah website di `examples/web/`:** jalankan juga tes browser di `tests/`.
-- **Mengubah `examples/web-pilihan/`:** jalankan `WEB_DIR=web-pilihan node test_web.mjs` dari `tests/`. Folder ini bukan data latihan.
+- **Mengubah `examples/web-pilihan/`:** jalankan `WEB_DIR=web-pilihan node test_web.mjs` dari `tests/`. Folder ini etalase, bukan data latihan. Versi datanya ada di `examples/web/27-`…`41-` (sampel `web-027`–`web-041`); perubahan di etalase tidak otomatis ikut ke sana.
+- **Mengubah `examples/web/27-`…`41-`:** salin HTML yang sama ke sampelnya di `data/train.jsonl`, lalu jalankan `python scripts/validate.py` dan tes browser. Jaga panjang sampel tetap ±6.200 token atau kurang. Jangan menambah sampel yang tugasnya sama dengan soal Web-eval.
 - **Mengubah `docs/PROSEDUR_V4.md`:** jalankan `python scripts/md_to_notebook.py` supaya `notebooks/v4_pilot_colab.ipynb` ikut diperbarui.
 - **Mengubah `scripts/panel_v4.py` atau `scripts/build_panel_notebook.py`:** jalankan `python scripts/build_panel_notebook.py` dan uji alurnya dengan `python scripts/panel_v4.py --demo /tmp/panel-demo`. Pilihan langkah di notebook harus sama dengan judul langkah di panel.

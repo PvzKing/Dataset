@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rutin — Pelacak Kebiasaan Harian</title>
+<style>
+  :root { --bg: #0d1117; --card: #161b22; --text: #e6edf3; --muted: #8b949e; --line: #30363d; --accent: #3fb950; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  button, input { font: inherit; color: inherit; }
+  .wrap { width: min(980px, 100% - 32px); margin: 0 auto; padding: 28px 0 60px; }
+  header { display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
+  h1 { font-size: 1.8rem; letter-spacing: -.02em; }
+  header p { color: var(--muted); }
+  .ring-wrap { display: flex; align-items: center; gap: 12px; }
+  .ring { width: 64px; height: 64px; position: relative; }
+  .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring b { position: absolute; inset: 0; display: grid; place-items: center; font-size: .9rem; }
+  .ring-wrap small { color: var(--muted); display: block; }
+
+  .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 20px; }
+  .wd { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 0; text-align: center; cursor: pointer; }
+  .wd small { color: var(--muted); font-size: .72rem; display: block; }
+  .wd b { font-size: 1.05rem; }
+  .wd.sel { border-color: var(--accent); background: rgba(63, 185, 80, .12); }
+  .wd.today b { color: var(--accent); }
+  .wd i { display: block; height: 4px; margin: 6px auto 0; width: 60%; border-radius: 9px; background: var(--line); overflow: hidden; }
+  .wd i span { display: block; height: 100%; background: var(--accent); }
+
+  .habits { display: grid; gap: 12px; }
+  .habit { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px; display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; }
+  .check { width: 48px; height: 48px; border-radius: 14px; border: 2px solid var(--c); background: transparent; cursor: pointer; font-size: 1.4rem; display: grid; place-items: center; transition: background .2s, transform .15s; }
+  .check:active { transform: scale(.92); }
+  .habit.done .check { background: var(--c); }
+  .habit h3 { font-size: 1.02rem; }
+  .habit .meta { color: var(--muted); font-size: .85rem; display: flex; gap: 12px; flex-wrap: wrap; }
+  .streak { color: #f0883e; font-weight: 600; }
+  .heat { grid-column: 1 / -1; display: grid; grid-template-rows: repeat(7, 13px); grid-auto-flow: column; grid-auto-columns: 13px; gap: 3px; justify-content: end; overflow: hidden; }
+  .heat span { border-radius: 3px; background: var(--line); }
+  .heat span.on { background: var(--c); }
+  .heat span.future { background: transparent; }
+  .del { border: 0; background: none; color: var(--muted); cursor: pointer; width: 34px; height: 34px; border-radius: 8px; }
+  .del:hover { background: var(--line); color: #f85149; }
+  .del.armed { width: auto; padding: 0 10px; color: #f85149; font-weight: 700; }
+
+  .add { margin-top: 18px; background: var(--card); border: 1px dashed var(--line); border-radius: 18px; padding: 16px; display: grid; gap: 12px; }
+  .add-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .add input[type=text] { flex: 1 1 200px; min-width: 0; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); }
+  .add input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  .emojis, .colors { display: flex; gap: 6px; flex-wrap: wrap; }
+  .emojis button { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; font-size: 1.1rem; }
+  .colors button { width: 28px; height: 28px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; }
+  .emojis button.sel { border-color: var(--accent); background: rgba(63,185,80,.15); }
+  .colors button.sel { border-color: #fff; }
+  .btn { background: var(--accent); color: #04260f; border: 0; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+  .empty { text-align: center; color: var(--muted); padding: 30px; }
+  .quote { margin-top: 26px; color: var(--muted); text-align: center; font-style: italic; }
+  @media (max-width: 480px) { .wd { padding: 6px 0; } .wd small { font-size: .65rem; } }
+  .habit .meta, .ring b, .wd b { font-family: ui-monospace, Menlo, Consolas, monospace; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1>Rutin<span style="color:var(--accent)">.</span></h1><p id="date-label"></p></div>
+    <div class="ring-wrap">
+      <div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--line)" stroke-width="3.5"/><circle id="ring" cx="18" cy="18" r="15.9" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="0 100" style="transition:stroke-dasharray .5s"/></svg><b id="ring-text">0%</b></div>
+      <div><b id="ring-count">0/0</b><small>selesai hari ini</small></div>
+    </div>
+  </header>
+
+  <div class="week" id="week"></div>
+  <div class="habits" id="habits"></div>
+
+  <form class="add" id="add-form">
+    <b>Tambah kebiasaan baru</b>
+    <div class="add-row"><input type="text" id="habit-name" placeholder="mis. Membaca 10 halaman" maxlength="40" aria-label="Nama kebiasaan"><button class="btn" type="submit">+ Tambah</button></div>
+    <div class="emojis" id="emojis"></div>
+    <div class="colors" id="colors"></div>
+  </form>
+  <p class="quote" id="quote"></p>
+</div>
+
+<script>
+  const EMOJIS = ['📖', '💧', '🏃', '🧘', '🕌', '🥗', '😴', '✍️', '🎸', '💰'];
+  const COLORS = ['#3fb950', '#58a6ff', '#f0883e', '#db61a2', '#a371f7', '#e3b341'];
+  const QUOTES = ['“Kebiasaan kecil, jika dilakukan setiap hari, menghasilkan perubahan besar.”', '“Sedikit demi sedikit, lama-lama menjadi bukit.”', '“Jangan putus rantainya. Satu hari lagi.”'];
+  const DAY = 864e5;
+  const key = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  let selected = new Date(today);
+  let emoji = EMOJIS[0], color = COLORS[0];
+
+  let habits;
+  try { habits = JSON.parse(localStorage.getItem('rutin-habits')); } catch (e) {}
+  if (!Array.isArray(habits)) {
+    // Contoh data: beberapa hari terakhir sudah tercentang
+    const past = (n, skip) => Array.from({ length: n }, (_, i) => i).filter(i => !skip.includes(i)).map(i => key(new Date(today - (i + 1) * DAY)));
+    habits = [
+      { id: 1, name: 'Minum 8 gelas air', emoji: '💧', color: '#58a6ff', done: past(20, [4, 9, 15]) },
+      { id: 2, name: 'Membaca 10 halaman', emoji: '📖', color: '#3fb950', done: past(12, [2, 7]) },
+      { id: 3, name: 'Olahraga 20 menit', emoji: '🏃', color: '#f0883e', done: past(5, [1]) }
+    ];
+  }
+  const save = () => { try { localStorage.setItem('rutin-habits', JSON.stringify(habits)); } catch (e) {} };
+
+  function streak(h) {
+    const set = new Set(h.done);
+    let d = new Date(today);
+    if (!set.has(key(d))) d = new Date(d - DAY); // belum dicentang hari ini tidak memutus rantai
+    let n = 0;
+    while (set.has(key(d))) { n++; d = new Date(d - DAY); }
+    return n;
+  }
+  function best(h) {
+    const days = [...h.done].sort();
+    let bestN = 0, cur = 0, prev = null;
+    days.forEach(k => {
+      const t = new Date(k + 'T00:00').getTime();
+      cur = prev !== null && Math.round((t - prev) / DAY) === 1 ? cur + 1 : 1;
+      bestN = Math.max(bestN, cur); prev = t;
+    });
+    return bestN;
+  }
+
+  function renderWeek() {
+    const start = new Date(today - 6 * DAY);
+    let html = '';
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start.getTime() + i * DAY);
+      const k = key(d);
+      const pct = habits.length ? habits.filter(h => h.done.includes(k)).length / habits.length * 100 : 0;
+      html += `<button class="wd ${k === key(selected) ? 'sel' : ''} ${k === key(today) ? 'today' : ''}" data-k="${k}">
+        <small>${d.toLocaleDateString('id-ID', { weekday: 'short' })}</small><b>${d.getDate()}</b><i><span style="width:${pct}%"></span></i></button>`;
+    }
+    document.getElementById('week').innerHTML = html;
+  }
+
+  function renderHabits() {
+    const k = key(selected);
+    const el = document.getElementById('habits');
+    if (!habits.length) { el.innerHTML = '<div class="empty">Belum ada kebiasaan. Mulai dengan satu yang kecil di bawah ini.</div>'; return; }
+    // Heatmap minggu-minggu terakhir, kolom = minggu (Senin di atas)
+    const end = new Date(today); end.setDate(end.getDate() + (7 - ((end.getDay() + 6) % 7)) - 1);
+    // Jumlah minggu menyesuaikan lebar kartu (sel 13px + celah 3px)
+    const weeks = Math.max(12, Math.min(53, Math.floor((el.clientWidth - 32 + 3) / 16)));
+    const start = new Date(end - (weeks * 7 - 1) * DAY);
+    el.innerHTML = habits.map(h => {
+      const set = new Set(h.done);
+      let cells = '';
+      for (let t = start.getTime(); t <= end.getTime(); t += DAY) {
+        const d = new Date(t), dk = key(d);
+        cells += `<span class="${d > today ? 'future' : set.has(dk) ? 'on' : ''}" title="${d.toLocaleDateString('id-ID')}"></span>`;
+      }
+      const s = streak(h);
+      return `<div class="habit ${set.has(k) ? 'done' : ''}" style="--c:${h.color}">
+        <button class="check" data-toggle="${h.id}" aria-label="Tandai ${escapeHTML(h.name)}" aria-pressed="${set.has(k)}">${set.has(k) ? '✓' : h.emoji}</button>
+        <div><h3>${escapeHTML(h.name)}</h3><div class="meta"><span class="streak">🔥 ${s} hari beruntun</span><span>Terbaik ${best(h)} hari</span><span>${h.done.length}× total</span></div></div>
+        <button class="del" data-del="${h.id}" aria-label="Hapus ${escapeHTML(h.name)}">✕</button>
+        <div class="heat">${cells}</div>
+      </div>`;
+    }).join('');
+  }
+  const escapeHTML = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  function renderRing() {
+    const k = key(selected);
+    const n = habits.filter(h => h.done.includes(k)).length, total = habits.length;
+    const pct = total ? Math.round(n / total * 100) : 0;
+    document.getElementById('ring').setAttribute('stroke-dasharray', `${pct} 100`);
+    document.getElementById('ring-text').textContent = pct + '%';
+    document.getElementById('ring-count').textContent = `${n}/${total}`;
+    document.querySelector('.ring-wrap small').textContent = key(selected) === key(today) ? 'selesai hari ini' : 'selesai pada ' + selected.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+    document.getElementById('date-label').textContent = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+  function render() { renderWeek(); renderHabits(); renderRing(); }
+
+  document.getElementById('week').addEventListener('click', e => {
+    const b = e.target.closest('.wd'); if (!b) return;
+    selected = new Date(b.dataset.k + 'T00:00'); render();
+  });
+  document.getElementById('habits').addEventListener('click', e => {
+    const t = e.target.closest('[data-toggle]'), d = e.target.closest('[data-del]');
+    if (t) {
+      const h = habits.find(x => x.id === +t.dataset.toggle), k = key(selected);
+      h.done = h.done.includes(k) ? h.done.filter(x => x !== k) : [...h.done, k];
+      save(); render();
+      if (habits.every(x => x.done.includes(k))) document.getElementById('quote').textContent = '🎉 Semua kebiasaan selesai! ' + QUOTES[0];
+    }
+    if (d) {
+      // Konfirmasi dua ketukan: ketukan pertama meminta kepastian, ketukan kedua menghapus
+      const h = habits.find(x => x.id === +d.dataset.del);
+      if (d.dataset.armed) { habits = habits.filter(x => x !== h); save(); render(); return; }
+      d.dataset.armed = '1'; d.textContent = 'Hapus?'; d.classList.add('armed');
+      setTimeout(() => { if (d.isConnected) { delete d.dataset.armed; d.textContent = '✕'; d.classList.remove('armed'); } }, 3000);
+    }
+  });
+
+  document.getElementById('emojis').innerHTML = EMOJIS.map((e, i) => `<button type="button" class="${i ? '' : 'sel'}" data-e="${e}">${e}</button>`).join('');
+  document.getElementById('colors').innerHTML = COLORS.map((c, i) => `<button type="button" class="${i ? '' : 'sel'}" data-c="${c}" style="background:${c}" aria-label="Warna ${i + 1}"></button>`).join('');
+  document.getElementById('emojis').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; emoji = b.dataset.e; [...b.parentNode.children].forEach(x => x.classList.toggle('sel', x === b)); });
+  document.getElementById('colors').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; color = b.dataset.c; [...b.parentNode.children].forEach(x => x.classList.toggle('sel', x === b)); });
+  document.getElementById('add-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = document.getElementById('habit-name').value.trim();
+    if (!name) return document.getElementById('habit-name').focus();
+    habits.push({ id: Date.now(), name, emoji, color, done: [] });
+    document.getElementById('habit-name').value = '';
+    save(); render();
+  });
+  document.getElementById('quote').textContent = QUOTES[today.getDate() % QUOTES.length];
+  let rz;
+  window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(renderHabits, 150); });
+  render();
+</script>
+</body>
+</html>
