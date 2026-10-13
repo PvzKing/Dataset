@@ -10,7 +10,8 @@ Dataset instruksi berbahasa Indonesia untuk fine-tuning **Qwen3.5-4B** dalam mod
 | Perbaikan bug website (`web_debug`) | 12 | ±3.650 | XSS, urutan operasi, timer di tab latar, `localStorage` rusak, overflow di HP, acak tidak aman, dan lainnya |
 | Python terverifikasi (`py_*`, `tech-023`) | 21 | ±2.000 | fungsi dengan kasus tepi, program lengkap dengan tes, debug dari traceback, olah data CSV/log, menulis tes, multi-giliran (Python 3.8, kebutuhan berubah), review keamanan, Python untuk web (Flask, generator HTML) |
 | Teknologi & pemrograman | 22 | ±700 | algoritma, struktur data, database, keamanan, sistem terdistribusi, Git, testing, AI |
-| Matematika & logika | 11 | ±800 | kalkulus, pembuktian, probabilitas, statistik, aljabar, teka-teki logika |
+| Matematika & logika | 15 | ±800 | kalkulus, pembuktian, probabilitas, statistik, aljabar, teka-teki logika, dan 4 sampel `matematika-*` dengan `<think>` (rata-rata token untuk 4 sampel itu belum diukur) |
+| Hukum | 1 | belum diukur | sengketa utang piutang, wanprestasi dan penipuan |
 | Sains | 10 | ±850 | fisika, biologi, kimia, ilmu bumi |
 | **Total** | **107** | | ±238 ribu token, sampel terpanjang ±6.200 token |
 
@@ -126,8 +127,10 @@ Pemisahan dibuat di `data/kelompok/`:
 
 Catatan untuk training:
 - `scripts/train_unsloth.py` merender jawaban yang diawali `<think>` dalam mode thinking (`enable_thinking=True`). Jawaban lainnya tetap memakai blok kosong seperti sebelumnya.
-- Template `qwen3_5_nothink` di LLaMA-Factory tidak mendukung sampel bertag ini. Gunakan `train_unsloth.py` untuk data dengan penalaran.
+- Jalur LLaMA-Factory (`dataset_info.json` dan file yaml) memakai `train.jsonl` penuh, sehingga 4 sampel ber-`<think>` ikut dilatih lewat template `qwen3_5_nothink`. Cara template itu menangani teks `<think>` di jawaban belum diuji. Sampai diuji, gunakan `train_unsloth.py` untuk data dengan penalaran.
+- Untuk `qwen2.5-coder-7b` (`train_unsloth.py`), sampel `<think>` dilatih sebagai teks biasa, karena template-nya tidak punya opsi thinking.
 - Empat sampel belum cukup untuk membuat model belajar mode thinking secara andal. Kelompok `penalaran.jsonl` perlu diperbesar dulu.
+- Angka token di tabel *Isi* belum dihitung ulang setelah penambahan sampel baru.
 
 ## Mencampur dengan dataset umum
 
