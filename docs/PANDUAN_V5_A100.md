@@ -38,7 +38,7 @@ Perkiraan total ±2,5–4 jam di A100. Angka ini belum pernah diukur untuk resep
 | Langkah | Isi | Perkiraan |
 |---|---|---|
 | Sel 1 | cek GPU, pasang paket, hubungkan Drive, unduh script dan data, cek data | ±8–12 menit pertama kali, berikutnya <1 menit |
-| Training | 281 sampel × 3 epoch = 108 step, lalu 2 website uji | ±25–65 menit, ditambah ±10 menit website uji |
+| Training | 281 sampel × 3 epoch, batch efektif 4 = 213 step, lalu 2 website uji | ±25–65 menit, ditambah ±10 menit website uji |
 | Uji epoch 3 | MBPP+, IndoPy-dev, Web-eval, HumanEval+; model dasar ikut dijawab sekali | ±60–90 menit |
 | Uji epoch 2 | MBPP+, IndoPy-dev, Web-eval; jawaban model dasar dipakai ulang | ±35–50 menit |
 | Ekspor | GGUF Q4_K_M (dan model 16-bit jika dipilih) | ±10–20 menit |
@@ -51,17 +51,25 @@ Perkiraan total ±2,5–4 jam di A100. Angka ini belum pernah diukur untuk resep
 | Data | own + HumanEval dalam **satu** run (`--dataset own+bench`) | Website dan Python dilatih bersama, jadi kemampuan website tidak tergeser oleh data Python |
 | Presisi | LoRA 16-bit (bf16) | Cara yang disarankan Unsloth untuk Qwen3.5. A100 mendukung bf16 asli |
 | Konteks training | 16.384 token | Sampel terpanjang ±6.200 token, jadi tidak ada yang dibuang |
-| LoRA | r 16, alpha 32, semua layer linear bahasa, vision dibekukan | Sama dengan v3 dan v4, sudah terbukti stabil |
-| Optimasi | lr 1e-4 cosine, warmup 10%, batch efektif 8, seed 42 | Sama dengan v3 dan v4 |
+| LoRA | r 16, alpha 32, semua layer linear bahasa, vision dibekukan | Sama dengan v3 |
+| Optimasi | **lr 2e-4** cosine, warmup 10%, **batch efektif 4** (1 × grad-accum 4), seed 42 | Resep yang terbukti berhasil di v3. Lihat penjelasan di bawah |
 | **Epoch** | **3, dengan adapter epoch 2 dan 3 disimpan, lalu dipilih yang terbaik dari hasil uji** | Lihat di bawah |
 | Checkpoint | setiap 10 step ke Drive, 2 checkpoint terakhir disimpan | Resume otomatis jika Colab terputus |
 | Batas jawaban saat uji | 12.000 token | Website panjang tidak terpotong |
 
-**Kenapa 3 epoch, dan kenapa epoch 2 tetap diuji.**
-- Dengan 281 sampel, 1 epoch terlalu sedikit untuk membentuk kebiasaan jawaban, misalnya satu file HTML lengkap ditutup **Cek kebutuhan**. Resep 3 epoch sudah dipakai v3 dan v4 tanpa tanda menghafal.
-- Data V5 punya risiko yang belum pernah diuji: 164 jawaban HumanEval yang ringkas. Dari percobaan bench-lanjut sudah terlihat bahwa model cepat meniru gaya ringkas itu, dan ketelitiannya bisa turun.
-- Karena itu adapter epoch 2 dan epoch 3 sama-sama disimpan dan diuji. Epoch 2 dipakai sebagai V5 hanya jika rata-rata skor MBPP+, IndoPy-dev, dan Web-eval-nya minimal 1 poin lebih tinggi.
-- Keputusan diambil dari hasil uji, bukan dari loss. Loss training menyesatkan untuk data seperti ini (`RENCANA_PYTHON.md`, pelajaran 3).
+**Kenapa lr 2e-4, batch efektif 4, dan 3 epoch.** Resep ini diambil dari run Colab sungguhan sebelumnya (semuanya di T4):
+
+| Run | Resep | Hasil |
+|---|---|---|
+| v2 | 62 sampel, lr 1e-4, batch efektif 8, 3 epoch (24 update) | format jawaban **tidak** terbentuk; dinilai terlalu lemah |
+| v3 | 79 sampel, lr 2e-4, batch efektif 4, 3 epoch (60 update) | format terbentuk; train_loss 0,60 |
+| bench-lanjut | v3 + 164 soal HumanEval saja, lr 1e-4, batch 8, 3 epoch | loss turun sampai 0,03–0,06 (menghafal), mutu website turun, dan bagian **Cek kebutuhan** hilang |
+
+- **Lr 2e-4 dengan batch efektif 4 = dosis v3.** Data own V5 lebih banyak dan dicampur HumanEval. Dengan resep v4 (lr 1e-4, batch 8), dosis per sampel untuk data own hanya ±⅓ dari v3, mendekati v2 yang gagal.
+- **Hasilnya, epoch 2 kira-kira setara dengan v3,** dan epoch 3 ±1,5 kali lebih kuat.
+- **Kenapa epoch 2 tetap diuji:** pada dosis epoch 3, risikonya adalah 164 jawaban HumanEval yang ringkas mulai mendominasi, seperti di bench-lanjut. Karena itu adapter epoch 2 dan epoch 3 sama-sama disimpan dan diuji.
+- **Aturan pemilihan:** epoch 2 dipakai sebagai V5 hanya jika rata-ratanya minimal 1 poin lebih tinggi. Rata-rata itu dihitung dari MBPP+, IndoPy-dev, Web-eval, dan kepatuhan format **Cek kebutuhan**.
+- **Keputusan diambil dari hasil uji, bukan dari loss.** Loss training menyesatkan untuk data seperti ini (`RENCANA_PYTHON.md`, pelajaran 3), dan loss bench-lanjut yang sangat rendah justru tanda menghafal.
 
 ### Peringatan: skor HumanEval V5 tidak bersih
 
@@ -141,7 +149,8 @@ CABANG = ["main", "claude/zen-babbage-wyppwh"]  # script diambil dari cabang per
 EVALPLUS = "evalplus @ git+https://github.com/evalplus/evalplus@26d6d00bb1fd0fa37f39c99d5290da67891d1c5e"
 OOM = r"CUDA out of memory|OutOfMemoryError"
 LATIH = ["--dataset", "own+bench", "--name", NAMA, "--out", str(FOLDER), "--data", "/content/train.jsonl",
-         "--no-load-in-4bit", "--max-seq-len", str(KONTEKS), "--epochs", str(EPOCH)]  # sama di semua perintah
+         "--no-load-in-4bit", "--max-seq-len", str(KONTEKS), "--epochs", str(EPOCH),
+         "--lr", "2e-4", "--grad-accum", "4"]  # sama di semua perintah; dosis per sampel sama dengan v3
 WEB = ["--max-seq-len", str(KONTEKS), "--max-new-tokens", "12000"]
 UJI_FINAL = [  # (nama, script, folder hasil, argumen tambahan, batch); HumanEval+ terakhir karena terkontaminasi
     ("MBPP+", "eval_humaneval.py", "eval-mbpp", ["--dataset", "mbpp"], 32),
@@ -267,7 +276,7 @@ print("Siap. Jalankan Sel 2, lalu Sel 3." if all(ok for _, ok, _ in cek) else
 ✅ Paket            unsloth ok, evalplus ok, playwright ok, chromium ok
 ✅ Google Drive     /content/drive/MyDrive/finetune-id/V5, ruang kosong ±80 GB (butuh ±8 GB)
 ✅ Script dan data  cabang main
-✅ Data training    281 sampel (seharusnya 281), 0 dibuang, terpanjang 62xx token, 108 step
+✅ Data training    281 sampel (seharusnya 281), 0 dibuang, terpanjang 62xx token, 213 step
 ```
 
 | Kalau muncul | Artinya | Yang dilakukan |
@@ -342,13 +351,16 @@ def pilih_epoch():
         rata = {}
         for n in (EPOCH - 1, EPOCH):
             nilai = [skor(n, folder, kunci) for _, folder, kunci in BERSIH]
-            if None in nilai:
+            web = HASIL / "eval-web" / tag_epoch(n) / "ringkasan.json"
+            if None in nilai or not web.is_file():
                 raise SystemExit(f"Uji epoch {n} belum lengkap. Jalankan uji({n}, UJI_EPOCH) dulu.")
+            web = json.loads(web.read_text())
+            nilai.append(web["format_cek_kebutuhan"] / web["soal"])  # format yang hilang di percobaan bench-lanjut
             rata[n] = sum(nilai) / len(nilai)
         if rata[EPOCH - 1] >= rata[EPOCH] + 0.01:  # epoch lebih awal hanya dipilih jika unggul minimal 1 poin
             pilihan = EPOCH - 1
-        alasan = (f"rata-rata MBPP+, IndoPy-dev, dan Web-eval: epoch {EPOCH - 1} {rata[EPOCH - 1]:.1%}, "
-                  f"epoch {EPOCH} {rata[EPOCH]:.1%}")
+        alasan = (f"rata-rata MBPP+, IndoPy-dev, Web-eval, dan format Cek kebutuhan: epoch {EPOCH - 1} "
+                  f"{rata[EPOCH - 1]:.1%}, epoch {EPOCH} {rata[EPOCH]:.1%}")
     if pilihan != EPOCH:
         shutil.rmtree(LORA)
         shutil.copytree(epoch_lora(pilihan), LORA)
@@ -482,7 +494,7 @@ else:
 | | `data valid: 281 sampel` dan `281 sampel dipakai, 0 dibuang` | semua data ikut |
 | | `cek masking: ... token sampel pertama ikut dilatih` | hanya jawaban asisten yang dilatih |
 | | `[status] training: mulai dari awal` atau `mulai dari .../checkpoint-60` | baris kedua berarti melanjutkan dari checkpoint |
-| | progress bar sampai `108/108`, dengan `adapter epoch 1/2/3 disimpan` di akhir tiap epoch | training berjalan |
+| | progress bar sampai `213/213`, dengan `adapter epoch 1/2/3 disimpan` di akhir tiap epoch | training berjalan |
 | | dua website uji mengalir di layar, lalu `[status] done` | adapter V5 sudah ada di Drive |
 | Uji | `[qwen3.5-4b-V5-epoch-3] 64/378 soal ...`, lalu `model-dasar`, lalu tabel perbandingan | uji berjalan; model dasar hanya dijawab sekali |
 | Pilih epoch | `V5 memakai adapter epoch 3 ...` beserta alasannya | adapter final sudah ditentukan |
@@ -555,6 +567,8 @@ if (RUN / "status.json").is_file():
 | `CUDA out of memory` saat uji | batch terlalu besar | tidak perlu apa-apa: batch diturunkan otomatis dan uji diulang tanpa kehilangan jawaban |
 | `data atau pengaturan berubah: hasil lama dipindah ke ...arsip...` | `EPOCH`, `KONTEKS`, atau data berubah sejak checkpoint dibuat | wajar jika memang sengaja diubah. Kalau tidak, kembalikan pengaturannya dan pindahkan isi `arsip/` kembali |
 | loss `nan` | versi Unsloth bermasalah | `!pip install --upgrade --force-reinstall unsloth`, Restart session, lalu Sel 1, 2, dan 3 |
+| Uji berjalan sangat lambat (puluhan token/detik) | paket `causal_conv1d` untuk lapisan Gated DeltaNet Qwen3.5 belum terpasang | opsional: `!pip install causal-conv1d --no-build-isolation` (kompilasi ±10–20 menit), Restart session, lalu Sel 1–3. Hasil tidak berubah, hanya lebih cepat |
+| Sel 1 memakai cabang `claude/...` padahal PR sudah di-merge | GitHub raw kadang menyajikan file lama sampai ±5 menit setelah merge | tidak masalah: isinya sama. Kalau ingin `main`, tunggu beberapa menit lalu jalankan Sel 1 lagi |
 | Ekspor GGUF gagal | kompilasi llama.cpp gagal atau Drive penuh | adapter V5 tetap aman. Kirim `log/gguf.log` ke chat. Adapter tetap bisa dipakai langsung (Bagian G) |
 | Ingin melatih ulang V5 dari nol | | hapus folder `MyDrive/finetune-id/V5/qwen3.5-4b-V5` di Drive, lalu jalankan Sel 1, 2, dan 3 |
 | Ingin memilih epoch secara manual | | hapus `PILIHAN_EPOCH.txt`, salin `epoch-N/qwen3.5-4b-V5-lora` menggantikan `qwen3.5-4b-V5-lora`, tulis `PILIHAN_EPOCH.txt` sendiri, hapus folder `gguf/`, lalu jalankan `ekspor()` |

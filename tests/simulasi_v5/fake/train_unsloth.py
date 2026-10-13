@@ -5,12 +5,13 @@ p = argparse.ArgumentParser()
 p.add_argument("command"); p.add_argument("--dataset"); p.add_argument("--name"); p.add_argument("--out"); p.add_argument("--data")
 p.add_argument("--no-load-in-4bit", action="store_true"); p.add_argument("--max-seq-len"); p.add_argument("--epochs", type=float)
 p.add_argument("--epoch-adapters", action="store_true"); p.add_argument("--max-new-tokens")
+p.add_argument("--lr"); p.add_argument("--grad-accum", type=int, default=8)
 a = p.parse_args()
 assert a.dataset == "own+bench"
 run = Path(a.out) / f"qwen3.5-4b-{a.name}"; run.mkdir(parents=True, exist_ok=True)
 lora = run / f"qwen3.5-4b-{a.name}-lora"
 n = sum(1 for l in open(a.data) if l.strip()) + 164
-data = {"samples": n, "dropped": [], "longest": 6231, "total_steps": -(-n // 8) * int(a.epochs)}
+data = {"samples": n, "dropped": [], "longest": 6231, "total_steps": -(-n // a.grad_accum) * int(a.epochs)}
 def status(**kw): (run / "status.json").write_text(json.dumps(kw))
 if a.command == "prepare":
     print(f"data valid: {n} sampel"); status(stage="prepared", data=data)
