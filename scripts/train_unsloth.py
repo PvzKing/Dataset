@@ -293,9 +293,13 @@ def render(tokenizer, template_kwargs, messages, **kw):
 
 def to_text(tokenizer, template_kwargs, messages):
     """Jawaban terakhir ditempel tepat setelah prompt inferensi, jadi format training sama dengan saat dipakai
-    (termasuk blok <think> kosong pada mode non-thinking Qwen3.5)."""
+    (termasuk blok <think> kosong pada mode non-thinking Qwen3.5). Jika jawaban sudah diawali <think> berisi
+    (ditulis lewat scripts/editor_think.py), blok kosong dari template dibuang supaya tidak ada dua blok <think>."""
     *history, last = messages
-    return render(tokenizer, template_kwargs, history, add_generation_prompt=True) + last["content"] + EOS
+    prompt = render(tokenizer, template_kwargs, history, add_generation_prompt=True)
+    if last["content"].startswith("<think>"):
+        prompt = re.sub(r"<think>\s*</think>\s*$", "", prompt)
+    return prompt + last["content"] + EOS
 
 
 def build_texts(tokenizer, template_kwargs, rows, max_seq_len):
