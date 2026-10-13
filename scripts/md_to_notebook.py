@@ -3,11 +3,12 @@
 Aturan:
   - blok ```python (tanpa indentasi) menjadi sel kode;
   - teks lain menjadi sel Markdown, dipecah di setiap judul ## dan ###;
-  - teks di antara <!-- hanya-md --> dan <!-- /hanya-md --> tidak ikut ke notebook.
+  - teks di antara <!-- hanya-md --> dan <!-- /hanya-md --> tidak ikut ke notebook;
+  - <!-- colab-gpu: A100 --> memilih runtime GPU saat notebook dibuka di Colab (bawaan T4).
 
 Pemakaian:
     python scripts/md_to_notebook.py                     # docs/PROSEDUR_V4.md -> notebooks/v4_pilot_colab.ipynb
-    python scripts/md_to_notebook.py PANDUAN.md OUT.ipynb
+    python scripts/md_to_notebook.py docs/PROSEDUR_V4_A100.md notebooks/v4_a100_colab.ipynb
 """
 import json
 import re
@@ -30,6 +31,11 @@ def sel(jenis, baris):
 
 
 def ubah(teks):
+    gpu = re.search(r"<!-- colab-gpu: (\w+) -->", teks)
+    colab = {"gpuType": gpu[1] if gpu else "T4", "provenance": []}
+    if gpu and gpu[1] == "A100":
+        colab["machine_shape"] = "hm"  # High-RAM
+    teks = re.sub(r"<!-- colab-gpu: \w+ -->\n?", "", teks)
     teks = re.sub(r"<!-- hanya-md -->.*?<!-- /hanya-md -->\n?", "", teks, flags=re.S)
     cells, md, kode, dalam_kode, dalam_pagar = [], [], [], False, False
     for b in teks.splitlines():
@@ -55,7 +61,7 @@ def ubah(teks):
     cells.append(sel("markdown", md))
     return {
         "cells": [c for c in cells if c],
-        "metadata": {"accelerator": "GPU", "colab": {"gpuType": "T4", "provenance": []},
+        "metadata": {"accelerator": "GPU", "colab": colab,
                      "kernelspec": {"display_name": "Python 3", "name": "python3"},
                      "language_info": {"name": "python"}},
         "nbformat": 4, "nbformat_minor": 0,
