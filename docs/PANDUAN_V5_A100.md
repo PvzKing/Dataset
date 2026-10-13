@@ -30,7 +30,7 @@ Semua hasil disimpan di Google Drive, dan setiap nama model memuat **V5**. Check
    - ekspor model;
    - laporan.
    
-   Setelah selesai, runtime dimatikan otomatis supaya compute unit tidak terbuang, dan output sel tetap terlihat.
+   Runtime tetap menyala setelah selesai. Matikan sendiri lewat **Runtime → Disconnect and delete runtime**, atau jalankan sel `matikan_runtime()` di Bagian E, supaya compute unit tidak terus terpakai.
 5. Baca laporannya di output Sel 3 atau di `MyDrive/finetune-id/V5/laporan-V5.txt`.
 
 Perkiraan total ±2,5–4 jam di A100. Angka ini belum pernah diukur untuk resep V5; ETA di setiap progress bar menunjukkan waktu sebenarnya.
@@ -113,7 +113,7 @@ Siapkan ruang Drive kosong minimal **±8 GB**: adapter, checkpoint, dan GGUF ±3
 ## Bagian A. Persiapan sebelum menjalankan sel
 
 1. Buka notebook ini dengan **akun Google yang Drive-nya akan menyimpan hasil**.
-2. **File → Save a copy in Drive.** Salinan ini menyimpan output sel, jadi hasilnya tetap bisa dibaca setelah runtime dimatikan otomatis.
+2. **File → Save a copy in Drive.** Salinan ini menyimpan output sel, jadi hasilnya tetap bisa dibaca setelah runtime dimatikan.
 3. **Runtime → Change runtime type**: pilih **A100 GPU** dan aktifkan **High-RAM** jika ada, lalu **Save**.
 4. A100 memakai **compute unit** (Colab Pro atau Pay As You Go). Cek sisanya di **Runtime → View resources** sebelum mulai. Untuk ±3–4 jam A100, siapkan sekitar 50 unit; tarif persisnya terlihat di halaman itu.
 5. Biarkan tab browser tetap terbuka selama Sel 3 berjalan. Di Colab Pro biasa, runtime bisa terputus kalau tab ditutup lama. Kalau itu terjadi, cukup ulangi Sel 1, 2, dan 3.
@@ -132,7 +132,6 @@ PILIH_EPOCH_TERBAIK = True      # uji juga adapter epoch 2, lalu pakai yang skor
 SERTAKAN_INDOPY_TEST = False    # set uji akhir yang dikunci (40 soal); True hanya sekali, untuk penilaian akhir
 EKSPOR_GGUF = True              # file GGUF Q4_K_M (±2,7 GB) untuk Ollama, llama.cpp, LM Studio
 EKSPOR_16BIT = False            # model 16-bit utuh (±9 GB) untuk transformers/vLLM; butuh ruang Drive lebih besar
-MATIKAN_RUNTIME = True          # matikan runtime otomatis setelah Sel 3 selesai atau gagal (output sel tetap terlihat)
 
 import codecs, importlib.metadata, importlib.util, json, os, re, shutil, subprocess, sys, time, urllib.request
 from pathlib import Path
@@ -263,8 +262,7 @@ print()
 for nama, ok, info in cek:
     print(f"{'✅' if ok else '❌'} {nama:<16} {info}")
 print(f"\nResep: {EPOCH} epoch, konteks {KONTEKS}, pilih epoch terbaik {'ya' if PILIH_EPOCH_TERBAIK else 'tidak'}, "
-      f"GGUF {'ya' if EKSPOR_GGUF else 'tidak'}, 16-bit {'ya' if EKSPOR_16BIT else 'tidak'}, "
-      f"matikan runtime {'ya' if MATIKAN_RUNTIME else 'tidak'}.")
+      f"GGUF {'ya' if EKSPOR_GGUF else 'tidak'}, 16-bit {'ya' if EKSPOR_16BIT else 'tidak'}.")
 print("Siap. Jalankan Sel 2, lalu Sel 3." if all(ok for _, ok, _ in cek) else
       "Perbaiki yang bertanda ❌ (atau kirim pesannya ke chat), lalu jalankan sel ini lagi.")
 ```
@@ -435,7 +433,6 @@ def laporan():
         baris.append("Catatan: IndoPy-test dikunci. Kirim skornya saja, jangan soal atau jawaban yang gagal.")
     teks = "\n".join(baris)
     (FOLDER / "laporan-V5.txt").write_text(teks + "\n", encoding="utf-8")
-    (FOLDER / "GAGAL-V5.txt").unlink(missing_ok=True)  # catatan kegagalan lama tidak berlaku lagi
     print(teks)
     print(f"\nLaporan juga disimpan di {FOLDER / 'laporan-V5.txt'}")
 
@@ -464,25 +461,11 @@ print("Langkah siap. Jalankan Sel 3 untuk menjalankan semuanya, atau sel di Bagi
 
 ## Bagian D. Sel 3: jalankan semua
 
-Sel ini menjalankan semua langkah yang belum selesai, berurutan. Langkah yang sudah selesai dilewati, jadi aman dijalankan ulang kapan pun. Kalau `MATIKAN_RUNTIME = True`, runtime dimatikan setelah selesai, **juga jika ada langkah yang gagal**, supaya compute unit tidak habis saat tidak ditunggu. Pesan error dan log tetap tersimpan. Tombol Stop di Colab tidak mematikan runtime.
+Sel ini menjalankan semua langkah yang belum selesai, berurutan. Langkah yang sudah selesai dilewati, jadi aman dijalankan ulang kapan pun. Runtime tetap menyala setelah selesai atau gagal, jadi output dan error bisa langsung diperiksa. Setelah selesai, matikan runtime sendiri supaya compute unit tidak terus terpakai (lihat Bagian E).
 
 ```python
-# ===== SEL 3: JALANKAN SEMUA (training, uji, pilih epoch, ekspor, laporan, lalu matikan runtime) =====
-try:
-    jalankan_semua()
-except KeyboardInterrupt:
-    print("\nDihentikan manual. Runtime tidak dimatikan; jalankan sel ini lagi untuk melanjutkan.")
-    raise
-except BaseException as e:
-    if MATIKAN_RUNTIME:  # pesan dicetak dan disimpan dulu, karena setelah runtime mati traceback tidak sempat tampil
-        pesan = f"{type(e).__name__}: {e}"
-        (FOLDER / "GAGAL-V5.txt").write_text(f"{time.strftime('%Y-%m-%d %H:%M')}\n{pesan}\nLog: {LOG}\n", encoding="utf-8")
-        print(f"\n{pesan}\nPesan ini juga disimpan di {FOLDER / 'GAGAL-V5.txt'}; log lengkap ada di {LOG}.")
-        matikan_runtime()
-    raise
-else:
-    if MATIKAN_RUNTIME:
-        matikan_runtime()
+# ===== SEL 3: JALANKAN SEMUA (training, uji, pilih epoch, ekspor, laporan) =====
+jalankan_semua()
 ```
 
 **Yang muncul berurutan:**
@@ -500,8 +483,7 @@ else:
 | Pilih epoch | `V5 memakai adapter epoch 3 ...` beserta alasannya | adapter final sudah ditentukan |
 | Ekspor | log llama.cpp yang panjang, lalu `[status] done: GGUF tersimpan` | file `qwen3.5-4b-V5.Q4_K_M.gguf` sudah ada |
 | Laporan | tabel skor model dasar, V5 epoch 2, dan V5 epoch 3 | salin ke chat |
-| Matikan | `Menyimpan Drive, lalu mematikan runtime ...` | runtime diputus, dan output sel tetap terlihat |
-| Jika gagal | pesan error, lalu `Pesan ini juga disimpan di .../GAGAL-V5.txt` | perbaiki sesuai pesan (Bagian F), lalu jalankan Sel 1, 2, dan 3 lagi. `GAGAL-V5.txt` terhapus sendiri setelah semua langkah berhasil |
+| Jika gagal | pesan `❌ ...` di akhir output, beserta lokasi log-nya | perbaiki sesuai pesan (Bagian F), lalu jalankan Sel 1, 2, dan 3 lagi. Langkah yang sudah selesai tidak diulang |
 
 **Contoh bentuk laporan.** Angka di bawah hanya contoh tampilan, bukan hasil model:
 
@@ -517,7 +499,7 @@ HumanEval+ (terkontaminasi)           x,x%             -          x,x%
 
 ## Bagian E. Langkah satu per satu (opsional)
 
-Pakai sel-sel ini sebagai pengganti Sel 3, misalnya untuk menjalankan ulang satu langkah. Jalankan Sel 1 dan Sel 2 dulu. Runtime tidak dimatikan otomatis di sini.
+Pakai sel-sel ini sebagai pengganti Sel 3, misalnya untuk menjalankan ulang satu langkah. Jalankan Sel 1 dan Sel 2 dulu. Sel `matikan_runtime()` di bawah menyimpan Drive lalu memutus runtime, jadi compute unit berhenti terpakai dan output sel tetap terlihat.
 
 ```python
 latih()                     # training V5 (lanjut dari checkpoint jika ada)
