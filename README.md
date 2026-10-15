@@ -6,14 +6,14 @@ Dataset instruksi berbahasa Indonesia untuk fine-tuning **Qwen3.5-4B** dalam mod
 
 | Kelompok | Sampel | Rata-rata token | Topik |
 |---|---|---|---|
-| Website one-shot (`web_oneshot`) | 26 | ±4.500 | landing page, portfolio, dashboard, toko online, game (termasuk game 3D WebGL), kalkulator, sistem kasir, form, undangan, dan lainnya |
+| Website one-shot (`web_oneshot`) | 28 | ±4.500 | landing page, portfolio, dashboard, toko online, game (termasuk game 3D WebGL), kalkulator, sistem kasir, form, undangan, dan lainnya |
 | Perbaikan bug website (`web_debug`) | 12 | ±3.650 | XSS, urutan operasi, timer di tab latar, `localStorage` rusak, overflow di HP, acak tidak aman, dan lainnya |
 | Python terverifikasi (`py_*`, `tech-023`) | 21 | ±2.000 | fungsi dengan kasus tepi, program lengkap dengan tes, debug dari traceback, olah data CSV/log, menulis tes, multi-giliran (Python 3.8, kebutuhan berubah), review keamanan, Python untuk web (Flask, generator HTML) |
 | Teknologi & pemrograman | 22 | ±700 | algoritma, struktur data, database, keamanan, sistem terdistribusi, Git, testing, AI |
 | Matematika & logika | 15 | ±800 | kalkulus, pembuktian, probabilitas, statistik, aljabar, teka-teki logika, dan 4 sampel `matematika-*` dengan `<think>` (rata-rata token untuk 4 sampel itu belum diukur) |
 | Hukum | 1 | belum diukur | sengketa utang piutang, wanprestasi dan penipuan |
 | Sains | 10 | ±850 | fisika, biologi, kimia, ilmu bumi |
-| **Total** | **107** | | ±238 ribu token, sampel terpanjang ±6.200 token |
+| **Total** | **109** | | ±238 ribu token, sampel terpanjang ±6.200 token |
 
 Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 
@@ -120,25 +120,25 @@ Dataset ini sekarang punya dua jenis jawaban:
 
 Pemisahan dibuat di `data/kelompok/`:
 
-- `penalaran.jsonl`: 4 sampel dengan `<think>` (`matematika-001` sampai `matematika-004`).
+- `penalaran.jsonl`: 6 sampel dengan `<think>` (`matematika-001` sampai `matematika-004`, `web-027`, dan `web-028`).
 - `tanpa-penalaran.jsonl`: 103 sampel lainnya.
 
-`data/train.jsonl` tetap berisi semua 107 sampel, sehingga pengaturan training dan `mix_general.py` tidak berubah.
+`data/train.jsonl` tetap berisi semua 109 sampel, sehingga pengaturan training dan `mix_general.py` tidak berubah.
 
 Catatan untuk training:
 - `scripts/train_unsloth.py` merender jawaban yang diawali `<think>` dalam mode thinking (`enable_thinking=True`). Jawaban lainnya tetap memakai blok kosong seperti sebelumnya.
-- Jalur LLaMA-Factory (`dataset_info.json` dan file yaml) memakai `train.jsonl` penuh, sehingga 4 sampel ber-`<think>` ikut dilatih lewat template `qwen3_5_nothink`. Cara template itu menangani teks `<think>` di jawaban belum diuji. Sampai diuji, gunakan `train_unsloth.py` untuk data dengan penalaran.
+- Jalur LLaMA-Factory (`dataset_info.json` dan file yaml) memakai `train.jsonl` penuh, sehingga 6 sampel ber-`<think>` ikut dilatih lewat template `qwen3_5_nothink`. Cara template itu menangani teks `<think>` di jawaban belum diuji. Sampai diuji, gunakan `train_unsloth.py` untuk data dengan penalaran.
 - Untuk `qwen2.5-coder-7b` (`train_unsloth.py`), sampel `<think>` dilatih sebagai teks biasa, karena template-nya tidak punya opsi thinking.
-- Empat sampel belum cukup untuk membuat model belajar mode thinking secara andal. Kelompok `penalaran.jsonl` perlu diperbesar dulu.
+- Enam sampel belum cukup untuk membuat model belajar mode thinking secara andal. Kelompok `penalaran.jsonl` perlu diperbesar dulu.
 - Angka token di tabel *Isi* belum dihitung ulang setelah penambahan sampel baru.
 
 ## Mencampur dengan dataset umum
 
-Melatih model hanya dengan 107 sampel berisiko membuat model "terlalu fokus", misalnya selalu menjawab dengan file HTML walaupun pertanyaannya bukan soal website. Selain itu, kemampuan umumnya bisa menurun. Karena itu, config training memakai data campuran yang dibuat oleh `scripts/mix_general.py`:
+Melatih model hanya dengan 109 sampel berisiko membuat model "terlalu fokus", misalnya selalu menjawab dengan file HTML walaupun pertanyaannya bukan soal website. Selain itu, kemampuan umumnya bisa menurun. Karena itu, config training memakai data campuran yang dibuat oleh `scripts/mix_general.py`:
 
 | Sumber | Jumlah bawaan | Isi |
 |---|---|---|
-| Dataset ini (`data/train.jsonl`) | 107 | semua sampel, tanpa dikurangi |
+| Dataset ini (`data/train.jsonl`) | 109 | semua sampel, tanpa dikurangi |
 | [`CohereForAI/aya_dataset`](https://huggingface.co/datasets/CohereForAI/aya_dataset), bagian bahasa Indonesia | 600 | tanya-jawab umum yang ditulis manusia |
 | [`ise-uiuc/Magicoder-Evol-Instruct-110K`](https://huggingface.co/datasets/ise-uiuc/Magicoder-Evol-Instruct-110K) | 200 | instruksi pemrograman (bahasa Inggris) |
 | [`HuggingFaceH4/ultrachat_200k`](https://huggingface.co/datasets/HuggingFaceH4/ultrachat_200k), split `train_sft` | 100 | percakapan umum multi-turn (bahasa Inggris) |
@@ -194,13 +194,13 @@ Dua hal yang perlu diingat:
 
 ## Pilihan data: `own` atau `mix`
 
-- **`own`**: hanya `data/train.jsonl`, 107 sampel, 3 epoch, ±710 ribu token diproses.
+- **`own`**: hanya `data/train.jsonl`, 109 sampel, 3 epoch, ±710 ribu token diproses.
 - **`mix`**: dataset ini ditambah ±900 sampel umum dari `scripts/mix_general.py`, 2 epoch, ±1 juta token dilatih.
 
 Mulailah dengan **`own`**, lalu beralih ke `mix` jika hasilnya menunjukkan gejala lupa kemampuan umum.
 
 - **Alasan memulai dengan `own`:**
-  - Qwen3.5-4B sudah dilatih dengan data umum dalam jumlah sangat besar. 107 sampel dengan LoRA rank 16 hanya mengubah sedikit bobot, jadi risiko model melupakan kemampuan umumnya kecil.
+  - Qwen3.5-4B sudah dilatih dengan data umum dalam jumlah sangat besar. 109 sampel dengan LoRA rank 16 hanya mengubah sedikit bobot, jadi risiko model melupakan kemampuan umumnya kecil.
   - Sekitar 70% token di dataset ini adalah sampel website, baik one-shot maupun perbaikan bug, dan 18% sampel Python terverifikasi. Keduanya memang kemampuan utama yang ingin diajarkan.
   - Training di T4 butuh ±30–90 menit, tidak berjam-jam, jadi cepat untuk iterasi.
 - **Kapan beralih ke `mix`.** Jika setelah training dengan `own` muncul salah satu gejala berikut:
@@ -294,7 +294,7 @@ Script ini memeriksa struktur JSON, urutan role, ID dan prompt duplikat, kelengk
 
 ## Catatan penting
 
-- **Ukuran dataset kecil.** Fine-tuning dengan 107 sampel terutama membentuk gaya dan format jawaban, misalnya kebiasaan menghasilkan satu file HTML lengkap dengan penjelasan berbahasa Indonesia. Pengetahuan baru tidak banyak bertambah. Karena itu, config bawaan memakai data campuran dengan dataset umum (lihat bagian *Mencampur dengan dataset umum*).
+- **Ukuran dataset kecil.** Fine-tuning dengan 109 sampel terutama membentuk gaya dan format jawaban, misalnya kebiasaan menghasilkan satu file HTML lengkap dengan penjelasan berbahasa Indonesia. Pengetahuan baru tidak banyak bertambah. Karena itu, config bawaan memakai data campuran dengan dataset umum (lihat bagian *Mencampur dengan dataset umum*).
 - **Hindari overfitting.** Pantau training loss. Dengan data sekecil ini, terlalu banyak epoch membuat model sekadar menghafal jawaban.
 
 ## Melihat dan menguji website
