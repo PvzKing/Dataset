@@ -109,7 +109,7 @@ Notebook ini melatih **v4 dari model dasar** Qwen3.5-4B, lalu melatih ulang **v3
 
 | | v4 | v3-ulang (pembanding) |
 |---|---|---|
-| Data | `data/train.jsonl` terbaru (117 sampel) | `train.jsonl` terakhir sebelum sampel Python ditambahkan (79 sampel, commit `3ed189d`), diunduh otomatis |
+| Data | `data/train.jsonl` terbaru (124 sampel) | `train.jsonl` terakhir sebelum sampel Python ditambahkan (79 sampel, commit `3ed189d`), diunduh otomatis |
 | Titik awal | model dasar | model dasar |
 | Resep | LoRA 16-bit (bf16), konteks 16.384, batas jawaban 12.000 token, 3 epoch, lr 1e-4, r16 | sama persis |
 

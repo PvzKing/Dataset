@@ -37,7 +37,7 @@ REPO = "https://raw.githubusercontent.com/PvzKing/Dataset/main"
 ROOT_REPO = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path.cwd()
 KERJA = Path("/content")
 OUT = Path("/content/drive/MyDrive/finetune-id")
-JUMLAH_SAMPEL = 117  # jumlah sampel data/train.jsonl yang diharapkan saat melatih v4
+JUMLAH_SAMPEL = 124  # jumlah sampel data/train.jsonl yang diharapkan saat melatih v4
 V3_BAWAAN = str(OUT / "v3" / "qwen3.5-4b-own-4bit" / "lora-adapter")
 EVALPLUS = "evalplus @ git+https://github.com/evalplus/evalplus@26d6d00bb1fd0fa37f39c99d5290da67891d1c5e"
 SCRIPTS = {
@@ -540,7 +540,7 @@ def latih_demo(k, kunci="latih-v4"):
     (folder / "adapter_config.json").write_text(json.dumps({"demo": True}))
     (run / "status.json").write_text(json.dumps({
         "stage": "done", "max_seq_len": k.konteks,
-        "data": {"samples": JUMLAH_SAMPEL, "dropped": [], "longest": 6231, "total_steps": 45},
+        "data": {"samples": JUMLAH_SAMPEL, "dropped": [], "longest": 6231, "total_steps": 48},
         "result": {"train_runtime_min": 0.1, "train_loss": 0.5},
         "tests": {"bengkel": {"tokens": 5200, "finished": True}, "absensi": {"tokens": 7400, "finished": True}}}))
     teks = (f"data valid: {JUMLAH_SAMPEL} sampel dari demo\n"

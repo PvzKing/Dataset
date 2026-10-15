@@ -6,9 +6,9 @@ Panduan ini melatih **V5**, adapter LoRA untuk Qwen3.5-4B, dari model dasar di G
 
 | Bagian data | Sampel | Token | Isi |
 |---|---|---|---|
-| `data/train.jsonl` (own) | 117 | ±326 ribu | website one-shot dan perbaikan bug, Python terverifikasi, teknologi, matematika, sains |
+| `data/train.jsonl` (own) | 124 | ±326 ribu | website one-shot dan perbaikan bug, Python terverifikasi, teknologi, matematika, sains |
 | `data/bench-support/humaneval.jsonl` | 164 | ±66 ribu | 164 soal HumanEval dengan solusi yang diverifikasi HumanEval+ |
-| **Total V5** | **281** | **±392 ribu** | dilatih bersama dalam satu run, dari model dasar |
+| **Total V5** | **288** | **±392 ribu** | dilatih bersama dalam satu run, dari model dasar |
 
 Semua hasil disimpan di Google Drive, dan setiap nama model memuat **V5**. Checkpoint disimpan setiap 10 step. Kalau Colab terputus, jalankan Sel 1, 2, dan 3 lagi: training lanjut dari checkpoint terakhir, dan uji yang sudah selesai tidak diulang.
 
@@ -38,7 +38,7 @@ Perkiraan total ±2,5–4 jam di A100. Angka ini belum pernah diukur untuk resep
 | Langkah | Isi | Perkiraan |
 |---|---|---|
 | Sel 1 | cek GPU, pasang paket, hubungkan Drive, unduh script dan data, cek data | ±8–12 menit pertama kali, berikutnya <1 menit |
-| Training | 281 sampel × 3 epoch, batch efektif 4 = 213 step, lalu 2 website uji | ±25–65 menit, ditambah ±10 menit website uji |
+| Training | 288 sampel × 3 epoch, batch efektif 4 = 216 step, lalu 2 website uji | ±25–65 menit, ditambah ±10 menit website uji |
 | Uji epoch 3 | MBPP+, IndoPy-dev, Web-eval, HumanEval+; model dasar ikut dijawab sekali | ±60–90 menit |
 | Uji epoch 2 | MBPP+, IndoPy-dev, Web-eval; jawaban model dasar dipakai ulang | ±35–50 menit |
 | Ekspor | GGUF Q4_K_M (dan model 16-bit jika dipilih) | ±10–20 menit |
@@ -143,7 +143,7 @@ RUN = FOLDER / f"{MODEL}-{NAMA}"              # checkpoint, adapter, status.json
 LORA = RUN / f"{MODEL}-{NAMA}-lora"           # adapter V5 final
 HASIL = FOLDER / "uji"
 LOG = FOLDER / "log"
-JUMLAH_SAMPEL = 281                           # 117 sampel own + 164 soal HumanEval
+JUMLAH_SAMPEL = 288                           # 124 sampel own + 164 soal HumanEval
 CABANG = ["main", "claude/zen-babbage-wyppwh"]  # script diambil dari cabang pertama yang sudah mendukung V5
 EVALPLUS = "evalplus @ git+https://github.com/evalplus/evalplus@26d6d00bb1fd0fa37f39c99d5290da67891d1c5e"
 OOM = r"CUDA out of memory|OutOfMemoryError"
@@ -274,13 +274,13 @@ print("Siap. Jalankan Sel 2, lalu Sel 3." if all(ok for _, ok, _ in cek) else
 ✅ Paket            unsloth ok, evalplus ok, playwright ok, chromium ok
 ✅ Google Drive     /content/drive/MyDrive/finetune-id/V5, ruang kosong ±80 GB (butuh ±8 GB)
 ✅ Script dan data  cabang main
-✅ Data training    281 sampel (seharusnya 281), 0 dibuang, terpanjang 62xx token, 213 step
+✅ Data training    288 sampel (seharusnya 288), 0 dibuang, terpanjang 62xx token, 216 step
 ```
 
 | Kalau muncul | Artinya | Yang dilakukan |
 |---|---|---|
 | `AssertionError: GPU sekarang: Tesla T4 ...` | runtime bukan A100 | ulangi Bagian A langkah 3. Resep 16-bit dengan konteks 16.384 tidak muat di T4 |
-| `Data training 266 sampel` | `train.jsonl` versi lama (102 sampel own) | perubahan dataset belum ada di cabang yang dipakai; kirim pesan ini ke chat |
+| `Data training 288 sampel` | `train.jsonl` versi lama (124 sampel own) | perubahan dataset belum ada di cabang yang dipakai; kirim pesan ini ke chat |
 | `chromium GAGAL` | Chromium untuk Web-eval gagal terpasang | jalankan `!playwright install --with-deps chromium` di sel baru, lalu Sel 1 lagi |
 | `Google Drive ❌ ... ruang kosong` | Drive hampir penuh | kosongkan Drive, atau set `EKSPOR_16BIT = False` |
 | tombol **Restart session** setelah instalasi | paket baru butuh runtime segar | klik tombolnya, lalu jalankan Sel 1 lagi |
@@ -474,7 +474,7 @@ jalankan_semua()
 |---|---|---|
 | 1. Training | `folder hasil: .../finetune-id/V5/qwen3.5-4b-V5` | folder V5 |
 | | banner Unsloth memuat `A100` dan `Bfloat16 = TRUE` | training 16-bit di A100 |
-| | `data valid: 281 sampel` dan `281 sampel dipakai, 0 dibuang` | semua data ikut |
+| | `data valid: 288 sampel` dan `288 sampel dipakai, 0 dibuang` | semua data ikut |
 | | `cek masking: ... token sampel pertama ikut dilatih` | hanya jawaban asisten yang dilatih |
 | | `[status] training: mulai dari awal` atau `mulai dari .../checkpoint-60` | baris kedua berarti melanjutkan dari checkpoint |
 | | progress bar sampai `213/213`, dengan `adapter epoch 1/2/3 disimpan` di akhir tiap epoch | training berjalan |
