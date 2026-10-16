@@ -217,18 +217,18 @@ Output-nya berupa progres `[v4-qwen3.5-4b-own] 64/164 soal ...`, lalu skor Human
 ### D3. IndoPy-dev (±3–5 menit)
 
 ```python
-%run /content/indopy_eval.py --split dev --adapter {V4} --results {HASIL}/eval-indopy-dev {UJI} --batch-size 16
+%run /content/indopy_eval.py --split dev --adapter {V4} --results {HASIL}/eval-indopy-dev {UJI} --batch-size 8
 ```
 
 ### D4. Web-eval dengan batas jawaban 12.000 token (±20–30 menit)
 
 ```python
-%run /content/web_eval.py --adapter {V4} --results {HASIL}/eval-web {UJI} --max-seq-len {KONTEKS} --max-new-tokens 12000 --batch-size 5
+%run /content/web_eval.py --adapter {V4} --results {HASIL}/eval-web {UJI} --max-seq-len {KONTEKS} --max-new-tokens 12000 --batch-size 2
 ```
 
 - Website yang dibuat disimpan di `a100/eval-web/v4-qwen3.5-4b-own/situs/`.
 
-**Kalau muncul `CUDA out of memory` di uji mana pun:** turunkan `--batch-size` (misalnya 32 → 16, atau 5 → 2), lalu jalankan perintah yang sama. Jawaban yang sudah tersimpan dilewati.
+**Kalau muncul `CUDA out of memory` di uji mana pun:** turunkan `--batch-size` (misalnya 32 → 16, atau 8 → 4), lalu jalankan perintah yang sama. Jawaban yang sudah tersimpan dilewati.
 
 ---
 
@@ -237,7 +237,7 @@ Output-nya berupa progres `[v4-qwen3.5-4b-own] 64/164 soal ...`, lalu skor Human
 Set test berisi 40 soal yang **dikunci**, untuk menilai Python berbahasa Indonesia dengan soal yang belum pernah dilihat saat menulis sampel.
 
 ```python
-%run /content/indopy_eval.py --split test --adapter {V4} --results {HASIL}/eval-indopy-test {UJI} --batch-size 16
+%run /content/indopy_eval.py --split test --adapter {V4} --results {HASIL}/eval-indopy-test {UJI} --batch-size 8
 ```
 
 - **Jalankan sekali saja untuk v4 ini.** Jangan membaca soal atau jawaban yang gagal untuk menulis sampel latihan baru. Kalau itu dilakukan, set test bocor dan tidak bisa lagi dipakai sebagai ukuran yang jujur.
@@ -364,9 +364,9 @@ cek     !python /content/train_unsloth.py prepare {LATIH}
 latih   !python /content/train_unsloth.py train {LATIH} --max-new-tokens 12000
 v4      %run /content/eval_humaneval.py --adapter {V4} --results {HASIL}/eval-humaneval {UJI} --batch-size 32
         %run /content/eval_humaneval.py --dataset mbpp --adapter {V4} --results {HASIL}/eval-mbpp {UJI} --batch-size 32
-        %run /content/indopy_eval.py --split dev --adapter {V4} --results {HASIL}/eval-indopy-dev {UJI} --batch-size 16
-        %run /content/web_eval.py --adapter {V4} --results {HASIL}/eval-web {UJI} --max-seq-len {KONTEKS} --max-new-tokens 12000 --batch-size 5
-akhir   %run /content/indopy_eval.py --split test --adapter {V4} --results {HASIL}/eval-indopy-test {UJI} --batch-size 16
+        %run /content/indopy_eval.py --split dev --adapter {V4} --results {HASIL}/eval-indopy-dev {UJI} --batch-size 8
+        %run /content/web_eval.py --adapter {V4} --results {HASIL}/eval-web {UJI} --max-seq-len {KONTEKS} --max-new-tokens 12000 --batch-size 2
+akhir   %run /content/indopy_eval.py --split test --adapter {V4} --results {HASIL}/eval-indopy-test {UJI} --batch-size 8
 skor    sel cek progres (F1) dan sel kumpulkan hasil (F2)
 ```
 

@@ -193,6 +193,8 @@ class Generator:
 
     def __init__(self, args):
         self.args = args
+        self.ciri_terakhir = []  # per jawaban di generate terakhir: jumlah token, terpotong, berulang
+        self.prompt_dicetak = False
         if args.demo:
             return
         for folder in (HERE.parent / "scripts", HERE):  # HERE terakhir disisipkan, jadi dicari lebih dulu
@@ -236,6 +238,9 @@ class Generator:
         import contextlib
 
         torch, tok, model = self.engine.torch, self.engine.tokenizer, self.engine.model
+        if not self.prompt_dicetak:  # untuk memastikan format prompt sama dengan teks training
+            print(f"akhir prompt pertama: {prompts[0][-80:]!r}", flush=True)
+            self.prompt_dicetak = True
         enc = tok(prompts, return_tensors="pt", padding=True, add_special_tokens=False).to(model.device)
         kwargs = dict(**enc, max_new_tokens=max_new_tokens, do_sample=False, repetition_penalty=1.0,
                       pad_token_id=tok.pad_token_id)
@@ -252,7 +257,40 @@ class Generator:
                 out = model.generate(**kwargs)
         new = out[:, enc["input_ids"].shape[1]:]
         texts = tok.batch_decode(new, skip_special_tokens=True)
-        return texts, int((new != tok.pad_token_id).sum())
+        panjang = (new != tok.pad_token_id).sum(dim=1).tolist()
+        self.ciri_terakhir = [{"token": n, "terpotong": n >= max_new_tokens, "berulang": berulang(t)}
+                              for n, t in zip(panjang, texts)]
+        return texts, int(sum(panjang))
+
+    def ciri(self, texts):
+        """Ciri jawaban generate terakhir untuk disimpan di jawaban.jsonl (kosong di mode demo)."""
+        return self.ciri_terakhir if len(self.ciri_terakhir) == len(texts) else [{} for _ in texts]
+
+
+def berulang(teks):
+    """True jika jawaban berakhir dengan potongan yang sama diulang minimal 4 kali sepanjang minimal 200 karakter:
+    tanda greedy decoding terjebak. Penutup wajar seperti beberapa </div> berturut-turut tidak sepanjang itu."""
+    ekor = teks[-4000:]
+    for n in range(1, 400):
+        ulang = max(4, -(-200 // n))
+        if len(ekor) >= n * ulang and ekor.endswith(ekor[-n:] * ulang):
+            return True
+    return False
+
+
+def ciri_run(rows):
+    """Jumlah jawaban yang terpotong di batas token dan yang berulang, dari baris jawaban.jsonl."""
+    rows = [r for r in rows if "token" in r]
+    if not rows:
+        return {}
+    return {"terpotong": sum(r["terpotong"] for r in rows), "berulang": sum(r["berulang"] for r in rows),
+            "token_maks": max(r["token"] for r in rows)}
+
+
+def cetak_ciri(ciri, n):
+    if "terpotong" in ciri:
+        print(f"jawaban terpotong di batas token: {ciri['terpotong']}/{n}, berulang: {ciri['berulang']}/{n}, "
+              f"jawaban terpanjang: {ciri['token_maks']} token")
 
 
 def free_gpu():
@@ -315,6 +353,7 @@ def summarize(rows, tag, model_label, args, gen_info, results_dir):
         print("gagal tes dasar:", short_ids(summary["gagal_dasar"]))
     if summary["gagal_plus_saja"]:
         print("lolos tes dasar, gagal tes tambahan:", short_ids(summary["gagal_plus_saja"]))
+    cetak_ciri(summary, n)
     if args.limit:
         print(f"(hanya {n} soal karena --limit; skor ini belum bisa dibandingkan dengan skor semua soal)")
     if "bench" in tag and args.dataset == "humaneval":
@@ -392,7 +431,9 @@ def run_one(args, tag, model_label, use_adapter, tasks, problems, results_dir, g
             batch = todo[i:i + args.batch_size]
             texts, tokens = generator(batch, use_adapter)
             n_tokens += tokens
-            append_jsonl(responses_path, [{"task_id": t["task_id"], "output": o} for t, o in zip(batch, texts)])
+            ciri = generator.ciri(texts) if hasattr(generator, "ciri") else [{} for _ in texts]
+            append_jsonl(responses_path, [{"task_id": t["task_id"], "output": o, **c}
+                                          for t, o, c in zip(batch, texts, ciri)])
             finished = i + len(batch)
             elapsed = time.time() - start
             eta = elapsed / finished * (len(todo) - finished)
@@ -408,6 +449,7 @@ def run_one(args, tag, model_label, use_adapter, tasks, problems, results_dir, g
                 if tid in done_ids else ""} for tid in problems]
     samples_path.write_text("".join(json.dumps(s, ensure_ascii=False) + "\n" for s in samples))
     rows = evaluate(samples_path, problems, done_ids, args.parallel, args.dataset)
+    gen_info = {**gen_info, **ciri_run([done[t] for t in done_ids if t in done])}
     summarize(rows, tag, model_label, args, gen_info, results_dir)
     return rows
 

@@ -564,13 +564,15 @@ def run_one(eh, args, tag, model_label, use_adapter, results_dir, get_generator)
                            for s in batch]
                 texts, tokens = generator.generate(prompts, use_adapter, args.max_new_tokens)
             n_tokens += tokens
-            eh.append_jsonl(responses_path, [{"task_id": s, "output": o} for s, o in zip(batch, texts)])
+            ciri = [{} for _ in texts] if args.demo else generator.ciri(texts)
+            eh.append_jsonl(responses_path, [{"task_id": s, "output": o, **c} for s, o, c in zip(batch, texts, ciri)])
             elapsed = time.time() - start
             print(f"[{tag}] {i + len(batch)}/{len(todo)} website, {elapsed / 60:.1f} menit"
                   + (f", {n_tokens / elapsed:.0f} token/detik" if n_tokens else ""), flush=True)
         gen_info = {"menit_generate": round((time.time() - start) / 60, 1), "token_baru": n_tokens}
     subprocess.run([sys.executable, str(Path(__file__).resolve()), "--nilai", str(run_dir)], check=True)
     rows = [r for r in eh.read_jsonl(run_dir / "hasil.jsonl") if r["task_id"] in ids]
+    gen_info = {**gen_info, **eh.ciri_run([r for r in eh.read_jsonl(responses_path) if r["task_id"] in ids])}
     n, ok = len(rows), sum(r["base"] for r in rows)
     summary = {"tag": tag, "model": model_label, "dataset": "web", "soal": n, "web_lolos": round(ok / n, 6),
                "format_cek_kebutuhan": sum(r["format"] for r in rows),
@@ -579,6 +581,7 @@ def run_one(eh, args, tag, model_label, use_adapter, results_dir, get_generator)
     (run_dir / "ringkasan.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False))
     print(f"\n===== {tag}: Web-eval, {n} website =====")
     print(f"lolos: {ok}/{n}   format Cek kebutuhan: {summary['format_cek_kebutuhan']}/{n}")
+    eh.cetak_ciri(summary, n)
     print(f"| {'website':<16} | html | tanpa error | responsif | fitur | alasan")
     for r in rows:
         mark = lambda v: "ya" if v else "TIDAK"

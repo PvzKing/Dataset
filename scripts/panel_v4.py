@@ -51,7 +51,7 @@ OTOMATIS = "Otomatis: semua yang belum selesai"
 CONFIG_FILE = KERJA / "panel_v4.json"
 
 # Mode A100 (docs/PROSEDUR_V4_A100.md). Batch uji bisa diturunkan otomatis saat VRAM habis.
-A100_BATCH = {"humaneval": 32, "mbpp": 32, "indopy": 16, "indopy-test": 16, "web": 5}
+A100_BATCH = {"humaneval": 32, "mbpp": 32, "indopy": 8, "indopy-test": 8, "web": 2}
 A100_JAWABAN = 12000  # batas jawaban website uji dan Web-eval
 A100_UJI = {  # kunci: (folder hasil, script, argumen tambahan, label)
     "humaneval": ("eval-humaneval", "eval_humaneval.py", [], "HumanEval+"),
@@ -220,7 +220,7 @@ def langkah_a100(k, indopy_test=False):
     pembanding: model dasar tidak ikut diuji (--no-vs-base). Semua uji 16-bit dengan folder hasil finetune-id/a100."""
     v4 = adapter_v4(k)
     run_v4 = nama_run(k, v4, "v4-demo") if v4 else None
-    menit = {"humaneval": 8, "mbpp": 18, "indopy": 5, "web": 20, "indopy-test": 5}
+    menit = {"humaneval": 8, "mbpp": 18, "indopy": 6, "web": 30, "indopy-test": 6}
 
     def langkah_uji(kunci, opsional=False):
         folder, nama, extra, label = A100_UJI[kunci]
@@ -532,6 +532,8 @@ def laporan_a100(k):
         nilai = [f"{x.split('_')[0]} {round(r[x] * r['soal'])}/{r['soal']} ({r[x]:.1%})" for x in kunci_skor]
         if kunci == "web":
             nilai.append(f"format Cek kebutuhan {r['format_cek_kebutuhan']}/{r['soal']}")
+        if "terpotong" in r:  # jawaban yang habis di batas token atau terjebak mengulang
+            nilai.append(f"terpotong {r['terpotong']}, berulang {r['berulang']}, terpanjang {r['token_maks']} token")
         potongan.append(f"{label:<12} " + ", ".join(nilai))
     potongan.append(daftar_gagal(k, {"v4": run_v4}))
     status = k.folder_v4 / "qwen3.5-4b-own" / "status.json"
