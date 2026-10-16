@@ -533,6 +533,8 @@ docs/PANDUAN_V7_A100.md               panduan Colab A100 untuk V7: own + sulinga
 notebooks/v7_a100_colab.ipynb         notebook Colab V7 (dibangun dari PANDUAN_V7_A100.md)
 scripts/sulingan.py                   jawaban model dasar yang lolos pemeriksaan otomatis (Python: assert MBPP, website: Chromium)
 data/sulingan/prompt-web.jsonl        40 prompt website untuk sulingan V7 (bukan soal Web-eval)
+data/ultradistillation/               kelompok terpisah: pertanyaan siap salin (SALIN.md), jawaban AI lain, dan hasilnya
+scripts/ultradistillation.py          salin/simpan/periksa/cek/bangun untuk kelompok ultradistillation
 tests/simulasi_v7/                    simulasi sel panduan V7 tanpa GPU, plus uji sulingan.py mode demo
 notebooks/v4_pilot_interaktif.ipynb   panel Colab interaktif v4-pilot: siapkan, jalankan otomatis, progres, laporan
 scripts/panel_v4.py                   logika panel (mode pilot dan a100): langkah, status dari Drive, saran saat gagal
