@@ -56,7 +56,8 @@ CONFIG = {
     "dataset": "own",               # "own" = data/train.jsonl (disarankan), "mix" = ditambah dataset umum,
                                     # "bench" = hanya kelompok bench-support (HumanEval) di data/bench-support/,
                                     # dipakai bersama --init-adapter untuk melanjutkan adapter hasil own,
-                                    # "own+bench" = own dan bench-support dilatih bersama dari model dasar
+                                    # "own+bench" = own dan bench-support dilatih bersama dari model dasar,
+                                    # "own+evalplus" = own + HumanEval+ + MBPP+ + MBPP (V6; skor HumanEval/MBPP kotor)
     "name": None,                   # nama hasil, misalnya "V5": folder <model>-V5, adapter <model>-V5-lora
     "out": "/content/drive/MyDrive/finetune-id",  # folder hasil; di Google Drive supaya aman saat sesi putus
     "data": None,                   # path train.jsonl; None = cari otomatis lalu unduh dari GitHub jika tidak ada
@@ -176,13 +177,16 @@ def sha256_file(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-BENCH_FILES = ["humaneval.jsonl"]  # isi kelompok bench-support di data/bench-support/
+BENCH_FILES = {  # isi kelompok bench-support di data/bench-support/
+    "bench": ["humaneval.jsonl"],
+    "evalplus": ["humaneval.jsonl", "mbppplus.jsonl", "mbpp-sisa.jsonl"],  # HumanEval+, MBPP+, sisa MBPP asli
+}
 
 
-def bench_files(args):
+def bench_files(args, group="bench"):
     """File bench-support lokal (repo) atau unduhan terbaru dari GitHub, disimpan di folder hasil."""
     files = []
-    for name in BENCH_FILES:
+    for name in BENCH_FILES[group]:
         local = HERE.parent / "data" / "bench-support" / name
         if local.is_file():
             files.append(local)
@@ -199,25 +203,25 @@ def bench_files(args):
     return files
 
 
-def bench_data(args):
-    """Data untuk --dataset bench."""
+def bench_data(args, group="bench"):
+    """Data untuk --dataset bench (atau kelompok bench-support lain)."""
     # Hanya kelompok bench-support (tanpa own), untuk training lanjutan di atas adapter yang sudah dilatih dengan own
     # (--init-adapter). File-file bench-support digabung ke satu file di folder hasil; ditulis ulang hanya jika
     # isinya berubah, supaya fingerprint dan resume checkpoint tetap konsisten.
-    parts = bench_files(args)
+    parts = bench_files(args, group)
     merged = "".join(Path(p).read_text(encoding="utf-8").rstrip("\n") + "\n" for p in parts)
-    out = Path(args.out) / "train_bench.jsonl"
+    out = Path(args.out) / f"train_{group}.jsonl"
     if not out.is_file() or out.read_text(encoding="utf-8") != merged:
         out.write_text(merged, encoding="utf-8")
     print(f"data bench: {' + '.join(Path(p).name for p in parts)}", flush=True)
     return out
 
 
-def own_bench_data(args):
-    """Data untuk --dataset own+bench: own lalu bench-support dalam satu file, dilatih bersama dari model dasar."""
+def own_bench_data(args, group="bench"):
+    """Data untuk --dataset own+<group>: own lalu bench-support dalam satu file, dilatih bersama dari model dasar."""
     own = find_own_data(args)
-    merged = own.read_text(encoding="utf-8").rstrip("\n") + "\n" + bench_data(args).read_text(encoding="utf-8")
-    out = Path(args.out) / "train_own_bench.jsonl"
+    merged = own.read_text(encoding="utf-8").rstrip("\n") + "\n" + bench_data(args, group).read_text(encoding="utf-8")
+    out = Path(args.out) / f"train_own_{group}.jsonl"
     if not out.is_file() or out.read_text(encoding="utf-8") != merged:  # ditulis ulang hanya jika isinya berubah
         out.write_text(merged, encoding="utf-8")
     return out
@@ -226,8 +230,8 @@ def own_bench_data(args):
 def data_file_for(args):
     if args.dataset == "bench":
         return bench_data(args)
-    if args.dataset == "own+bench":
-        return own_bench_data(args)
+    if args.dataset in ("own+bench", "own+evalplus"):
+        return own_bench_data(args, args.dataset.split("+")[1])
     own = find_own_data(args)
     if args.dataset == "own":
         return own
@@ -638,7 +642,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("command", nargs="?", choices=["info", "prepare", "train", "test", "gguf", "merge"])
     parser.add_argument("--model", choices=sorted(MODELS))
-    parser.add_argument("--dataset", choices=["own", "mix", "bench", "own+bench"])
+    parser.add_argument("--dataset", choices=["own", "mix", "bench", "own+bench", "own+evalplus"])
     parser.add_argument("--name", help="nama hasil, misalnya V5 (folder, adapter, dan GGUF memuat nama ini)")
     parser.add_argument("--out", help="folder hasil, misalnya di Google Drive")
     parser.add_argument("--data", help="path train.jsonl (bawaan: cari otomatis, lalu unduh dari GitHub)")

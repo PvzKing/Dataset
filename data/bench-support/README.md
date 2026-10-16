@@ -11,8 +11,12 @@ Di T4, training 164 sampel × 3 epoch diperkirakan memakan ±19–27 menit.
 | File | Sampel | Token | Sumber |
 |---|---|---|---|
 | `humaneval.jsonl` | 164 | ±65 ribu (terpanjang ±1.000) | HumanEval (OpenAI) + HumanEval+ (EvalPlus) |
+| `mbppplus.jsonl` | 378 | ±65 ribu (perkiraan) | MBPP (Google) + MBPP+ v0.2.0 (EvalPlus) |
+| `mbpp-sisa.jsonl` | 589 | ±115 ribu (perkiraan) | MBPP asli (Google): soal yang tidak masuk MBPP+ |
 
-**Kontaminasi benchmark disengaja.** Model yang dilatih dengan kelompok ini sudah melihat soal HumanEval beserta jawabannya. Akibatnya, skor HumanEval atau HumanEval+ model tersebut tidak lagi mengukur kemampuan menyelesaikan soal baru. Jangan laporkan skor itu sebagai hasil evaluasi yang bersih.
+`--dataset bench` dan `own+bench` (V5) hanya memakai `humaneval.jsonl`. `--dataset own+evalplus` (V6, [`docs/PANDUAN_V6_A100.md`](../../docs/PANDUAN_V6_A100.md)) memakai ketiganya.
+
+**Kontaminasi benchmark disengaja.** Model yang dilatih dengan kelompok ini sudah melihat soal HumanEval (dan, untuk V6, MBPP) beserta jawabannya. Akibatnya, skor HumanEval, HumanEval+, MBPP, atau MBPP+ model tersebut tidak lagi mengukur kemampuan menyelesaikan soal baru. Jangan laporkan skor itu sebagai hasil evaluasi yang bersih.
 
 ## Format
 
@@ -42,6 +46,24 @@ Semua langkah dijalankan oleh `scripts/build_bench_support.py`:
 
 File hanya ditulis jika semua soal lolos verifikasi. Menjalankan ulang `python scripts/build_bench_support.py` membuat file yang sama persis.
 
+## MBPP+ dan MBPP
+
+`python scripts/build_bench_support.py --only mbpp` membangun dua file dengan format yang sama. Prompt-nya sama persis dengan yang dipakai `eval_humaneval.py --dataset mbpp`: deskripsi soal dan satu assert contoh di dalam docstring.
+
+- **`mbppplus.jsonl`:** 378 soal MBPP+ v0.2.0. Jawabannya solusi kanonis EvalPlus, yang juga menjadi kunci jawaban MBPP+. Setiap solusi harus lolos assert resmi MBPP (field `assertion`).
+- **`mbpp-sisa.jsonl`:** soal MBPP asli (974 soal) yang tidak masuk MBPP+. Prompt dibuat dengan format MBPP+, dan jawabannya kode asli MBPP yang dirapikan (CRLF, tab, spasi di akhir baris). Setiap solusi harus lolos semua assert-nya (`test_list` dan `challenge_test_list`). Yang dibuang:
+
+  | Soal MBPP | Alasan |
+  |---|---|
+  | 367, 927 | assert-nya butuh `test_setup_code` (pohon biner) yang tidak disebut di prompt |
+  | 347 | prompt-nya sama persis dengan soal lain |
+  | 216, 298, 889 | punya 13-gram yang sama dengan IndoPy-dev (deret angka 1, 2, 3, …) |
+  | 522 | punya 13-gram yang sama dengan IndoPy-test (deret uji yang sama) |
+
+  Lima soal terakhir dibuang supaya IndoPy tetap bersih untuk memilih epoch V6. Periksa dengan `python scripts/decontaminate.py --sumber IndoPy Web-eval --data data/bench-support/*.jsonl`.
+
+Solusi asli MBPP tidak diperiksa silang dengan input tambahan MBPP+, karena soalnya memang tidak ada di MBPP+. Jadi mutu `mbpp-sisa.jsonl` setara dengan MBPP asli: lolos tiga assert, tetapi bisa keliru pada kasus tepi.
+
 ## Menguji skor
 
 `humaneval-bench-script/eval_humaneval.py` menjalankan 164 soal dengan template chat yang sama, greedy decoding, lalu menilainya dengan harness resmi EvalPlus (tes dasar HumanEval dan tes tambahan HumanEval+). Petunjuk Colab ada di `humaneval-bench-script/README.md`.
@@ -58,10 +80,12 @@ File hanya ditulis jika semua soal lolos verifikasi. Menjalankan ulang `python s
 | Komponen | Lisensi | Pemegang hak cipta | Teks lisensi |
 |---|---|---|---|
 | HumanEval (soal, tes, solusi asli) | MIT | OpenAI | `LICENSE-HumanEval-MIT.txt` |
-| HumanEval+ (solusi yang ditulis ulang, input tambahan) | Apache License 2.0 | tim EvalPlus | `LICENSE-EvalPlus-Apache-2.0.txt` |
+| HumanEval+ dan MBPP+ (solusi yang ditulis ulang, input tambahan) | Apache License 2.0 | tim EvalPlus | `LICENSE-EvalPlus-Apache-2.0.txt` |
+| MBPP (soal, assert, solusi asli) | Creative Commons Attribution 4.0 (CC BY 4.0) | Google Research (Austin dkk., 2021) | `LICENSE-MBPP-CC-BY-4.0.txt` |
 
 Kedua lisensi mengizinkan pemakaian ulang, modifikasi, dan distribusi, termasuk untuk komersial, dengan beberapa syarat:
 - **MIT:** pemberitahuan hak cipta dan izin MIT wajib disertakan pada setiap salinan atau bagian substansialnya.
+- **CC BY 4.0 Section 3(a):** sebut pencipta (Google Research, *Program Synthesis with Large Language Models*, Austin dkk., 2021), cantumkan lisensinya, dan nyatakan bahwa materi telah diubah. Lisensi ini tidak mengizinkan pembatasan tambahan bagi penerima (Section 2(a)(5)(B)), jadi data turunannya tidak boleh dibagikan dengan syarat yang lebih ketat.
 - **Apache 2.0 Pasal 4:**
   - salinan lisensinya wajib diberikan;
   - pemberitahuan hak cipta wajib dipertahankan;
@@ -73,5 +97,6 @@ Kedua lisensi mengizinkan pemakaian ulang, modifikasi, dan distribusi, termasuk 
 - Soal dan solusi diformat ulang menjadi pasangan percakapan user/assistant dengan template EvalPlus.
 - Kontrak input (`contract`) HumanEval+ tidak disertakan.
 - Solusi HumanEval/32 ditulis ulang seperti dijelaskan di atas.
+- MBPP: prompt dibuat dengan format MBPP+, kode asli dirapikan (CRLF, tab, spasi di akhir baris), dan beberapa soal dibuang seperti dijelaskan di bagian *MBPP+ dan MBPP*. Ini juga pernyataan perubahan menurut CC BY 4.0 Section 3(a)(1)(B).
 
-Jika dataset ini atau model hasil training-nya didistribusikan, sertakan folder ini beserta kedua file lisensinya.
+Jika dataset ini atau model hasil training-nya didistribusikan, sertakan folder ini beserta ketiga file lisensinya.

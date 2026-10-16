@@ -187,15 +187,22 @@ Hal-hal yang dilakukan script:
 - **Model dasar** Qwen3.5-4B dan Qwen2.5-Coder-7B-Instruct berlisensi Apache 2.0. Adapter atau model gabungan hasil fine-tuning boleh didistribusikan dan dipakai secara komersial, dengan syarat menyertakan salinan lisensi, mempertahankan pemberitahuan hak cipta, dan menandai bahwa model telah diubah (Pasal 4 Apache License 2.0). Tidak semua model Qwen berlisensi Apache 2.0: misalnya Qwen2.5-Coder-3B memakai lisensi riset non-komersial. Periksa lisensi setiap model sebelum mengganti model dasar.
 - Periksa kartu dataset (dataset card) masing-masing sumber untuk lisensi terbaru sebelum mendistribusikan dataset campuran atau model hasil training.
 
-## Kelompok `bench-support` (HumanEval)
+## Kelompok `bench-support` (HumanEval dan MBPP)
 
-Folder `data/bench-support/` berisi sampel latihan dari benchmark kode, terpisah dari dataset `own`. Saat ini isinya 164 soal HumanEval dengan format prompt instruct EvalPlus. Solusinya diambil dari HumanEval+, kecuali satu soal yang ditulis ulang.
+Folder `data/bench-support/` berisi sampel latihan dari benchmark kode, terpisah dari dataset `own`. Semuanya memakai format prompt instruct EvalPlus:
 
-Setiap solusi diverifikasi oleh `scripts/build_bench_support.py` dengan dua cara: tes resmi HumanEval, dan pemeriksaan silang dengan solusi asli HumanEval pada 111 ribu input tambahan HumanEval+. Lewat pemeriksaan ini ditemukan 15 solusi asli HumanEval yang keliru dan satu soal yang kedua solusi referensinya gagal. Rinciannya ada di `data/bench-support/README.md`.
+| File | Sampel | Sumber |
+|---|---|---|
+| `humaneval.jsonl` | 164 | HumanEval, solusi dari HumanEval+ (satu soal ditulis ulang) |
+| `mbppplus.jsonl` | 378 | MBPP+ v0.2.0, solusi kanonis EvalPlus |
+| `mbpp-sisa.jsonl` | 589 | soal MBPP asli yang tidak masuk MBPP+ |
 
-Ada dua cara memakai kelompok ini:
+Setiap solusi HumanEval diverifikasi oleh `scripts/build_bench_support.py` dengan dua cara: tes resmi HumanEval, dan pemeriksaan silang dengan solusi asli HumanEval pada 111 ribu input tambahan HumanEval+. Lewat pemeriksaan ini ditemukan 15 solusi asli HumanEval yang keliru dan satu soal yang kedua solusi referensinya gagal. Solusi MBPP+ dan MBPP harus lolos assert resmi MBPP. Rinciannya ada di `data/bench-support/README.md`.
+
+Ada tiga cara memakai kelompok ini:
 
 - **Dicampur dengan `own` dalam satu run dari model dasar (`--dataset own+bench`, dipakai V5).** Panduannya ada di [`docs/PANDUAN_V5_A100.md`](docs/PANDUAN_V5_A100.md). Adapter epoch 2 dan 3 disimpan, lalu yang dipakai dipilih dari uji yang bersih: MBPP+, IndoPy-dev, dan Web-eval.
+- **Seluruh EvalPlus dan MBPP dicampur dengan `own`, 10 epoch (`--dataset own+evalplus`, dipakai V6).** Panduannya ada di [`docs/PANDUAN_V6_A100.md`](docs/PANDUAN_V6_A100.md). Kontaminasinya disengaja: skor HumanEval+ dan MBPP+ V6 tidak bersih, jadi epoch dipilih hanya dari IndoPy-dev dan Web-eval.
 - **Dilatih sendiri, tanpa `own`**, sebagai training lanjutan di atas adapter yang sudah dilatih dengan `own` (misalnya v3). Cara ini dipakai percobaan bench-lanjut, yang skornya turun (lihat `data/bench-support/README.md`):
 
 ```bash
@@ -229,7 +236,7 @@ Mulailah dengan **`own`**, lalu beralih ke `mix` jika hasilnya menunjukkan gejal
 
 ## Training di Google Colab
 
-**Panduan langkah demi langkah: [`docs/PANDUAN_TRAINING.md`](docs/PANDUAN_TRAINING.md).** Untuk GPU A100 dengan data own + HumanEval, checkpoint dan hasil di Google Drive, serta model bernama V5, pakai [`docs/PANDUAN_V5_A100.md`](docs/PANDUAN_V5_A100.md) atau [notebook-nya](notebooks/v5_a100_colab.ipynb).
+**Panduan langkah demi langkah: [`docs/PANDUAN_TRAINING.md`](docs/PANDUAN_TRAINING.md).** Untuk GPU A100 dengan data own + HumanEval, checkpoint dan hasil di Google Drive, serta model bernama V5, pakai [`docs/PANDUAN_V5_A100.md`](docs/PANDUAN_V5_A100.md) atau [notebook-nya](notebooks/v5_a100_colab.ipynb). Untuk V6 (ditambah MBPP+ dan MBPP, 10 epoch, skor benchmark sengaja terkontaminasi), pakai [`docs/PANDUAN_V6_A100.md`](docs/PANDUAN_V6_A100.md) atau [notebook-nya](notebooks/v6_a100_colab.ipynb).
 
 Seluruh proses training ada di satu file mandiri, [`scripts/train_unsloth.py`](scripts/train_unsloth.py), dengan pengaturan di blok `CONFIG`. File ini tidak butuh clone repo: jika `train.jsonl` tidak ditemukan, file itu diunduh dari repo publik ini. Ada dua cara memakainya, dan keduanya tidak perlu menghubungkan Colab ke GitHub:
 
@@ -484,6 +491,8 @@ docs/RENCANA_PYTHON.md                rencana adapter v4: jago Python sekaligus 
 docs/PROSEDUR_V4.md                   panduan Colab langkah demi langkah: ukur v3, latih v4-pilot, papan skor
 docs/PANDUAN_V5_A100.md               panduan Colab A100 untuk V5: own + HumanEval, checkpoint di Drive, pilih epoch, ekspor GGUF
 notebooks/v5_a100_colab.ipynb         notebook Colab V5 (dibangun dari PANDUAN_V5_A100.md)
+docs/PANDUAN_V6_A100.md               panduan Colab A100 untuk V6: own + HumanEval+ + MBPP+ + MBPP, 10 epoch (terkontaminasi)
+notebooks/v6_a100_colab.ipynb         notebook Colab V6 (dibangun dari PANDUAN_V6_A100.md)
 notebooks/v4_pilot_interaktif.ipynb   panel Colab interaktif v4-pilot: siapkan, jalankan otomatis, progres, laporan
 scripts/panel_v4.py                   logika panel (mode pilot dan a100): langkah, status dari Drive, saran saat gagal
 scripts/build_panel_notebook.py       membangun notebook panel interaktif
@@ -495,7 +504,7 @@ scripts/md_to_notebook.py             membangun notebook Colab dari panduan Mark
 CLAUDE.md                             catatan singkat untuk Claude Code di repo ini
 scripts/mix_general.py                pencampur dengan dataset umum dari Hugging Face
 scripts/validate.py                   validasi dataset
-scripts/build_bench_support.py        membuat dan memverifikasi kelompok bench-support (HumanEval)
+scripts/build_bench_support.py        membuat dan memverifikasi kelompok bench-support (HumanEval, MBPP+, MBPP)
 scripts/build_python_samples.py       membangun sampel Python dari data/python-src/ dengan output hasil eksekusi
 scripts/decontaminate.py              cek tumpang tindih 13-gram data latihan dengan HumanEval+, MBPP+, IndoPy, Web-eval
 data/python-src/                      sumber sampel Python: teks giliran, kode, dan data

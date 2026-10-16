@@ -12,7 +12,10 @@ yang namanya sama dengan nama fungsi soal uji dilaporkan sebagai peringatan untu
 
 Pemakaian:
     python scripts/decontaminate.py            # keluar dengan kode 1 jika ada kontaminasi
+    # kelompok bench-support sengaja memuat HumanEval+ dan MBPP; pastikan uji yang tersisa (IndoPy, Web-eval) tetap bersih:
+    python scripts/decontaminate.py --sumber IndoPy Web-eval --data data/bench-support/*.jsonl
 """
+import argparse
 import ast
 import gzip
 import json
@@ -71,10 +74,15 @@ def web_eval():
 
 
 def main():
-    index, names = defaultdict(set), defaultdict(set)
     sources = {"HumanEval+": humaneval, "MBPP+": mbpp, "IndoPy": indopy, "Web-eval": web_eval}
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--data", nargs="+", default=[str(ROOT / "data" / "train.jsonl")], help="file latihan yang diperiksa")
+    parser.add_argument("--sumber", nargs="+", choices=sorted(sources), default=list(sources), help="soal uji pembanding")
+    args = parser.parse_args()
+    index, names = defaultdict(set), defaultdict(set)
     counts = {}
-    for label, load in sources.items():
+    for label in args.sumber:
+        load = sources[label]
         counts[label] = 0
         for item_id, text, entry_points in load():
             counts[label] += 1
@@ -85,7 +93,7 @@ def main():
     print("sumber: " + ", ".join(f"{k} {v} soal" for k, v in counts.items()))
 
     contaminated, warnings = [], []
-    for row in read_jsonl(ROOT / "data" / "train.jsonl"):
+    for row in (r for path in args.data for r in read_jsonl(path)):
         text = "\n".join(m["content"] for m in row["messages"])
         hits = defaultdict(int)
         for g in grams(text):

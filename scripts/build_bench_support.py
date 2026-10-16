@@ -2,15 +2,20 @@
 
 Isi saat ini:
     data/bench-support/humaneval.jsonl   164 soal HumanEval, dengan prompt dan solusi dari HumanEval+ (EvalPlus)
+    data/bench-support/mbppplus.jsonl    378 soal MBPP+, dengan prompt dan solusi dari MBPP+ v0.2.0 (EvalPlus)
+    data/bench-support/mbpp-sisa.jsonl   soal MBPP asli (Google) yang tidak ada di MBPP+, dengan prompt format MBPP+
 
 Formatnya mengikuti prompt instruct EvalPlus, yaitu cara HumanEval/HumanEval+ menguji model chat: user meminta
 skrip Python mandiri dalam blok kode, dan jawaban diawali kalimat pembuka EvalPlus lalu satu blok ```python.
 Setiap solusi diverifikasi sebelum ditulis: lolos tes resmi HumanEval, dan outputnya sama dengan solusi asli
 HumanEval pada semua input tambahan HumanEval+. Perbedaan yang sudah ditinjau manual dicatat di KNOWN_ORIGINAL_BUGS,
-PROPERTY_CHECKS, dan CUSTOM_SOLUTIONS.
+PROPERTY_CHECKS, dan CUSTOM_SOLUTIONS. Solusi MBPP+ harus lolos assert resmi MBPP dan berjalan tanpa error pada semua
+input dasar dan tambahan MBPP+; solusi MBPP asli harus lolos semua assert-nya (test_list dan challenge_test_list).
+Soal MBPP asli yang gagal, atau butuh test_setup_code, dibuang dan dicatat di output.
 
 Pemakaian:
-    python scripts/build_bench_support.py              # unduh, verifikasi, tulis
+    python scripts/build_bench_support.py              # unduh, verifikasi, tulis (HumanEval dan MBPP)
+    python scripts/build_bench_support.py --only mbpp  # hanya mbppplus.jsonl dan mbpp-sisa.jsonl
     python scripts/build_bench_support.py --source HumanEvalPlus.jsonl.gz --original HumanEval.jsonl.gz  # file lokal
 """
 import argparse
@@ -26,6 +31,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "bench-support" / "humaneval.jsonl"
 SOURCE_URL = "https://github.com/evalplus/humanevalplus_release/releases/download/v0.1.10/HumanEvalPlus.jsonl.gz"
+MBPP_PLUS_OUT = OUT.with_name("mbppplus.jsonl")
+MBPP_REST_OUT = OUT.with_name("mbpp-sisa.jsonl")
+MBPP_PLUS_URL = "https://github.com/evalplus/mbppplus_release/releases/download/v0.2.0/MbppPlus.jsonl.gz"
+MBPP_URL = ("https://raw.githubusercontent.com/google-research/google-research/"
+            "master/mbpp/mbpp.jsonl")
 # Teks persis dari template chat EvalPlus (evalplus/provider/utility.py).
 INSTRUCTION = ("Please provide a self-contained Python script that solves the following problem in a markdown "
                "code block:")
@@ -178,10 +188,107 @@ def build_sample(task, solution=None):
     }, code
 
 
+# ---------------------------------------------------------------- MBPP+ dan MBPP
+
+# MBPP+ menilai dengan output solusi kanonisnya sendiri, jadi solusi itu cukup dibuktikan lolos assert resmi MBPP
+# (field assertion; beberapa memakai math.isclose tanpa import, seperti di harness EvalPlus). Solusi MBPP asli
+# dibuktikan dengan semua assert-nya.
+# Soal MBPP asli yang punya 13-gram sama dengan IndoPy (scripts/decontaminate.py --sumber IndoPy Web-eval). Isinya
+# deret angka yang kebetulan sama, tetapi tetap dibuang supaya IndoPy-dev dan IndoPy-test tetap bersih untuk V6.
+MBPP_EXCLUDE = {216: "deret 1..14 sama dengan IndoPy-dev", 298: "deret 1..14 sama dengan IndoPy-dev",
+                522: "deret uji sama dengan IndoPy-test", 889: "deret 1..16 sama dengan IndoPy-dev"}
+
+
+def verify_mbpp(code, asserts, timeout):
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / "run.py").write_text(f"import math\n{code}\n\n{asserts}\n")
+        try:
+            result = subprocess.run([sys.executable, "-I", "run.py"], capture_output=True, text=True,
+                                    timeout=timeout, cwd=tmp)
+        except subprocess.TimeoutExpired:
+            return f"lebih dari {timeout} detik"
+        if result.returncode:
+            return (result.stderr.strip().splitlines() or ["gagal"])[-1][:300]
+    return None
+
+
+def mbpp_sample(sample_id, category, source, prompt, code):
+    return {
+        "id": sample_id,
+        "category": category,
+        "source": source,
+        "messages": [
+            {"role": "user", "content": f"{INSTRUCTION}\n{FENCE}\n{prompt.strip()}\n{FENCE}"},
+            {"role": "assistant", "content": f"{RESPONSE}\n{FENCE}python\n{code}\n{FENCE}"},
+        ],
+    }
+
+
+def tidy(code):
+    """Rapikan solusi MBPP asli: baris CRLF, spasi di akhir baris, dan tab (diverifikasi ulang setelahnya)."""
+    return "\n".join(line.rstrip().expandtabs(4) for line in code.replace("\r\n", "\n").split("\n")).strip()
+
+
+def build_mbpp(fetch, args):
+    plus = [json.loads(line) for line in gzip.decompress(fetch(args.mbpp_source, MBPP_PLUS_URL)).decode().splitlines()
+            if line.strip()]
+    original = [json.loads(line) for line in fetch(args.mbpp_original, MBPP_URL).decode().splitlines() if line.strip()]
+    plus.sort(key=lambda t: int(t["task_id"].split("/")[1]))
+
+    def check_plus(t):
+        return verify_mbpp(t["canonical_solution"].strip(), t["assertion"], args.timeout)
+
+    plus_ids = {int(t["task_id"].split("/")[1]) for t in plus}
+    rest, skipped = [], []
+    for t in sorted(original, key=lambda t: t["task_id"]):
+        if t["task_id"] in plus_ids:
+            continue
+        if t["task_id"] in MBPP_EXCLUDE:
+            skipped.append((t["task_id"], MBPP_EXCLUDE[t["task_id"]]))
+            continue
+        if t["test_setup_code"].strip():  # assert-nya memakai objek yang tidak disebut di prompt
+            skipped.append((t["task_id"], "butuh test_setup_code"))
+            continue
+        rest.append(t)
+
+    def check_rest(t):
+        code = tidy(t["code"])
+        return code, verify_mbpp(code, "\n".join(t["test_list"] + t["challenge_test_list"]), args.timeout)
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        plus_errors = list(pool.map(check_plus, plus))
+        rest_results = list(pool.map(check_rest, rest))
+    failed = [(t["task_id"], e) for t, e in zip(plus, plus_errors) if e]
+    for task_id, error in failed:
+        print(f"GAGAL {task_id}: {error}")
+    if failed:
+        sys.exit(f"{len(failed)} solusi MBPP+ gagal verifikasi; file tidak ditulis")
+    plus_rows = [mbpp_sample(f"mbppplus-{int(t['task_id'].split('/')[1]):03d}", "bench_mbppplus", t["task_id"],
+                             t["prompt"], t["canonical_solution"].strip()) for t in plus]
+
+    rest_rows, seen = [], {t["prompt"].strip() for t in plus}
+    for t, (code, error) in zip(rest, rest_results):
+        prompt = f'"""\n{t["text"].strip()}\n{t["test_list"][0].strip()}\n"""'  # format prompt MBPP+
+        if error or prompt in seen:
+            skipped.append((t["task_id"], error or "prompt sama dengan soal lain"))
+            continue
+        seen.add(prompt)
+        rest_rows.append(mbpp_sample(f"mbpp-{t['task_id']:03d}", "bench_mbpp", f"MBPP/{t['task_id']}", prompt, code))
+    for task_id, reason in sorted(skipped):
+        print(f"dibuang MBPP/{task_id}: {reason}")
+
+    for path, rows in ((MBPP_PLUS_OUT, plus_rows), (MBPP_REST_OUT, rest_rows)):
+        path.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
+        print(f"{len(rows)} sampel lolos verifikasi dan ditulis ke {path.relative_to(ROOT)}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--source", help="HumanEvalPlus.jsonl.gz lokal (bawaan: unduh dari rilis EvalPlus)")
     parser.add_argument("--original", help="HumanEval.jsonl.gz lokal (bawaan: unduh dari repo openai/human-eval)")
+    parser.add_argument("--mbpp-source", help="MbppPlus.jsonl.gz lokal (bawaan: unduh dari rilis EvalPlus)")
+    parser.add_argument("--mbpp-original", help="mbpp.jsonl lokal (bawaan: unduh dari repo google-research)")
+    parser.add_argument("--only", choices=["humaneval", "mbpp"], help="bangun satu kelompok saja")
     parser.add_argument("--timeout", type=int, default=120, help="batas waktu verifikasi per soal (detik)")
     args = parser.parse_args()
 
@@ -190,6 +297,11 @@ def main():
             return Path(local).read_bytes()
         print(f"mengunduh {url} ...", flush=True)
         return urllib.request.urlopen(url, timeout=120).read()
+
+    if args.only != "humaneval":
+        build_mbpp(fetch, args)
+    if args.only == "mbpp":
+        return
 
     def tasks_of(raw):
         rows = [json.loads(line) for line in gzip.decompress(raw).decode("utf-8").splitlines() if line.strip()]
