@@ -37,9 +37,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import think_tags  # noqa: E402  isi <think> dari data/think/ ikut dipasang saat menulis train.jsonl
-
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "data" / "python-src"
 TRAIN = ROOT / "data" / "train.jsonl"
@@ -114,9 +111,6 @@ def build_one(folder):
 
 
 def normalize(entry):
-    # Isi <think> ditulis manusia lewat data/think/, bukan dari sumber Python, jadi tidak ikut dibandingkan.
-    entry = {**entry, "messages": [{**m, "content": think_tags.strip_think(m["content"])} if m["role"] == "assistant" else m
-                                   for m in entry["messages"]]}
     return json.loads(TIMING.sub(r"\1", json.dumps(entry, ensure_ascii=False)))
 
 
@@ -134,7 +128,7 @@ def main():
                              "Jalankan: python scripts/build_python_samples.py")
         print(f"OK: {len(built)} sampel Python sesuai sumber dan hasil eksekusinya")
         return
-    rows = [think_tags.apply_to_row(built.pop(r["id"], r)) for r in rows] + [think_tags.apply_to_row(e) for e in built.values()]
+    rows = [built.pop(r["id"], r) for r in rows] + list(built.values())
     TRAIN.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows))
     print(f"ditulis: {len(rows)} sampel di {TRAIN.relative_to(ROOT)}")
 

@@ -15,7 +15,7 @@ Dataset instruksi berbahasa Indonesia untuk fine-tuning **Qwen3.5-4B** dalam mod
 | Sains | 10 | ±850 | fisika, biologi, kimia, ilmu bumi |
 | **Total** | **125** | | ±329 ribu token, sampel terpanjang ±6.200 token |
 
-Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
+Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan. Angkanya belum dihitung ulang setelah penambahan sampel baru.
 
 ### Sampel website
 
@@ -117,37 +117,6 @@ python scripts/build_python_samples.py           # bangun ulang sampel Python ke
 python scripts/build_python_samples.py --check   # pastikan train.jsonl sama dengan hasil eksekusi ulang
 python scripts/decontaminate.py                  # pastikan tidak ada tumpang tindih dengan soal uji
 ```
-
-## Mode penalaran
-
-Saat ini semua jawaban di dataset adalah jawaban langsung tanpa `<think>`. Blok `<think>` yang pernah ada di 6 sampel (`matematika-001` sampai `matematika-004`, `web-042`, dan `web-043`) sudah dihapus, jadi sampel itu kembali berisi respons biasa. Mekanisme di bawah tetap tersedia jika nanti ingin menambah sampel dengan penalaran.
-
-Dataset mendukung dua jenis jawaban:
-
-- **Tanpa penalaran**: jawaban langsung.
-- **Dengan penalaran**: jawaban diawali blok `<think>…</think>`, lalu baris kosong, lalu jawaban yang dibaca pengguna. Contoh:
-
-  ```
-  <think>
-  Harga awal Rp250.000. Diskon 20% ... sisa 200.000. Diskon 10% dari 200.000 ... 180.000.
-  </think>
-
-  Harga akhirnya **Rp180.000**. ...
-  ```
-
-Pemisahan dibuat di `data/kelompok/`:
-
-- `penalaran.jsonl`: sampel dengan `<think>`. Saat ini kosong.
-- `tanpa-penalaran.jsonl`: sampel tanpa `<think>`. Saat ini berisi semua 125 sampel.
-
-`data/train.jsonl` tetap berisi semua 125 sampel, sehingga pengaturan training dan `mix_general.py` tidak berubah.
-
-Catatan untuk training:
-- `scripts/train_unsloth.py` merender jawaban yang diawali `<think>` dalam mode thinking (`enable_thinking=True`). Jawaban lainnya tetap memakai blok kosong seperti sebelumnya.
-- Jalur LLaMA-Factory (`dataset_info.json` dan file yaml) memakai `train.jsonl` penuh lewat template `qwen3_5_nothink`. Cara template itu menangani teks `<think>` di jawaban belum diuji. Jika sampel ber-`<think>` ditambahkan lagi, gunakan `train_unsloth.py` sampai jalur ini diuji.
-- Untuk `qwen2.5-coder-7b` (`train_unsloth.py`), sampel `<think>` dilatih sebagai teks biasa, karena template-nya tidak punya opsi thinking.
-- Untuk melatih mode thinking secara andal, kelompok `penalaran.jsonl` perlu diisi dengan cukup banyak sampel.
-- Angka token di tabel *Isi* belum dihitung ulang setelah penambahan sampel baru.
 
 ## Mencampur dengan dataset umum
 
@@ -427,38 +396,6 @@ Batasan yang perlu diketahui:
   - Blok yang tetap tidak cocok dilaporkan dan dilewati, tidak diterapkan sembarangan.
   - Setiap versi disimpan di `<workdir>/.versi/`, dan perubahan bisa dibatalkan dengan `/undo`.
 
-## Menulis isi `<think>` sendiri (`scripts/editor_think.py`)
-
-Isi tag `<think>` untuk sampel dataset own ditulis manusia lewat editor ini. **Cara termudah:** buka [notebook editor di Colab](https://colab.research.google.com/github/PvzKing/Dataset/blob/main/notebooks/editor_think_colab.ipynb), isi nama, email, dan sandi, lalu jalankan satu sel. Langkah membuat token GitHub ada di notebook itu. Editor tidak membuat atau menyarankan isi apa pun.
-
-- **Isi editor.** Setiap sampel ditampilkan dengan prompt dan jawabannya, ditambah kotak untuk menulis isi `<think>`. Sampel multi-giliran punya satu kotak per jawaban.
-- **Saat Simpan:**
-  1. Teks ditulis ke `data/think/<id>-<n>.md`, yaitu isi `<think>` untuk jawaban assistant ke-n.
-  2. `scripts/think_tags.py` memasangnya ke `data/train.jsonl` sebagai `<think>\n...\n</think>\n\n` di awal jawaban.
-  3. `scripts/validate.py` dijalankan.
-  4. Jika kotak **Commit & push** dicentang, perubahan di-commit lalu di-push ke GitHub.
-- **Menghapus.** Kosongkan teks lalu Simpan untuk menghapus `<think>` dari sampel itu.
-- **Aman saat build ulang.** `build_python_samples.py` ikut memasang isi `data/think/`, jadi membangun ulang sampel Python tidak menghapusnya.
-
-Di Colab (CPU saja cukup), simpan token GitHub fine-grained dengan izin *Contents: Read and write* untuk repo ini di **Secrets** dengan nama `GITHUB_TOKEN`, lalu jalankan:
-
-```python
-import os
-from google.colab import userdata
-os.environ["GITHUB_TOKEN"] = userdata.get("GITHUB_TOKEN")
-!git clone -q https://github.com/PvzKing/Dataset.git /content/Dataset
-!pip install -q "gradio>=5"
-!git -C /content/Dataset config user.name "Nama Anda" && git -C /content/Dataset config user.email "email@contoh.com"
-%run /content/Dataset/scripts/editor_think.py --share --auth penulis:ganti-sandi
-```
-
-Di laptop: `python scripts/editor_think.py` dari clone repo, lalu buka `http://127.0.0.1:7861`. Push ke `main` adalah bawaan; pakai `--branch <nama>` untuk cabang lain, atau `--no-push` untuk menyimpan saja. Token tidak disimpan ke git config dan tidak ditampilkan di layar.
-
-**Dampaknya ke training.**
-- Sampel yang berisi `<think>` dilatih dengan isi itu: blok `<think>` kosong dari template mode non-thinking dibuang, jadi model belajar menulis penalarannya sendiri sebelum menjawab.
-- Saat dipakai dengan `enable_thinking=False`, template menyisipkan `<think>` kosong, sehingga model langsung menjawab. Untuk memakai penalaran yang dipelajari, jalankan inferensi dengan `enable_thinking=True`.
-- Sampel tanpa `<think>` tetap dilatih seperti sebelumnya.
-
 ## Menambah sampel
 
 1. Tambahkan satu baris JSON ke `data/train.jsonl` dengan `id` unik. Untuk sampel Python, buat folder di `data/python-src/` lalu jalankan `python scripts/build_python_samples.py`.
@@ -469,8 +406,6 @@ Di laptop: `python scripts/editor_think.py` dari clone repo, lalu buka `http://1
 
 ```
 data/train.jsonl                      dataset (format messages), semua sampel
-data/kelompok/penalaran.jsonl         sampel dengan blok <think> (mode thinking)
-data/kelompok/tanpa-penalaran.jsonl   sampel tanpa blok <think>
 data/train_mix.jsonl                  hasil scripts/mix_general.py (tidak di-commit)
 data/dataset_info.json                registrasi dataset untuk LLaMA-Factory
 train/qwen3.5-4b-lora.yaml            konfigurasi LoRA Qwen3.5-4B untuk LLaMA-Factory
