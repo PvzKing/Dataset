@@ -1,6 +1,6 @@
 """Bangun panel Colab berbentuk formulir untuk scripts/panel_v4.py:
   notebooks/v4_pilot_interaktif.ipynb  mode pilot (T4): ukur v3, latih v4-pilot, ukur v4-pilot
-  notebooks/v4_a100_interaktif.ipynb   mode a100: latih v4 dan v3-ulang dari model dasar dengan konteks 16.384, ukur
+  notebooks/v4_a100_interaktif.ipynb   mode a100: latih v4 dari model dasar (konteks 16.384), ukur tanpa pembanding
 
 Pemakaian:
     python scripts/build_panel_notebook.py
@@ -16,8 +16,7 @@ PANEL = "https://raw.githubusercontent.com/PvzKing/Dataset/main/scripts/panel_v4
 LANGKAH = ["Otomatis: semua yang belum selesai", "HumanEval+ v3", "IndoPy-dev v3", "Web-eval v3", "Latih v4-pilot",
            "HumanEval+ v4", "IndoPy-dev v4", "Web-eval v4", "MBPP+ v4", "MBPP+ v3"]
 LANGKAH_A100 = ["Otomatis: semua yang belum selesai", "Latih v4", "HumanEval+ v4", "MBPP+ v4", "IndoPy-dev v4",
-                "Web-eval v4", "Latih v3-ulang", "Web-eval v3-ulang", "HumanEval+ v3-ulang", "MBPP+ v3-ulang",
-                "IndoPy-dev v3-ulang", "IndoPy-test v4"]
+                "Web-eval v4", "IndoPy-test v4"]
 
 def md(text):
     return {"cell_type": "markdown", "metadata": {}, "source": text.strip("\n").splitlines(True)}
@@ -105,24 +104,23 @@ cells_a100 = [
     md("""
 # Panel v4 di A100: training dari awal dengan konteks panjang
 
-Notebook ini melatih **v4 dari model dasar** Qwen3.5-4B, lalu melatih ulang **v3-ulang** sebagai pembanding. Setelah itu keduanya dan model dasar diukur, lalu laporan dibuat. Semua langkah dijalankan dari tombol di bawah. **Tidak butuh hasil lama di Drive**, jadi bisa dimulai dari akun Google yang baru.
+Notebook ini melatih **v4 dari model dasar** Qwen3.5-4B, mengukurnya, lalu membuat laporan. **Tanpa pembanding:** v3 dan model dasar tidak dilatih ulang atau diuji, jadi laporannya berisi skor v4 apa adanya. Semua langkah dijalankan dari tombol di bawah. **Tidak butuh hasil lama di Drive**, jadi bisa dimulai dari akun Google yang baru.
 
-| | v4 | v3-ulang (pembanding) |
-|---|---|---|
-| Data | `data/train.jsonl` terbaru (124 sampel) | `train.jsonl` terakhir sebelum sampel Python ditambahkan (79 sampel, commit `3ed189d`), diunduh otomatis |
-| Titik awal | model dasar | model dasar |
-| Resep | LoRA 16-bit (bf16), konteks 16.384, batas jawaban 12.000 token, 3 epoch, lr 1e-4, r16 | sama persis |
-
-Karena resepnya sama, beda skor v4 dan v3-ulang berasal dari **data**, yaitu 23 sampel baru: 20 Python, `tech-023`, `web-025`, dan `web-026`. v3-ulang tidak identik dengan v3 lama (yang dilatih QLoRA di T4 dengan 78 sampel), tetapi dibangun dari data yang paling dekat dengannya. Semua hasil uji disimpan di `finetune-id/a100/`.
+| | v4 |
+|---|---|
+| Data | `data/train.jsonl` terbaru (125 sampel) |
+| Titik awal | model dasar (bukan lanjutan adapter lain) |
+| Resep | LoRA 16-bit (bf16), konteks 16.384, batas jawaban 12.000 token, 3 epoch, lr 1e-4, r16 |
+| Uji | HumanEval+, MBPP+, IndoPy-dev, Web-eval; IndoPy-test opsional. Hasil di `finetune-id/a100/` |
 
 **Cara pakai**
 1. Pilih **Runtime → Change runtime type → A100 GPU**. Aktifkan **High-RAM** jika ada, lalu **Save**. A100 memakai compute unit; cek sisanya di **Runtime → View resources**.
 2. Jalankan **sel 1 (Siapkan)** dengan tombol ▶. Saat diminta, izinkan akses Google Drive dengan **akun yang menyimpan folder `finetune-id`**. Tunggu sampai semua baris bertanda ✅.
-3. Jalankan **sel 2 (Jalankan)** dengan pilihan *Otomatis*. Panel melatih v4 dan mengujinya, lalu melatih v3-ulang dan mengujinya. Biarkan tab tetap terbuka.
+3. Jalankan **sel 2 (Jalankan)** dengan pilihan *Otomatis*. Panel melatih v4, lalu menjalankan keempat uji. Biarkan tab tetap terbuka.
 4. **Kalau Colab terputus:** buka notebook ini lagi, lalu jalankan sel 1 dan sel 2. Training dilanjutkan dari checkpoint terakhir, dan jawaban uji yang sudah tersimpan tidak diulang.
 5. Setelah semua langkah ✅, jalankan **sel 4** dan kirim teksnya ke chat.
 
-Perkiraan kasarnya sekitar 3,5 jam GPU (belum pernah diukur di A100), jadi biasanya selesai dalam satu sesi. Sel 3 menampilkan progres kapan saja.
+Perkiraan kasarnya sekitar 1,5 jam GPU (belum pernah diukur di A100), jadi biasanya selesai dalam satu sesi. Sel 3 menampilkan progres kapan saja.
 
 **Tentang konteks 16.384:** sampel terpanjang di dataset sekarang ±6.200 token, jadi semua sampel sudah ikut dilatih, sama seperti di T4. Konteks panjang baru mengubah isi pelajaran setelah dataset ditambah sampel yang lebih panjang. Yang langsung terasa adalah batas jawaban 12.000 token, sehingga website panjang tidak terpotong.
 
@@ -130,7 +128,7 @@ Rincian setiap langkah dan arti output-nya ada di panduan [`docs/PROSEDUR_V4_A10
 """),
     form(f'''
 #@title 1️⃣ Siapkan (jalankan di awal setiap sesi)
-#@markdown Sel ini mengecek GPU (harus A100), memasang paket yang belum ada (pertama kali ±5–8 menit), menghubungkan Google Drive, mengunduh script terbaru, dan mengunduh data v3-ulang. Folder `finetune-id` dibuat otomatis jika belum ada.
+#@markdown Sel ini mengecek GPU (harus A100), memasang paket yang belum ada (pertama kali ±5–8 menit), menghubungkan Google Drive, dan mengunduh script terbaru. Folder `finetune-id` dibuat otomatis jika belum ada.
 #@markdown
 #@markdown **Konteks training** (`max_seq_len`). Pilih 12288 hanya jika training kehabisan VRAM. Mengubah nilai ini setelah training dimulai akan mengulang training dari awal.
 konteks_training = 16384  #@param [16384, 12288] {{type:"raw"}}
@@ -143,9 +141,9 @@ panel_v4.siapkan(mode="a100", konteks=konteks_training)
 '''),
     form(f'''
 #@title 2️⃣ Jalankan
-#@markdown **Otomatis** menjalankan semua langkah yang belum selesai secara berurutan: latih v4, uji v4, latih v3-ulang, lalu uji v3-ulang. Atau pilih satu langkah untuk menjalankan langkah itu saja.
+#@markdown **Otomatis** menjalankan semua langkah yang belum selesai secara berurutan: latih v4, lalu uji v4. Atau pilih satu langkah untuk menjalankan langkah itu saja.
 langkah = "{LANGKAH_A100[0]}"  #@param {json.dumps(LANGKAH_A100, ensure_ascii=False)}
-#@markdown Centang untuk ikut menjalankan **IndoPy-test**, yaitu penilaian akhir gerbang G2 (40 soal yang dikunci, ±10 menit). Jalankan **sekali saja** untuk v4 ini, dan jangan pakai soal atau jawabannya untuk menulis sampel latihan.
+#@markdown Centang untuk ikut menjalankan **IndoPy-test**, yaitu set uji akhir (40 soal yang dikunci, ±5 menit). Jalankan **sekali saja** untuk v4 ini, dan jangan pakai soal atau jawabannya untuk menulis sampel latihan.
 sertakan_indopy_test = False  #@param {{type:"boolean"}}
 {IMPORT}
 panel_v4.jalankan(langkah, sertakan_indopy_test)
@@ -159,7 +157,7 @@ panel_v4.progres(sertakan_indopy_test)
 '''),
     form(f'''
 #@title 4️⃣ Papan skor dan laporan untuk dikirim
-#@markdown Menampilkan papan skor v4 (dibanding model dasar dan v3-ulang) dan v3-ulang, website dan soal IndoPy-dev yang gagal, serta ringkasan training. Teksnya juga disimpan ke `finetune-id/laporan-v4-a100.txt` di Drive.
+#@markdown Menampilkan skor v4 di setiap uji, website dan soal IndoPy-dev yang gagal, serta ringkasan training. Teksnya juga disimpan ke `finetune-id/laporan-v4-a100.txt` di Drive.
 {IMPORT}
 panel_v4.laporan()
 '''),
@@ -172,7 +170,6 @@ Saat langkah gagal, panel menampilkan saran perbaikannya. Yang paling sering:
 |---|---|
 | Sel 1 menampilkan ❌ GPU | runtime-nya bukan A100. Runtime → Change runtime type → A100 GPU, lalu jalankan sel 1 lagi. Untuk T4, pakai notebook `v4_pilot_interaktif` |
 | `Cannot connect to GPU backend` | A100 sedang penuh atau compute unit habis. Coba lagi nanti; semua hasil aman di Drive |
-| ❌ Data v3-ulang | unduhan data dari GitHub gagal. Jalankan sel 1 lagi |
 | `⚠️ VRAM habis ... diulang dengan batch ...` | tidak perlu tindakan. Panel mengulang uji itu dengan batch lebih kecil, dan jawaban yang sudah tersimpan tidak hilang |
 | VRAM habis saat training | pilih `konteks_training` 12288 di sel 1, jalankan sel 1, lalu sel 2 |
 | Ingin menghentikan langkah yang sedang berjalan | klik ■ di sel 2. Langkah itu dilanjutkan saat sel 2 dijalankan lagi |

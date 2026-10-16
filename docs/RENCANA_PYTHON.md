@@ -63,7 +63,7 @@ Adapter **diterima** hanya jika lolos semua gerbang yang sudah bisa diukur. `eva
 
 | Kategori | Pilot (sudah ada) | Target v4 | Isi |
 |---|---|---|---|
-| `py_fungsi` | 6 | 35 | fungsi ringkas dengan kasus tepi: nomor HP, interval, hari kerja, kata terbanyak, kembalian (DP), urutan dependensi |
+| `py_fungsi` | 7 | 35 | fungsi ringkas dengan kasus tepi: nomor HP, interval, hari kerja, kata terbanyak, kembalian (DP), urutan dependensi, pencocokan transfer dengan faktur (meet in the middle, deteksi ambigu) |
 | `py_program` | 3 + `tech-023` | 25 | program lengkap dengan tes: terbilang, angsuran anuitas, file duplikat, to-do dengan penyimpanan atomik |
 | `py_debug` | 3 | 20 | bug di pesan user, lalu penyebab dan patch: argumen default mutable, pembulatan bankir, datetime tanpa zona |
 | `py_data` | 2 | 15 | CSV ekspor Excel (titik koma, BOM, format Indonesia), log nginx |
@@ -112,7 +112,7 @@ Data ini memakai gaya model itu sendiri, jadi menjaga ketelitian model dasar dan
 | Pengaturan | v4-pilot | v4 penuh | Alasan |
 |---|---|---|---|
 | Titik awal | model dasar | model dasar | hasil bisa diulang, tidak mewarisi pergeseran adapter lama |
-| Data | own sekarang (102 sampel) | own + Python penuh + swa-distilasi | web selalu ikut |
+| Data | own sekarang (125 sampel) | own + Python penuh + swa-distilasi | web selalu ikut |
 | Epoch | 3 (sama dengan v3) | 2, dengan checkpoint tiap epoch | pilot memakai resep v3 persis, supaya perbedaan hasil pasti berasal dari data |
 | LoRA | r 16, alpha 32, lr 1e-4 cosine | sama | r 32 hanya dicoba jika uji menunjukkan underfit |
 | Panjang | `max_seq_len` 6144 (T4) | sama | semua sampel ≤ ±6.200 token |

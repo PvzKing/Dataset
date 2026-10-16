@@ -163,6 +163,9 @@ class Engine:
         FastLanguageModel.for_inference(model)
         self.model = model
         self.tokenizer = getattr(tokenizer, "tokenizer", tokenizer)  # processor multimodal -> tokenizer teks
+        if self.tokenizer is not tokenizer and not getattr(self.tokenizer, "chat_template", None):
+            # Sama dengan train_unsloth.unwrap_tokenizer, supaya format prompt saat dipakai sama dengan saat training.
+            self.tokenizer.chat_template = tokenizer.chat_template
         self.torch = torch
         gpu = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU"
         self.info = (f"**Model:** `{args.base_model if not self.adapter else self.adapter}`  \n"

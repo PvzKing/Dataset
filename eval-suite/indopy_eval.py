@@ -193,7 +193,9 @@ def run_one(eh, args, tag, model_label, use_adapter, tasks, results_dir, get_gen
                            for t in batch]
                 texts, tokens = generator.generate(prompts, use_adapter, args.max_new_tokens)
             n_tokens += tokens
-            eh.append_jsonl(responses_path, [{"task_id": t["task_id"], "output": o} for t, o in zip(batch, texts)])
+            ciri = [{} for _ in texts] if args.demo else generator.ciri(texts)
+            eh.append_jsonl(responses_path, [{"task_id": t["task_id"], "output": o, **c}
+                                             for t, o, c in zip(batch, texts, ciri)])
             elapsed = time.time() - start
             finished = i + len(batch)
             print(f"[{tag}] {finished}/{len(todo)} soal, {elapsed / 60:.1f} menit"
@@ -210,6 +212,7 @@ def run_one(eh, args, tag, model_label, use_adapter, tasks, results_dir, get_gen
     with ThreadPoolExecutor(max_workers=4) as pool:
         rows = list(pool.map(judge, tasks))
     (run_dir / "hasil.jsonl").write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows))
+    gen_info = {**gen_info, **eh.ciri_run([done[t["task_id"]] for t in tasks])}
     summarize(rows, tag, model_label, args, gen_info, results_dir)
     return rows
 
@@ -230,6 +233,9 @@ def summarize(rows, tag, model_label, args, gen_info, results_dir):
           + ", ".join(f"{k} {a}/{b}" for k, (a, b) in sorted(per_level.items())))
     for task_id, reason in summary["gagal"].items():
         print(f"  gagal {task_id.rsplit('/', 1)[1]}: {reason}")
+    if "terpotong" in summary:
+        print(f"jawaban terpotong di batas token: {summary['terpotong']}/{n}, berulang: {summary['berulang']}/{n}, "
+              f"jawaban terpanjang: {summary['token_maks']} token")
     if args.limit:
         print(f"(hanya {n} soal karena --limit)")
 

@@ -35,8 +35,8 @@ HOME = tempfile.mkdtemp()
 shutil.rmtree(HASIL, ignore_errors=True)
 o = jalan("semua", SIM_EPOCH2_BONUS="0.05")
 harus("cabang claude/" in o, "Sel 1 memakai cabang yang sudah mendukung V5")
-harus("281 sampel (seharusnya 281), 0 dibuang, terpanjang 6231 token, 213 step" in o,
-      "cek data: 281 sampel, tidak ada yang dibuang, 213 step (lr 2e-4, grad-accum 4)")
+harus("289 sampel (seharusnya 289), 0 dibuang, terpanjang 6231 token, 219 step" in o,
+      "cek data: 289 sampel, tidak ada yang dibuang, 219 step (lr 2e-4, grad-accum 4)")
 harus("V5 memakai adapter epoch 2" in o, "epoch 2 dipilih saat skornya unggul ≥ 1 poin")
 harus("dipakai adapter: {'epoch': 2}" in o, "ekspor GGUF memakai adapter epoch terpilih")
 harus((HASIL / "qwen3.5-4b-V5/gguf/qwen3.5-4b-V5.Q4_K_M.gguf").is_file(), "file GGUF memuat nama V5")
