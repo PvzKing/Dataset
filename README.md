@@ -203,6 +203,7 @@ Ada tiga cara memakai kelompok ini:
 
 - **Dicampur dengan `own` dalam satu run dari model dasar (`--dataset own+bench`, dipakai V5).** Panduannya ada di [`docs/PANDUAN_V5_A100.md`](docs/PANDUAN_V5_A100.md). Adapter epoch 2 dan 3 disimpan, lalu yang dipakai dipilih dari uji yang bersih: MBPP+, IndoPy-dev, dan Web-eval.
 - **Seluruh EvalPlus dan MBPP dicampur dengan `own`, 10 epoch (`--dataset own+evalplus`, dipakai V6).** Panduannya ada di [`docs/PANDUAN_V6_A100.md`](docs/PANDUAN_V6_A100.md). Kontaminasinya disengaja: skor HumanEval+ dan MBPP+ V6 tidak bersih, jadi epoch dipilih hanya dari IndoPy-dev dan Web-eval.
+- **Tidak dipakai sama sekali (V7).** V6 menghafal sampel latihan dan kalah dari model dasar di permintaan baru, jadi V7 melatih `own` + jawaban model dasar sendiri yang lolos pemeriksaan otomatis (lihat bagian V7 di bawah). Keempat uji, termasuk HumanEval+ dan MBPP+, kembali bersih.
 - **Dilatih sendiri, tanpa `own`**, sebagai training lanjutan di atas adapter yang sudah dilatih dengan `own` (misalnya v3). Cara ini dipakai percobaan bench-lanjut, yang skornya turun (lihat `data/bench-support/README.md`):
 
 ```bash
@@ -236,7 +237,22 @@ Mulailah dengan **`own`**, lalu beralih ke `mix` jika hasilnya menunjukkan gejal
 
 ## Training di Google Colab
 
-**Panduan langkah demi langkah: [`docs/PANDUAN_TRAINING.md`](docs/PANDUAN_TRAINING.md).** Untuk GPU A100 dengan data own + HumanEval, checkpoint dan hasil di Google Drive, serta model bernama V5, pakai [`docs/PANDUAN_V5_A100.md`](docs/PANDUAN_V5_A100.md) atau [notebook-nya](notebooks/v5_a100_colab.ipynb). Untuk V6 (ditambah MBPP+ dan MBPP, 10 epoch, skor benchmark sengaja terkontaminasi), pakai [`docs/PANDUAN_V6_A100.md`](docs/PANDUAN_V6_A100.md) atau [notebook-nya](notebooks/v6_a100_colab.ipynb).
+**Panduan langkah demi langkah: [`docs/PANDUAN_TRAINING.md`](docs/PANDUAN_TRAINING.md).** Untuk GPU A100 dengan data own + HumanEval, checkpoint dan hasil di Google Drive, serta model bernama V5, pakai [`docs/PANDUAN_V5_A100.md`](docs/PANDUAN_V5_A100.md) atau [notebook-nya](notebooks/v5_a100_colab.ipynb). Untuk V6 (ditambah MBPP+ dan MBPP, 10 epoch, skor benchmark sengaja terkontaminasi), pakai [`docs/PANDUAN_V6_A100.md`](docs/PANDUAN_V6_A100.md) atau [notebook-nya](notebooks/v6_a100_colab.ipynb). Untuk V7, perbaikan V6 yang mencegah hafalan, pakai [`docs/PANDUAN_V7_A100.md`](docs/PANDUAN_V7_A100.md) atau [notebook-nya](notebooks/v7_a100_colab.ipynb).
+
+### V7: data sulingan model dasar dan gerbang melawan model dasar
+
+V6 (Codexia2) dilatih 10 epoch dengan 1.131 jawaban benchmark pendek. Hasilnya, epoch 9 menyalin sampel web-003 kata per kata, tetapi gagal total di permintaan baru (antrean puskesmas). V7 mengubah empat hal:
+
+1. **Tanpa jawaban benchmark**, jadi IndoPy-dev, Web-eval, MBPP+, dan HumanEval+ semuanya bersih.
+2. **Data sulingan** dari `scripts/sulingan.py`. Model dasar menjawab 589 soal MBPP di luar MBPP+ (dibungkus permintaan berbahasa Indonesia) dan 40 prompt website baru (`data/sulingan/prompt-web.jsonl`) beberapa kali. Hanya jawaban yang lolos pemeriksaan otomatis yang dipakai: assert resmi MBPP untuk Python; untuk website, Chromium tanpa error saat semua input diisi dan tombol diklik, halaman berubah setelah dipakai, responsif di 375 px, localStorage jika diminta, dan bagian **Cek kebutuhan**. Instruksi gaya hanya ada di system prompt saat membuat jawaban dan tidak ikut dilatih. Sampel yang punya 13-gram sama dengan soal uji dibuang.
+3. **Dosis kecil**: 2 epoch, lr 1e-4, batch efektif 8.
+4. **Gerbang**: adapter dipakai hanya jika rata-rata keempat uji bersih minimal sama dengan model dasar. Kalau tidak, laporan menyarankan model dasar dan ekspor dilewati.
+
+```bash
+python scripts/sulingan.py python --out /tmp/sulingan --demo --limit 20   # uji alur tanpa GPU
+python scripts/sulingan.py gabung --out /tmp/sulingan --demo
+python tests/simulasi_v7/cek.py     # simulasi sel panduan V7 (menulis ke /content: container sekali pakai saja)
+```
 
 Seluruh proses training ada di satu file mandiri, [`scripts/train_unsloth.py`](scripts/train_unsloth.py), dengan pengaturan di blok `CONFIG`. File ini tidak butuh clone repo: jika `train.jsonl` tidak ditemukan, file itu diunduh dari repo publik ini. Ada dua cara memakainya, dan keduanya tidak perlu menghubungkan Colab ke GitHub:
 
@@ -513,6 +529,11 @@ docs/PANDUAN_V5_A100.md               panduan Colab A100 untuk V5: own + HumanEv
 notebooks/v5_a100_colab.ipynb         notebook Colab V5 (dibangun dari PANDUAN_V5_A100.md)
 docs/PANDUAN_V6_A100.md               panduan Colab A100 untuk V6: own + HumanEval+ + MBPP+ + MBPP, 10 epoch (terkontaminasi)
 notebooks/v6_a100_colab.ipynb         notebook Colab V6 (dibangun dari PANDUAN_V6_A100.md)
+docs/PANDUAN_V7_A100.md               panduan Colab A100 untuk V7: own + sulingan model dasar, 2 epoch, gerbang melawan model dasar
+notebooks/v7_a100_colab.ipynb         notebook Colab V7 (dibangun dari PANDUAN_V7_A100.md)
+scripts/sulingan.py                   jawaban model dasar yang lolos pemeriksaan otomatis (Python: assert MBPP, website: Chromium)
+data/sulingan/prompt-web.jsonl        40 prompt website untuk sulingan V7 (bukan soal Web-eval)
+tests/simulasi_v7/                    simulasi sel panduan V7 tanpa GPU, plus uji sulingan.py mode demo
 notebooks/v4_pilot_interaktif.ipynb   panel Colab interaktif v4-pilot: siapkan, jalankan otomatis, progres, laporan
 scripts/panel_v4.py                   logika panel (mode pilot dan a100): langkah, status dari Drive, saran saat gagal
 scripts/build_panel_notebook.py       membangun notebook panel interaktif
