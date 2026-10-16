@@ -10,7 +10,7 @@ Dataset instruksi berbahasa Indonesia untuk fine-tuning **Qwen3.5-4B** dalam mod
 | Perbaikan bug website (`web_debug`) | 12 | ±3.650 | XSS, urutan operasi, timer di tab latar, `localStorage` rusak, overflow di HP, acak tidak aman, dan lainnya |
 | Python terverifikasi (`py_*`, `tech-023`) | 22 | ±2.000 | fungsi dengan kasus tepi, program lengkap dengan tes, debug dari traceback, olah data CSV/log, menulis tes, multi-giliran (Python 3.8, kebutuhan berubah), review keamanan, Python untuk web (Flask, generator HTML) |
 | Teknologi & pemrograman | 22 | ±700 | algoritma, struktur data, database, keamanan, sistem terdistribusi, Git, testing, AI |
-| Matematika & logika | 15 | ±800 | kalkulus, pembuktian, probabilitas, statistik, aljabar, teka-teki logika, dan 4 soal hitungan sehari-hari (`matematika-*`) |
+| Matematika & logika | 15 | ±1.200 (perkiraan) | tingkat kuliah sampai pascasarjana: analisis real (Teorema Darboux, integral Dirichlet), irasionalitas π, martingale dan waktu tunggu pola, inferensi Bayes, teorema spektral, Σ 1/p divergen, MSE estimator variansi, AM–GM Cauchy, teori Galois (kuintik tak terselesaikan), metode bolak-balik Cantor, dan 4 soal singkat berjawaban tertutup (`matematika-*`) |
 | Hukum | 1 | belum diukur | sengketa utang piutang, wanprestasi dan penipuan |
 | Sains | 10 | ±850 | fisika, biologi, kimia, ilmu bumi |
 | **Total** | **125** | | ±329 ribu token, sampel terpanjang ±6.200 token |
