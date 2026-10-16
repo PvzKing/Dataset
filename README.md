@@ -432,6 +432,24 @@ Batasan yang perlu diketahui:
   - Blok yang tetap tidak cocok dilaporkan dan dilewati, tidak diterapkan sembarangan.
   - Setiap versi disimpan di `<workdir>/.versi/`, dan perubahan bisa dibatalkan dengan `/undo`.
 
+## Codexia Studio (`scripts/codexia_studio.py`)
+
+Tampilan Gradio bergaya Claude Code untuk memakai **Codexia2** (hasil `docs/PANDUAN_V6_A100.md`) tanpa kuantisasi. Model dimuat bf16, atau float32 dengan `--dtype float32`; tidak pernah 4-bit atau 8-bit. Karena itu butuh GPU dengan bf16 asli seperti A100, L4, atau H100.
+
+- **Editor Monaco** (editor VS Code). Kode baru dari model mengalir langsung ke editor saat ditulis.
+- **Edit beberapa baris, tanpa menulis ulang.** Jika editor sudah berisi kode, permintaan dikirim dengan format sampel debug di data training: keluhan, lalu kode lengkap, lalu output atau error. Jawaban model diawali blok `SEARCH/REPLACE`, dan setiap blok diterapkan ke baris yang sama. Baris yang berubah disorot di editor dan tampil sebagai diff di transkrip. Blok yang tidak cocok dikirim balik ke model satu kali.
+- **Jalankan dan perbaiki.** Python, JavaScript (jika ada `node`), dan Bash dijalankan di subprocess dengan batas waktu. HTML tampil di tab Pratinjau. `/perbaiki` tanpa keterangan mengirim traceback terakhir ke model, lalu menjalankan ulang file untuk membuktikan perbaikannya.
+- **Pengaturan lengkap:** sampling terpisah untuk menulis dan mengedit, mode patch atau bebas, mode berpikir, seed, batas konteks 16.384 token, undo, dan riwayat versi di folder kerja.
+
+```bash
+!pip install -q --upgrade unsloth "gradio>=5.40,<7"
+%run /content/codexia_studio.py                      # adapter Codexia2 final dari Google Drive
+%run /content/codexia_studio.py --adapter .../epoch-5/qwen3.5-4b-Codexia2-lora   # epoch lain
+%run /content/codexia_studio.py --demo               # coba tampilan tanpa GPU
+```
+
+Monaco diunduh sekali dari registry npm lalu disajikan oleh Gradio. Jika gagal, Monaco dimuat dari CDN jsDelivr, dan jika itu juga gagal, editor diganti kotak teks biasa. Kode yang dijalankan adalah kode tulisan model, jadi jalankan di runtime Colab, bukan di komputer yang berisi data penting.
+
 ## Menulis isi `<think>` sendiri (`scripts/editor_think.py`)
 
 Isi tag `<think>` untuk sampel dataset own ditulis manusia lewat editor ini. **Cara termudah:** buka [notebook editor di Colab](https://colab.research.google.com/github/PvzKing/Dataset/blob/main/notebooks/editor_think_colab.ipynb), isi nama, email, dan sandi, lalu jalankan satu sel. Langkah membuat token GitHub ada di notebook itu. Editor tidak membuat atau menyarankan isi apa pun.
@@ -484,6 +502,7 @@ notebooks/train_colab.ipynb           notebook Colab mandiri untuk di-upload (mo
 scripts/train_unsloth.py              script training mandiri (Unsloth): info/prepare/train/test/gguf, menulis status.json
 scripts/chat_gradio.py                chatbot Gradio untuk mencoba adapter (streaming, pengaturan lengkap, pratinjau HTML)
 scripts/agent_gradio.py               agen coding bergaya Claude Code: tulis → uji di browser → perbaiki (SEARCH/REPLACE)
+scripts/codexia_studio.py             Codexia2 tanpa kuantisasi: UI bergaya Claude Code, editor Monaco, edit baris lewat SEARCH/REPLACE
 scripts/build_notebook.py             membangun notebooks/train_colab.ipynb dari script dan runbook
 docs/PANDUAN_TRAINING.md              panduan training lengkap untuk pengguna
 docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol training di Colab
