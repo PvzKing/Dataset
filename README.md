@@ -445,6 +445,7 @@ Tampilan Gradio bergaya Claude Code untuk memakai **Codexia2** (hasil `docs/PAND
 !pip install -q --upgrade unsloth "gradio>=5.40,<7"
 %run /content/codexia_studio.py                      # adapter Codexia2 final dari Google Drive
 %run /content/codexia_studio.py --adapter .../epoch-5/qwen3.5-4b-Codexia2-lora   # epoch lain
+%run /content/codexia_studio.py --adapter none       # model dasar Qwen3.5-4B tanpa adapter, untuk pembanding
 %run /content/codexia_studio.py --demo               # coba tampilan tanpa GPU
 ```
 

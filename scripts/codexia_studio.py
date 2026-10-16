@@ -24,6 +24,7 @@ Opsi CONFIG bisa diganti lewat argumen, misalnya:
 
     %run /content/codexia_studio.py --adapter /content/drive/MyDrive/finetune-id/Codexia2/qwen3.5-4b-Codexia2/epoch-5/qwen3.5-4b-Codexia2-lora
     %run /content/codexia_studio.py --merged /content/drive/MyDrive/finetune-id/Codexia2/qwen3.5-4b-Codexia2/qwen3.5-4b-Codexia2-merged-16bit
+    %run /content/codexia_studio.py --adapter none     # model dasar tanpa adapter, untuk pembanding
     %run /content/codexia_studio.py --dtype float32 --max-seq-len 8192
     %run /content/codexia_studio.py --demo        # coba tampilan tanpa GPU dan tanpa model
 
@@ -48,10 +49,11 @@ from pathlib import Path
 
 # ======================================================== CONFIG: ubah di sini ========================================
 CONFIG = {
-    # Adapter final Codexia2 (epoch terpilih). Ganti ke epoch-N/... untuk mencoba epoch lain.
+    # Adapter final Codexia2 (epoch terpilih). Ganti ke epoch-N/... untuk mencoba epoch lain, atau "none" untuk
+    # model dasar (base_model) tanpa adapter.
     "adapter": "/content/drive/MyDrive/finetune-id/Codexia2/qwen3.5-4b-Codexia2/qwen3.5-4b-Codexia2-lora",
     "merged": None,                 # folder model 16-bit hasil merge (EKSPOR_16BIT); jika diisi, adapter diabaikan
-    "base_model": "unsloth/Qwen3.5-4B",
+    "base_model": "unsloth/Qwen3.5-4B",  # dipakai jika adapter = "none" dan sebagai cadangan pemuatan adapter
     "dtype": "bfloat16",            # "bfloat16" (disarankan) atau "float32". Tidak ada 4-bit/8-bit
     "merge_adapter": False,         # True = gabungkan LoRA ke bobot 16-bit setelah dimuat (sedikit lebih cepat)
     "max_seq_len": 16384,           # sama dengan training: prompt + kode + jawaban harus muat di sini
@@ -131,7 +133,14 @@ def parse_args():
     return args
 
 
+def base_only(args):
+    """True jika yang dimuat model dasar saja (--adapter none)."""
+    return not args.merged and str(args.adapter).lower() == "none"
+
+
 def check_model_folder(args):
+    if base_only(args):
+        return
     if args.merged:
         if not (Path(args.merged) / "config.json").is_file():
             raise SystemExit(f"bukan folder model (tidak ada config.json): {args.merged}")
@@ -171,14 +180,14 @@ class Engine:
         dtype = getattr(torch, args.dtype)
         from unsloth import FastLanguageModel
 
-        name = args.merged or args.adapter
+        name = args.base_model if base_only(args) else args.merged or args.adapter
         print(f"memuat {name} ({args.dtype}, tanpa kuantisasi) ...", flush=True)
         load = dict(max_seq_length=args.max_seq_len, dtype=dtype, load_in_4bit=False, load_in_8bit=False,
                     load_in_16bit=args.dtype == "bfloat16")
         try:
             model, tokenizer = FastLanguageModel.from_pretrained(model_name=str(name), **load)
         except Exception as e:
-            if args.merged:
+            if args.merged or base_only(args):
                 raise
             # Cadangan: model dasar 16-bit lalu adapter lewat PEFT.
             base = json.loads((Path(args.adapter) / "adapter_config.json").read_text()).get("base_model_name_or_path")
@@ -946,7 +955,8 @@ def monaco_sources(args):
 def build_app(engine, args):
     import gradio as gr
 
-    model_label = "demo (model tiruan)" if args.demo else str(args.merged or args.adapter)
+    model_label = ("demo (model tiruan)" if args.demo else f"{args.base_model} (tanpa adapter)" if base_only(args)
+                   else str(args.merged or args.adapter))
     welcome = {"kind": "welcome", "app": args.app_name, "model": model_label, "workdir": str(Path(args.workdir).resolve())}
     studio = Studio(engine, args)
 
