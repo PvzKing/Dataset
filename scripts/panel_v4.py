@@ -61,6 +61,7 @@ A100_UJI = {  # kunci: (folder hasil, script, argumen tambahan, label)
     "indopy-test": ("eval-indopy-test", "indopy_eval.py", ["--split", "test"], "IndoPy-test"),
 }
 POLA_OOM = r"CUDA out of memory|OutOfMemoryError"
+JUMLAH_SAMPEL = 103  # isi data/train.jsonl; training dengan jumlah lain berarti train.jsonl lama terpakai
 
 # Saran untuk pesan error yang sudah dikenal, dicocokkan dengan output langkah yang gagal.
 SARAN = [
@@ -454,8 +455,8 @@ def ringkas_training(k, ekor):
     folder, run, latih = (("v4-pilot", "qwen3.5-4b-own-4bit", "Latih v4-pilot") if k.mode == "pilot"
                           else ("v4", "qwen3.5-4b-own", "Latih v4"))
     m = re.search(r"data valid: (\d+) sampel", ekor)
-    if m and int(m[1]) != 102:
-        print(f"\n⚠️ Training memakai {m[1]} sampel, bukan 102. Hapus finetune-id/{folder}/train.jsonl di Drive, "
+    if m and int(m[1]) != JUMLAH_SAMPEL:
+        print(f"\n⚠️ Training memakai {m[1]} sampel, bukan {JUMLAH_SAMPEL}. Hapus finetune-id/{folder}/train.jsonl di Drive, "
               f"hapus folder {folder}/{run}, lalu jalankan langkah '{latih}' lagi.")
     m = re.search(r"(\d+) sampel dipakai, (\d+) dibuang", ekor)
     if m and int(m[2]):
@@ -470,10 +471,10 @@ def latih_demo(k):
     (folder / "adapter_config.json").write_text(json.dumps({"demo": True}))
     (run / "status.json").write_text(json.dumps({
         "stage": "done", "max_seq_len": k.konteks,
-        "data": {"samples": 102, "dropped": [], "longest": 6216, "total_steps": 39},
+        "data": {"samples": JUMLAH_SAMPEL, "dropped": [], "longest": 6216, "total_steps": 39},
         "result": {"train_runtime_min": 0.1, "train_loss": 0.5},
         "tests": {"bengkel": {"tokens": 5200, "finished": True}, "absensi": {"tokens": 7400, "finished": True}}}))
-    teks = (f"data valid: 102 sampel dari demo\n102 sampel dipakai, 0 dibuang karena > {k.konteks} token []\n"
+    teks = (f"data valid: {JUMLAH_SAMPEL} sampel dari demo\n{JUMLAH_SAMPEL} sampel dipakai, 0 dibuang karena > {k.konteks} token []\n"
             "[status] trained: adapter tersimpan\n")
     print(teks)
     return 0, teks

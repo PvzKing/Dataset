@@ -27,7 +27,7 @@ Bagian di bawah ini adalah **cara manual**, sel demi sel. Gunanya untuk memahami
 
 Yang akan dikerjakan:
 1. **Mengukur v3 dan model dasar** dengan empat uji: HumanEval+, IndoPy-dev, Web-eval, dan MBPP+.
-2. **Melatih v4-pilot**, yaitu adapter baru dengan dataset own terbaru (102 sampel, termasuk 20 sampel Python baru). Resepnya sama persis dengan v3, jadi perbedaan hasilnya berasal dari data.
+2. **Melatih v4-pilot**, yaitu adapter baru dengan dataset own terbaru (103 sampel, termasuk 21 sampel Python baru). Resepnya sama persis dengan v3, jadi perbedaan hasilnya berasal dari data.
 3. **Mengukur v4-pilot** dengan empat uji yang sama.
 4. **Membaca papan skor**: apakah v4-pilot lolos gerbang G1 (Python umum tidak turun) dan G3 (website tidak kalah dari v3).
 
@@ -208,9 +208,9 @@ Output penting yang perlu dicek, berurutan:
 |---|---|
 | `folder hasil: /content/drive/MyDrive/finetune-id/v4-pilot/qwen3.5-4b-own-4bit` | hasil masuk ke folder baru, jadi v3 tidak tersentuh |
 | `GPU kecil tanpa bf16 terdeteksi (misalnya T4): ...` | QLoRA 4-bit dan konteks 6144 dipakai otomatis, sama dengan v3 |
-| `data valid: 102 sampel dari ...` | **wajib 102.** Angka lain berarti `train.jsonl` yang terunduh bukan versi terbaru (lihat Bagian H) |
-| `102 sampel dipakai, 0 dibuang karena > 6144 token []` | semua sampel ikut dilatih |
-| `token per epoch: ...` dan `3 epoch = 39 step` | 102 sampel ÷ 8 per step = 13 step per epoch |
+| `data valid: 103 sampel dari ...` | **wajib 103.** Angka lain berarti `train.jsonl` yang terunduh bukan versi terbaru (lihat Bagian H) |
+| `103 sampel dipakai, 0 dibuang karena > 6144 token []` | semua sampel ikut dilatih |
+| `token per epoch: ...` dan `3 epoch = 39 step` | 103 sampel ÷ 8 per step, dibulatkan ke atas = 13 step per epoch |
 | `perkiraan T4 (kalibrasi dari run v3): ...` | perkiraan lama training |
 | progress bar sampai `39/39` | training berjalan. Loss dicetak berkala |
 | `[status] trained: adapter tersimpan` | adapter v4-pilot sudah tersimpan di Drive |
@@ -349,7 +349,7 @@ Dari situ saya menganalisis jenis kesalahannya dan menyusun sampel Fase 3.
 | `CUDA out of memory` | memori dari uji atau training sebelumnya | Restart session, Sel 2, lalu ulangi perintah yang sama |
 | Colab terputus di tengah uji | sesi habis atau idle | sesi baru: Sel 1 (jika runtime baru), Sel 2, lalu perintah yang sama. Jawaban yang tersimpan dilewati |
 | Colab terputus di tengah training | sesi habis | jalankan D1 lagi. Training dilanjutkan dari checkpoint terakhir |
-| `data valid: 82 sampel` atau angka lain selain 102 | `train.jsonl` lama dipakai | hapus `MyDrive/finetune-id/v4-pilot/train.jsonl`, lalu ulangi D1 |
+| `data valid: 82 sampel` atau angka lain selain 103 | `train.jsonl` lama dipakai | hapus `MyDrive/finetune-id/v4-pilot/train.jsonl`, lalu ulangi D1 |
 | `data atau pengaturan berubah: hasil lama dipindah ke .../arsip/...` | training ulang dengan data atau pengaturan berbeda | wajar. Hasil lama diarsipkan, dan training dimulai dari awal |
 | `stop_strings tidak didukung ...` | versi transformers | tidak perlu tindakan. Generate tetap jalan, hanya sedikit lebih lambat |
 | Skor v4-pilot janggal setelah dilatih ulang | jawaban uji dari adapter lama dipakai ulang | hapus subfolder `v4-pilot-qwen3.5-4b-own-4bit` di setiap folder `eval-*`, lalu ulangi Bagian E dan F |

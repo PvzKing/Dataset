@@ -8,11 +8,11 @@ Dataset instruksi berbahasa Indonesia untuk fine-tuning **Qwen3.5-4B** dalam mod
 |---|---|---|---|
 | Website one-shot (`web_oneshot`) | 26 | ±4.500 | landing page, portfolio, dashboard, toko online, game (termasuk game 3D WebGL), kalkulator, sistem kasir, form, undangan, dan lainnya |
 | Perbaikan bug website (`web_debug`) | 12 | ±3.650 | XSS, urutan operasi, timer di tab latar, `localStorage` rusak, overflow di HP, acak tidak aman, dan lainnya |
-| Python terverifikasi (`py_*`, `tech-023`) | 21 | ±2.000 | fungsi dengan kasus tepi, program lengkap dengan tes, debug dari traceback, olah data CSV/log, menulis tes, multi-giliran (Python 3.8, kebutuhan berubah), review keamanan, Python untuk web (Flask, generator HTML) |
+| Python terverifikasi (`py_*`, `tech-023`) | 22 | ±2.000 | fungsi dengan kasus tepi, program lengkap dengan tes, debug dari traceback, olah data CSV/log, menulis tes, multi-giliran (Python 3.8, kebutuhan berubah), review keamanan, Python untuk web (Flask, generator HTML) |
 | Teknologi & pemrograman | 22 | ±700 | algoritma, struktur data, database, keamanan, sistem terdistribusi, Git, testing, AI |
 | Matematika & logika | 11 | ±800 | kalkulus, pembuktian, probabilitas, statistik, aljabar, teka-teki logika |
 | Sains | 10 | ±850 | fisika, biologi, kimia, ilmu bumi |
-| **Total** | **102** | | ±238 ribu token, sampel terpanjang ±6.200 token |
+| **Total** | **103** | | ±238 ribu token, sampel terpanjang ±6.200 token |
 
 Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 
@@ -83,7 +83,7 @@ Contoh kode Python di sampel teknologi juga sudah dijalankan, sehingga output ya
 
 ### Sampel Python terverifikasi
 
-Sampel Python (`py-001`–`py-020` dan `tech-023`) tidak ditulis langsung di `train.jsonl`. Sumbernya ada di `data/python-src/<id>/`: teks tiap giliran, file kode, dan file data. `scripts/build_python_samples.py` lalu membangun sampelnya:
+Sampel Python (`py-001`–`py-021` dan `tech-023`) tidak ditulis langsung di `train.jsonl`. Sumbernya ada di `data/python-src/<id>/`: teks tiap giliran, file kode, dan file data. `scripts/build_python_samples.py` lalu membangun sampelnya:
 
 - **Kode** di jawaban diambil dari file sumbernya.
 - **Output** diisi dari hasil menjalankan perintah sungguhan, termasuk traceback, hasil tes, dan untuk sampel kompatibilitas, Python 3.8.
@@ -104,11 +104,11 @@ python scripts/decontaminate.py                  # pastikan tidak ada tumpang ti
 
 ## Mencampur dengan dataset umum
 
-Melatih model hanya dengan 102 sampel berisiko membuat model "terlalu fokus", misalnya selalu menjawab dengan file HTML walaupun pertanyaannya bukan soal website. Selain itu, kemampuan umumnya bisa menurun. Karena itu, config training memakai data campuran yang dibuat oleh `scripts/mix_general.py`:
+Melatih model hanya dengan 103 sampel berisiko membuat model "terlalu fokus", misalnya selalu menjawab dengan file HTML walaupun pertanyaannya bukan soal website. Selain itu, kemampuan umumnya bisa menurun. Karena itu, config training memakai data campuran yang dibuat oleh `scripts/mix_general.py`:
 
 | Sumber | Jumlah bawaan | Isi |
 |---|---|---|
-| Dataset ini (`data/train.jsonl`) | 102 | semua sampel, tanpa dikurangi |
+| Dataset ini (`data/train.jsonl`) | 103 | semua sampel, tanpa dikurangi |
 | [`CohereForAI/aya_dataset`](https://huggingface.co/datasets/CohereForAI/aya_dataset), bagian bahasa Indonesia | 600 | tanya-jawab umum yang ditulis manusia |
 | [`ise-uiuc/Magicoder-Evol-Instruct-110K`](https://huggingface.co/datasets/ise-uiuc/Magicoder-Evol-Instruct-110K) | 200 | instruksi pemrograman (bahasa Inggris) |
 | [`HuggingFaceH4/ultrachat_200k`](https://huggingface.co/datasets/HuggingFaceH4/ultrachat_200k), split `train_sft` | 100 | percakapan umum multi-turn (bahasa Inggris) |
@@ -164,13 +164,13 @@ Dua hal yang perlu diingat:
 
 ## Pilihan data: `own` atau `mix`
 
-- **`own`**: hanya `data/train.jsonl`, 102 sampel, 3 epoch, ±710 ribu token diproses.
+- **`own`**: hanya `data/train.jsonl`, 103 sampel, 3 epoch, ±710 ribu token diproses.
 - **`mix`**: dataset ini ditambah ±900 sampel umum dari `scripts/mix_general.py`, 2 epoch, ±1 juta token dilatih.
 
 Mulailah dengan **`own`**, lalu beralih ke `mix` jika hasilnya menunjukkan gejala lupa kemampuan umum.
 
 - **Alasan memulai dengan `own`:**
-  - Qwen3.5-4B sudah dilatih dengan data umum dalam jumlah sangat besar. 102 sampel dengan LoRA rank 16 hanya mengubah sedikit bobot, jadi risiko model melupakan kemampuan umumnya kecil.
+  - Qwen3.5-4B sudah dilatih dengan data umum dalam jumlah sangat besar. 103 sampel dengan LoRA rank 16 hanya mengubah sedikit bobot, jadi risiko model melupakan kemampuan umumnya kecil.
   - Sekitar 70% token di dataset ini adalah sampel website, baik one-shot maupun perbaikan bug, dan 18% sampel Python terverifikasi. Keduanya memang kemampuan utama yang ingin diajarkan.
   - Training di T4 butuh ±30–90 menit, tidak berjam-jam, jadi cepat untuk iterasi.
 - **Kapan beralih ke `mix`.** Jika setelah training dengan `own` muncul salah satu gejala berikut:
@@ -264,7 +264,7 @@ Script ini memeriksa struktur JSON, urutan role, ID dan prompt duplikat, kelengk
 
 ## Catatan penting
 
-- **Ukuran dataset kecil.** Fine-tuning dengan 102 sampel terutama membentuk gaya dan format jawaban, misalnya kebiasaan menghasilkan satu file HTML lengkap dengan penjelasan berbahasa Indonesia. Pengetahuan baru tidak banyak bertambah. Karena itu, config bawaan memakai data campuran dengan dataset umum (lihat bagian *Mencampur dengan dataset umum*).
+- **Ukuran dataset kecil.** Fine-tuning dengan 103 sampel terutama membentuk gaya dan format jawaban, misalnya kebiasaan menghasilkan satu file HTML lengkap dengan penjelasan berbahasa Indonesia. Pengetahuan baru tidak banyak bertambah. Karena itu, config bawaan memakai data campuran dengan dataset umum (lihat bagian *Mencampur dengan dataset umum*).
 - **Hindari overfitting.** Pantau training loss. Dengan data sekecil ini, terlalu banyak epoch membuat model sekadar menghafal jawaban.
 
 ## Melihat dan menguji website
