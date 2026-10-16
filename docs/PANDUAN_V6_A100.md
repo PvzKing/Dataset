@@ -30,7 +30,7 @@ V6 **sengaja** dilatih dengan soal dan jawaban HumanEval, HumanEval+, MBPP, dan 
 
 ### Kenapa 10 epoch, dan pengamannya
 
-10 epoch dipakai sesuai permintaan. Dosisnya besar: dengan lr 2e-4 dan batch efektif 4 (resep v3/V5), 10 epoch berarti ±3.140 update, sekitar **5 kali** dosis V5 untuk setiap sampel own. Pada data kecil, dosis sebesar ini biasanya membuat model **menghafal**, bukan makin pintar. Tandanya loss training mendekati nol, sementara skor uji yang bersih turun.
+10 epoch dipakai sesuai permintaan. Dosisnya besar: dengan lr 2e-4 dan batch efektif 4 (resep v3/V5), 10 epoch berarti ±3.140 update, setiap sampel dilihat 10 kali, dibanding 3 kali di v3 dan V5 (±3,3 kali lipat). Pada data kecil, dosis sebesar ini biasanya membuat model **menghafal**, bukan makin pintar. Tandanya loss training mendekati nol, sementara skor uji yang bersih turun.
 
 Karena itu panduan ini memasang pengaman yang tidak mengurangi jumlah epoch:
 
