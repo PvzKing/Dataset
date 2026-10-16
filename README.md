@@ -10,7 +10,7 @@ Dataset instruksi berbahasa Indonesia untuk fine-tuning **Qwen3.5-4B** dalam mod
 | Perbaikan bug website (`web_debug`) | 12 | ±3.650 | XSS, urutan operasi, timer di tab latar, `localStorage` rusak, overflow di HP, acak tidak aman, dan lainnya |
 | Python terverifikasi (`py_*`, `tech-023`) | 22 | ±2.000 | fungsi dengan kasus tepi, program lengkap dengan tes, debug dari traceback, olah data CSV/log, menulis tes, multi-giliran (Python 3.8, kebutuhan berubah), review keamanan, Python untuk web (Flask, generator HTML) |
 | Teknologi & pemrograman | 22 | ±700 | algoritma, struktur data, database, keamanan, sistem terdistribusi, Git, testing, AI |
-| Matematika & logika | 15 | ±800 | kalkulus, pembuktian, probabilitas, statistik, aljabar, teka-teki logika, dan 4 sampel `matematika-*` dengan `<think>` |
+| Matematika & logika | 15 | ±800 | kalkulus, pembuktian, probabilitas, statistik, aljabar, teka-teki logika, dan 4 soal hitungan sehari-hari (`matematika-*`) |
 | Hukum | 1 | belum diukur | sengketa utang piutang, wanprestasi dan penipuan |
 | Sains | 10 | ±850 | fisika, biologi, kimia, ilmu bumi |
 | **Total** | **125** | | ±329 ribu token, sampel terpanjang ±6.200 token |
@@ -120,9 +120,11 @@ python scripts/decontaminate.py                  # pastikan tidak ada tumpang ti
 
 ## Mode penalaran
 
-Dataset ini sekarang punya dua jenis jawaban:
+Saat ini semua jawaban di dataset adalah jawaban langsung tanpa `<think>`. Blok `<think>` yang pernah ada di 6 sampel (`matematika-001` sampai `matematika-004`, `web-042`, dan `web-043`) sudah dihapus, jadi sampel itu kembali berisi respons biasa. Mekanisme di bawah tetap tersedia jika nanti ingin menambah sampel dengan penalaran.
 
-- **Tanpa penalaran** (sebagian besar): jawaban langsung, seperti sebelumnya.
+Dataset mendukung dua jenis jawaban:
+
+- **Tanpa penalaran**: jawaban langsung.
 - **Dengan penalaran**: jawaban diawali blok `<think>…</think>`, lalu baris kosong, lalu jawaban yang dibaca pengguna. Contoh:
 
   ```
@@ -135,16 +137,16 @@ Dataset ini sekarang punya dua jenis jawaban:
 
 Pemisahan dibuat di `data/kelompok/`:
 
-- `penalaran.jsonl`: 6 sampel dengan `<think>` (`matematika-001` sampai `matematika-004`, `web-042`, dan `web-043`).
-- `tanpa-penalaran.jsonl`: 119 sampel lainnya.
+- `penalaran.jsonl`: sampel dengan `<think>`. Saat ini kosong.
+- `tanpa-penalaran.jsonl`: sampel tanpa `<think>`. Saat ini berisi semua 125 sampel.
 
 `data/train.jsonl` tetap berisi semua 125 sampel, sehingga pengaturan training dan `mix_general.py` tidak berubah.
 
 Catatan untuk training:
 - `scripts/train_unsloth.py` merender jawaban yang diawali `<think>` dalam mode thinking (`enable_thinking=True`). Jawaban lainnya tetap memakai blok kosong seperti sebelumnya.
-- Jalur LLaMA-Factory (`dataset_info.json` dan file yaml) memakai `train.jsonl` penuh, sehingga 6 sampel ber-`<think>` ikut dilatih lewat template `qwen3_5_nothink`. Cara template itu menangani teks `<think>` di jawaban belum diuji. Sampai diuji, gunakan `train_unsloth.py` untuk data dengan penalaran.
+- Jalur LLaMA-Factory (`dataset_info.json` dan file yaml) memakai `train.jsonl` penuh lewat template `qwen3_5_nothink`. Cara template itu menangani teks `<think>` di jawaban belum diuji. Jika sampel ber-`<think>` ditambahkan lagi, gunakan `train_unsloth.py` sampai jalur ini diuji.
 - Untuk `qwen2.5-coder-7b` (`train_unsloth.py`), sampel `<think>` dilatih sebagai teks biasa, karena template-nya tidak punya opsi thinking.
-- Enam sampel belum cukup untuk membuat model belajar mode thinking secara andal. Kelompok `penalaran.jsonl` perlu diperbesar dulu.
+- Untuk melatih mode thinking secara andal, kelompok `penalaran.jsonl` perlu diisi dengan cukup banyak sampel.
 - Angka token di tabel *Isi* belum dihitung ulang setelah penambahan sampel baru.
 
 ## Mencampur dengan dataset umum
