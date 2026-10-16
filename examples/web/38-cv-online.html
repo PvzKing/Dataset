@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anindya Kusuma — Product Designer | CV</title>
+<style>
+  :root { --bg: #eceae6; --paper: #fffefb; --ink: #1d1c1a; --muted: #6f6b64; --line: #e4e0d8; --accent: #0e7c66; --accent-soft: #e0f2ec; }
+  [data-theme="dark"] { --bg: #121212; --paper: #1c1c1b; --ink: #ecebe7; --muted: #a29e96; --line: #2f2e2b; --accent: #4fd1b0; --accent-soft: #173a32; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.6; transition: background .3s, color .3s; }
+  button { font: inherit; color: inherit; }
+  a { color: var(--accent); }
+  .toolbar { position: sticky; top: 0; z-index: 10; display: flex; justify-content: center; gap: 8px; padding: 10px; background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(8px); flex-wrap: wrap; }
+  .toolbar button { border: 1px solid var(--line); background: var(--paper); padding: 8px 14px; border-radius: 999px; cursor: pointer; font-size: .9rem; }
+  .toolbar button.on { background: var(--ink); color: var(--paper); }
+  .page { width: min(920px, 100% - 24px); margin: 14px auto 50px; background: var(--paper); border-radius: 6px; box-shadow: 0 30px 60px -40px rgba(0,0,0,.4); display: grid; grid-template-columns: 290px 1fr; overflow: hidden; }
+  aside { background: var(--accent-soft); padding: 40px 30px; display: flex; flex-direction: column; gap: 28px; }
+  .photo { width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), #f59e0b); display: grid; place-items: center; color: #fff; font-size: 2.6rem; font-weight: 800; font-family: Georgia, serif; }
+  aside h2 { font-size: .78rem; text-transform: uppercase; letter-spacing: .14em; color: var(--accent); margin-bottom: 10px; }
+  .contact { list-style: none; display: grid; gap: 8px; font-size: .9rem; overflow-wrap: anywhere; }
+  .contact a { color: var(--ink); text-decoration: none; }
+  .contact a:hover { color: var(--accent); }
+  .copy { border: 0; background: none; cursor: pointer; color: var(--muted); font-size: .8rem; margin-left: 4px; }
+  .skill { margin-bottom: 10px; font-size: .9rem; }
+  .skill div { display: flex; justify-content: space-between; }
+  .skill small { color: var(--muted); }
+  .meter { height: 6px; border-radius: 9px; background: color-mix(in srgb, var(--accent) 18%, transparent); margin-top: 4px; overflow: hidden; }
+  .meter i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 9px; transition: width 1.2s cubic-bezier(.2, .8, .2, 1); }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tags span { font-size: .8rem; padding: 3px 10px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); }
+  .lang { display: flex; justify-content: space-between; font-size: .9rem; }
+  .lang small { color: var(--muted); }
+
+  main { padding: 44px 44px 40px; min-width: 0; }
+  .name { font-family: Georgia, "Times New Roman", serif; font-size: clamp(2rem, 5.5vw, 3.2rem); line-height: 1.05; letter-spacing: -.025em; font-weight: 400; }
+  .role { color: var(--accent); font-weight: 700; margin: 6px 0 14px; letter-spacing: .02em; }
+  .summary { color: var(--muted); }
+  .highlights { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 22px 0 8px; }
+  .hl { border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .hl b { font-size: 1.5rem; display: block; color: var(--accent); }
+  .hl small { color: var(--muted); font-size: .8rem; }
+  section { margin-top: 30px; }
+  section > h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .filter { display: flex; gap: 4px; text-transform: none; letter-spacing: 0; flex-wrap: wrap; }
+  .filter button { white-space: nowrap; }
+  .filter button { border: 1px solid var(--line); background: none; border-radius: 999px; padding: 2px 10px; font-size: .78rem; cursor: pointer; color: var(--muted); }
+  .filter button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .timeline { position: relative; padding-left: 22px; }
+  .timeline::before { content: ""; position: absolute; left: 5px; top: 6px; bottom: 6px; width: 2px; background: var(--line); }
+  .job { position: relative; margin-bottom: 20px; }
+  .job::before { content: ""; position: absolute; left: -22px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--paper); border: 3px solid var(--accent); }
+  .job-head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .job-head small { color: var(--muted); white-space: nowrap; }
+  .job .co { color: var(--accent); font-weight: 600; font-size: .92rem; }
+  .job ul { margin: 6px 0 0 18px; color: var(--muted); font-size: .93rem; }
+  .job.hidden { display: none; }
+  .more { border: 0; background: none; color: var(--accent); cursor: pointer; font-weight: 600; font-size: .88rem; padding: 0; margin-top: 4px; }
+  .projects { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .proj { border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  .proj small { color: var(--muted); }
+  .proj p { font-size: .9rem; color: var(--muted); margin-top: 4px; }
+  .edu { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .edu small { color: var(--muted); }
+  .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%) translateY(120px); background: var(--ink); color: var(--paper); padding: 10px 18px; border-radius: 10px; transition: transform .3s; font-size: .9rem; }
+  .toast.show { transform: translateX(-50%); }
+
+  @media (max-width: 760px) {
+    .page { grid-template-columns: 1fr; }
+    aside { order: 2; padding: 28px 22px; }
+    main { padding: 30px 22px; }
+    .projects { grid-template-columns: 1fr; }
+    .highlights { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .hl { padding: 10px 8px; } .hl b { font-size: 1.2rem; }
+  }
+  @media print {
+    @page { size: A4; margin: 0; }
+    body { background: #fff; }
+    .toolbar, .more, .filter, .copy, .toast { display: none !important; }
+    .page { margin: 0; width: 100%; box-shadow: none; border-radius: 0; grid-template-columns: 250px 1fr; }
+    aside { order: 0; }
+    .job.hidden { display: block; }
+    .meter i { transition: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button id="lang-btn">🌐 English</button>
+  <button id="theme-btn">🌙 Mode gelap</button>
+  <button id="print-btn">🖨 Cetak / PDF</button>
+</div>
+
+<article class="page">
+  <aside>
+    <div class="photo" aria-hidden="true">AK</div>
+    <div>
+      <h2 data-i18n="contact">Kontak</h2>
+      <ul class="contact">
+        <li>✉ <a href="mailto:anindya@contoh.id">anindya@contoh.id</a><button class="copy" data-copy="anindya@contoh.id" aria-label="Salin email">⧉</button></li>
+        <li>☎ <a href="tel:+6281200001111">+62 812-0000-1111</a></li>
+        <li>📍 <span data-i18n="city">Yogyakarta, Indonesia</span></li>
+        <li>🔗 <a href="#">anindya.design</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2 data-i18n="skills">Keahlian</h2>
+      <div id="skills"></div>
+    </div>
+    <div>
+      <h2 data-i18n="tools">Perangkat</h2>
+      <div class="tags"><span>Figma</span><span>FigJam</span><span>Maze</span><span>Notion</span><span>HTML/CSS</span><span>Framer</span></div>
+    </div>
+    <div>
+      <h2 data-i18n="langs">Bahasa</h2>
+      <div class="lang"><span>Indonesia</span><small data-i18n="native">Penutur asli</small></div>
+      <div class="lang"><span>English</span><small>IELTS 7.5</small></div>
+      <div class="lang"><span>Jawa</span><small data-i18n="fluent">Lancar</small></div>
+    </div>
+  </aside>
+
+  <main>
+    <h1 class="name">Anindya Kusuma</h1>
+    <div class="role" data-i18n="role">Senior Product Designer</div>
+    <p class="summary" data-i18n="summary">Desainer produk dengan 7 tahun pengalaman membangun aplikasi fintech dan e-commerce yang dipakai jutaan orang Indonesia. Terbiasa memimpin riset pengguna, menyusun design system, dan bekerja erat dengan tim engineering.</p>
+    <div class="highlights">
+      <div class="hl"><b data-count="7">0</b><small data-i18n="h1">tahun pengalaman</small></div>
+      <div class="hl"><b data-count="12">0</b><small data-i18n="h2">produk diluncurkan</small></div>
+      <div class="hl"><b data-count="40" data-suffix="%">0</b><small data-i18n="h3">kenaikan konversi</small></div>
+    </div>
+
+    <section>
+      <h2><span data-i18n="exp">Pengalaman</span>
+        <span class="filter" id="exp-filter"><button class="on" data-f="all" data-i18n="all">Semua</button><button data-f="fintech">Fintech</button><button data-f="ecom">E-commerce</button></span>
+      </h2>
+      <div class="timeline" id="jobs"></div>
+      <button class="more" id="more"></button>
+    </section>
+
+    <section>
+      <h2 data-i18n="projects">Proyek Pilihan</h2>
+      <div class="projects">
+        <div class="proj"><b>Design System “Lumbung”</b><br><small>2024</small><p data-i18n="p1">80+ komponen yang dipakai 6 tim produk; waktu rilis fitur turun 30%.</p></div>
+        <div class="proj"><b>Onboarding e-KYC</b><br><small>2023</small><p data-i18n="p2">Alur verifikasi identitas dari 9 langkah menjadi 4; tingkat selesai naik 40%.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2 data-i18n="edu">Pendidikan</h2>
+      <div class="edu"><div><b data-i18n="degree">S1 Desain Komunikasi Visual</b><br><small>Institut Seni Indonesia Yogyakarta</small></div><small>2013 – 2017</small></div>
+      <div class="edu"><div><b>Google UX Design Certificate</b><br><small>Coursera</small></div><small>2020</small></div>
+    </section>
+  </main>
+</article>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+  const JOBS = [
+    { cat: 'fintech', from: 2022, to: null, title: 'Senior Product Designer', co: 'Dompet Rakyat (fintech pembayaran)', id: ['Memimpin desain aplikasi dengan 8 juta pengguna aktif bulanan.', 'Membangun design system dan membimbing 4 desainer junior.'], en: ['Lead designer for an app with 8M monthly active users.', 'Built the design system and mentored 4 junior designers.'] },
+    { cat: 'ecom', from: 2019, to: 2022, title: 'Product Designer', co: 'Pasar Kita (marketplace UMKM)', id: ['Mendesain ulang alur checkout; konversi naik 18%.', 'Menjalankan 60+ sesi uji kegunaan dengan penjual di 5 kota.'], en: ['Redesigned checkout; conversion up 18%.', 'Ran 60+ usability sessions with sellers in 5 cities.'] },
+    { cat: 'fintech', from: 2018, to: 2019, title: 'UI/UX Designer', co: 'KoperasiDigital', id: ['Merancang aplikasi simpan pinjam untuk koperasi di Jawa Tengah.'], en: ['Designed a savings-and-loan app for cooperatives in Central Java.'] },
+    { cat: 'ecom', from: 2017, to: 2018, title: 'Junior Visual Designer', co: 'Studio Kayu Manis', id: ['Membuat aset kampanye untuk merek fesyen lokal.'], en: ['Produced campaign assets for local fashion brands.'] }
+  ];
+  const SKILLS = [['Riset Pengguna', 'User Research', 92], ['Desain Interaksi', 'Interaction Design', 95], ['Design System', 'Design Systems', 88], ['Prototyping', 'Prototyping', 90], ['Penulisan UX', 'UX Writing', 75]];
+  const T = {
+    en: { contact: 'Contact', city: 'Yogyakarta, Indonesia', skills: 'Skills', tools: 'Tools', langs: 'Languages', native: 'Native', fluent: 'Fluent', role: 'Senior Product Designer',
+      summary: 'Product designer with 7 years of experience building fintech and e-commerce apps used by millions of Indonesians. Comfortable leading user research, building design systems, and working closely with engineering.',
+      h1: 'years of experience', h2: 'products launched', h3: 'conversion uplift', exp: 'Experience', all: 'All', projects: 'Selected Projects',
+      p1: '80+ components used by 6 product teams; feature delivery time down 30%.', p2: 'Identity verification flow cut from 9 steps to 4; completion rate up 40%.',
+      edu: 'Education', degree: 'B.A. Visual Communication Design', now: 'Present', more: 'Show all experience', less: 'Show less' },
+    id: { now: 'Sekarang', more: 'Tampilkan semua pengalaman', less: 'Tampilkan lebih sedikit' }
+  };
+  // Simpan teks asli bahasa Indonesia dari HTML
+  document.querySelectorAll('[data-i18n]').forEach(el => { T.id[el.dataset.i18n] = el.textContent; });
+
+  let lang = 'id', expFilter = 'all', expanded = false;
+  const $ = id => document.getElementById(id);
+
+  function renderJobs() {
+    const list = JOBS.filter(j => expFilter === 'all' || j.cat === expFilter);
+    $('jobs').innerHTML = list.map((j, i) => `<div class="job ${!expanded && i >= 2 ? 'hidden' : ''}">
+      <div class="job-head"><b>${j.title}</b><small>${j.from} – ${j.to || T[lang].now}</small></div>
+      <div class="co">${j.co}</div><ul>${j[lang].map(x => `<li>${x}</li>`).join('')}</ul></div>`).join('');
+    $('more').style.display = list.length > 2 ? '' : 'none';
+    $('more').textContent = (expanded ? '↑ ' + T[lang].less : '↓ ' + T[lang].more) ;
+  }
+  function renderSkills() {
+    $('skills').innerHTML = SKILLS.map(s => `<div class="skill"><div><span>${lang === 'id' ? s[0] : s[1]}</span><small>${s[2]}%</small></div><div class="meter"><i data-w="${s[2]}"></i></div></div>`).join('');
+    requestAnimationFrame(() => requestAnimationFrame(() => document.querySelectorAll('.meter i').forEach(i => i.style.width = i.dataset.w + '%')));
+  }
+  function applyLang() {
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-i18n]').forEach(el => { const v = T[lang][el.dataset.i18n]; if (v) el.textContent = v; });
+    $('lang-btn').textContent = lang === 'id' ? '🌐 English' : '🌐 Bahasa Indonesia';
+    renderJobs(); renderSkills();
+  }
+
+  $('exp-filter').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    expFilter = b.dataset.f;
+    [...b.parentNode.children].forEach(x => x.classList.toggle('on', x === b));
+    renderJobs();
+  });
+  $('more').addEventListener('click', () => { expanded = !expanded; renderJobs(); });
+  $('lang-btn').addEventListener('click', () => { lang = lang === 'id' ? 'en' : 'id'; applyLang(); });
+  function setTheme(t) {
+    document.documentElement.dataset.theme = t;
+    $('theme-btn').textContent = t === 'dark' ? '☀️ Mode terang' : '🌙 Mode gelap';
+    try { localStorage.setItem('cv-theme', t); } catch (e) {}
+  }
+  $('theme-btn').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+  $('print-btn').addEventListener('click', () => window.print());
+  document.querySelectorAll('.copy').forEach(b => b.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(b.dataset.copy); toast('Email disalin'); } catch (e) { toast(b.dataset.copy); }
+  }));
+  let tt;
+  function toast(m) { $('toast').textContent = m; $('toast').classList.add('show'); clearTimeout(tt); tt = setTimeout(() => $('toast').classList.remove('show'), 1800); }
+
+  // Angka sorotan bertambah perlahan
+  document.querySelectorAll('[data-count]').forEach(el => {
+    const target = +el.dataset.count, suf = el.dataset.suffix || '+';
+    let n = 0;
+    const step = () => { n = Math.min(target, n + Math.ceil(target / 30)); el.textContent = n + suf; if (n < target) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  });
+
+  let saved = 'light';
+  try { saved = localStorage.getItem('cv-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (e) {}
+  setTheme(saved);
+  applyLang();
+</script>
+</body>
+</html>

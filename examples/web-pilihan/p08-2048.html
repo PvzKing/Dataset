@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>2048 Rempah — Gabungkan Angka</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700;800;900&display=swap">
+<style>
+  :root { --bg: #faf6ee; --board: #b9a58a; --cell: #d6c7b0; --text: #5b4636; --gap: clamp(8px, 2.4vw, 14px); --size: min(460px, 100vw - 32px); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .wrap { width: var(--size); margin: 0 auto; padding: 24px 0 40px; }
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+  h1 { font-size: clamp(2.6rem, 11vw, 4rem); font-weight: 900; line-height: 1; letter-spacing: -.04em; }
+  .scores { display: flex; gap: 6px; }
+  .score { background: var(--board); color: #fff; border-radius: 10px; padding: 6px 12px; text-align: center; min-width: 70px; position: relative; }
+  .score small { display: block; font-size: .65rem; text-transform: uppercase; letter-spacing: .08em; opacity: .85; font-weight: 700; }
+  .score b { font-size: 1.25rem; }
+  .plus { position: absolute; left: 50%; top: 20px; transform: translateX(-50%); font-weight: 800; color: var(--text); animation: up .8s forwards; pointer-events: none; }
+  @keyframes up { to { top: -30px; opacity: 0; } }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .row p { font-size: .9rem; }
+  .btns { display: flex; gap: 6px; }
+  button { font: inherit; }
+  .btn { background: #8f7a66; color: #fff; border: 0; border-radius: 10px; padding: 10px 14px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .board { position: relative; width: var(--size); height: var(--size); background: var(--board); border-radius: 14px; padding: var(--gap); touch-action: none; user-select: none; }
+  .grid, .tiles { position: absolute; inset: var(--gap); }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); }
+  .grid div { background: var(--cell); border-radius: 8px; }
+  .tile { position: absolute; width: calc((100% - 3 * var(--gap)) / 4); height: calc((100% - 3 * var(--gap)) / 4); border-radius: 8px; display: grid; place-items: center; font-weight: 900; transition: transform .12s ease-in-out; font-size: clamp(1.3rem, 7vw, 2.6rem); }
+  .tile .in { width: 100%; height: 100%; display: grid; place-items: center; border-radius: 8px; flex-direction: column; line-height: 1; }
+  .tile .in small { font-size: clamp(.45rem, 1.8vw, .65rem); font-weight: 700; margin-top: 3px; opacity: .85; letter-spacing: .02em; }
+  .tile.new .in { animation: appear .18s ease .08s backwards; }
+  .tile.merged .in { animation: pop .2s ease .08s; }
+  @keyframes appear { from { transform: scale(0); } }
+  @keyframes pop { 50% { transform: scale(1.18); } }
+  .overlay { position: absolute; inset: 0; border-radius: 14px; background: rgba(250, 246, 238, .78); display: none; flex-direction: column; justify-content: center; align-items: center; gap: 14px; z-index: 5; text-align: center; padding: 20px; }
+  .overlay.show { display: flex; animation: fade .4s; }
+  @keyframes fade { from { opacity: 0; } }
+  .overlay h2 { font-size: clamp(1.8rem, 8vw, 3rem); }
+  .help { margin-top: 20px; font-size: .9rem; line-height: 1.6; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .legend span { padding: 3px 8px; border-radius: 6px; font-size: .75rem; font-weight: 700; }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button { font-family: "Rubik", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>2048</h1>
+    <div class="scores">
+      <div class="score" id="score-box"><small>Skor</small><b id="score">0</b></div>
+      <div class="score"><small>Terbaik</small><b id="best">0</b></div>
+    </div>
+  </div>
+  <div class="row">
+    <p>Gabungkan rempah sampai <b>2048 · Emas Hitam</b>!</p>
+    <div class="btns"><button class="btn" id="undo" disabled aria-label="Urungkan langkah" title="Urungkan (Ctrl+Z)">↶</button><button class="btn" id="new">Baru</button></div>
+  </div>
+  <div class="board" id="board">
+    <div class="grid">
+      <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+      <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <div class="overlay" id="overlay"><h2 id="ov-title"></h2><p id="ov-text"></p><div class="btns"><button class="btn" id="ov-continue">Lanjut Main</button><button class="btn" id="ov-new">Main Lagi</button></div></div>
+  </div>
+  <div class="help">
+    <b>Cara main:</b> gunakan tombol panah / WASD, atau geser layar. Ubin dengan angka sama akan bergabung saat bersentuhan.
+    <div class="legend" id="legend"></div>
+  </div>
+</div>
+
+<script>
+  const NAMES = { 2: 'Garam', 4: 'Merica', 8: 'Kunyit', 16: 'Jahe', 32: 'Kencur', 64: 'Lengkuas', 128: 'Kayu Manis', 256: 'Cengkih', 512: 'Kapulaga', 1024: 'Pala', 2048: 'Emas Hitam', 4096: 'Raja Rempah' };
+  const COLORS = { 2: ['#eee4da', '#776e65'], 4: ['#ede0c8', '#776e65'], 8: ['#f2b179', '#fff'], 16: ['#f59563', '#fff'], 32: ['#f67c5f', '#fff'], 64: ['#f65e3b', '#fff'],
+    128: ['#edcf72', '#fff'], 256: ['#edcc61', '#fff'], 512: ['#edc850', '#fff'], 1024: ['#c2a03c', '#fff'], 2048: ['#3c3a32', '#f9d65c'], 4096: ['#1f1d18', '#ffd700'] };
+  const N = 4;
+  let grid, score, bestScore = 0, history = [], won = false, keepGoing = false, idSeq = 1;
+  try { bestScore = +localStorage.getItem('2048-best') || 0; } catch (e) {}
+
+  const tilesEl = document.getElementById('tiles');
+  const tileEls = new Map();
+
+  function empty() { return Array.from({ length: N }, () => Array(N).fill(null)); }
+
+  function addRandom() {
+    const cells = [];
+    grid.forEach((row, r) => row.forEach((c, k) => { if (!c) cells.push([r, k]); }));
+    if (!cells.length) return;
+    const [r, c] = cells[Math.floor(Math.random() * cells.length)];
+    grid[r][c] = { id: idSeq++, v: Math.random() < .9 ? 2 : 4, isNew: true };
+  }
+
+  function newGame() {
+    tileEls.forEach(el => el.remove()); tileEls.clear();
+    grid = empty(); score = 0; history = []; won = false; keepGoing = false;
+    addRandom(); addRandom();
+    document.getElementById('overlay').classList.remove('show');
+    render();
+  }
+
+  // Geser satu baris ke kiri; dipakai untuk keempat arah dengan memutar koordinat.
+  function slideLine(line) {
+    const tiles = line.filter(Boolean);
+    const out = [];
+    let gained = 0;
+    for (let i = 0; i < tiles.length; i++) {
+      if (i + 1 < tiles.length && tiles[i].v === tiles[i + 1].v) {
+        const v = tiles[i].v * 2;
+        out.push({ id: idSeq++, v, merged: true, from: [tiles[i].id, tiles[i + 1].id] });
+        gained += v; i++;
+      } else out.push({ ...tiles[i], merged: false, isNew: false });
+    }
+    while (out.length < N) out.push(null);
+    return { out, gained };
+  }
+
+  function move(dir) {
+    if (document.getElementById('overlay').classList.contains('show')) return;
+    const coords = (i, j) => dir === 'left' ? [i, j] : dir === 'right' ? [i, N - 1 - j] : dir === 'up' ? [j, i] : [N - 1 - j, i];
+    const snapshot = JSON.stringify({ grid, score });
+    const next = empty();
+    let moved = false, gained = 0;
+    for (let i = 0; i < N; i++) {
+      const line = [];
+      for (let j = 0; j < N; j++) { const [r, c] = coords(i, j); line.push(grid[r][c]); }
+      const res = slideLine(line);
+      gained += res.gained;
+      res.out.forEach((t, j) => {
+        const [r, c] = coords(i, j);
+        next[r][c] = t;
+        if ((t && !line[j]) || (t && line[j] && t.id !== line[j].id)) moved = true;
+      });
+    }
+    if (!moved) return;
+    history.push(snapshot);
+    if (history.length > 20) history.shift();
+    grid = next;
+    score += gained;
+    if (gained) showPlus(gained);
+    addRandom();
+    render();
+    checkEnd();
+  }
+
+  function canMove() {
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      if (!grid[r][c]) return true;
+      if (c < N - 1 && grid[r][c + 1] && grid[r][c + 1].v === grid[r][c].v) return true;
+      if (r < N - 1 && grid[r + 1][c] && grid[r + 1][c].v === grid[r][c].v) return true;
+    }
+    return false;
+  }
+
+  function checkEnd() {
+    const max = Math.max(...grid.flat().filter(Boolean).map(t => t.v));
+    if (max >= 2048 && !won && !keepGoing) {
+      won = true;
+      overlay('Kamu menang! 🏆', 'Kamu mendapatkan Emas Hitam. Mau lanjut mengejar Raja Rempah?', true);
+    } else if (!canMove()) overlay('Permainan selesai', `Skor akhir ${score}. Coba lagi?`, false);
+  }
+  function overlay(title, text, canContinue) {
+    document.getElementById('ov-title').textContent = title;
+    document.getElementById('ov-text').textContent = text;
+    document.getElementById('ov-continue').style.display = canContinue ? '' : 'none';
+    document.getElementById('overlay').classList.add('show');
+  }
+
+  function render() {
+    const seen = new Set();
+    grid.forEach((row, r) => row.forEach((t, c) => {
+      if (!t) return;
+      seen.add(t.id);
+      let el = tileEls.get(t.id);
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'tile' + (t.isNew ? ' new' : '') + (t.merged ? ' merged' : '');
+        const [bg, fg] = COLORS[t.v] || COLORS[4096];
+        el.innerHTML = `<div class="in" style="background:${bg};color:${fg}"><span style="font-size:${t.v >= 1024 ? '.7em' : t.v >= 128 ? '.85em' : '1em'}">${t.v}</span><small>${NAMES[t.v] || ''}</small></div>`;
+        el.dataset.value = t.v;
+        tilesEl.appendChild(el);
+        tileEls.set(t.id, el);
+        // Ubin hasil gabungan muncul dari posisi ubin asalnya supaya terlihat menyatu
+        if (t.merged) t.from.forEach(fid => { const old = tileEls.get(fid); if (old) { old.style.transform = pos(r, c); old.style.zIndex = 0; } });
+      }
+      el.style.transform = pos(r, c);
+      el.style.zIndex = 1;
+      t.isNew = false;
+    }));
+    tileEls.forEach((el, id) => {
+      if (!seen.has(id)) { tileEls.delete(id); setTimeout(() => el.remove(), 130); }
+    });
+    document.getElementById('score').textContent = score;
+    if (score > bestScore) { bestScore = score; try { localStorage.setItem('2048-best', bestScore); } catch (e) {} }
+    document.getElementById('best').textContent = bestScore;
+    document.getElementById('undo').disabled = !history.length;
+  }
+  const pos = (r, c) => `translate(calc(${c} * (100% + var(--gap))), calc(${r} * (100% + var(--gap))))`;
+
+  function showPlus(n) {
+    const p = document.createElement('span');
+    p.className = 'plus'; p.textContent = '+' + n;
+    document.getElementById('score-box').appendChild(p);
+    setTimeout(() => p.remove(), 800);
+  }
+
+  function undo() {
+    if (!history.length) return;
+    const s = JSON.parse(history.pop());
+    tileEls.forEach(el => el.remove()); tileEls.clear();
+    grid = s.grid.map(row => row.map(t => t && { ...t, isNew: false, merged: false }));
+    score = s.score;
+    document.getElementById('overlay').classList.remove('show');
+    render();
+  }
+
+  const KEYS = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', a: 'left', d: 'right', w: 'up', s: 'down' };
+  document.addEventListener('keydown', e => {
+    const dir = KEYS[e.key] || KEYS[e.key.toLowerCase()];
+    if (dir) { e.preventDefault(); move(dir); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+  });
+  let touch = null;
+  const board = document.getElementById('board');
+  board.addEventListener('pointerdown', e => { touch = [e.clientX, e.clientY]; });
+  board.addEventListener('pointerup', e => {
+    if (!touch) return;
+    const dx = e.clientX - touch[0], dy = e.clientY - touch[1];
+    touch = null;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+    move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+  });
+  document.getElementById('new').addEventListener('click', newGame);
+  document.getElementById('ov-new').addEventListener('click', newGame);
+  document.getElementById('ov-continue').addEventListener('click', () => { keepGoing = true; document.getElementById('overlay').classList.remove('show'); });
+  document.getElementById('undo').addEventListener('click', undo);
+
+  document.getElementById('legend').innerHTML = Object.entries(NAMES).slice(0, 11).map(([v, n]) => `<span style="background:${COLORS[v][0]};color:${COLORS[v][1]}">${v} ${n}</span>`).join('');
+  newGame();
+</script>
+</body>
+</html>

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NusaTech Summit — Konferensi Teknologi Indonesia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Chivo:wght@400;500;700&display=swap">
+<style>
+  :root { --bg: #070712; --card: #10101f; --text: #f4f4ff; --muted: #9b9bbb; --line: #23233d; --lime: #c6ff3d; --pink: #ff3d9a; --cyan: #3de0ff; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.55; }
+  button, input, select { font: inherit; color: inherit; }
+  a { color: inherit; text-decoration: none; }
+  .wrap { width: min(1160px, 100% - 32px); margin: 0 auto; }
+  nav { display: flex; justify-content: space-between; align-items: center; padding: 18px 0; gap: 12px; }
+  .logo { font-weight: 900; letter-spacing: -.03em; font-size: 1.2rem; }
+  .logo span { color: var(--lime); }
+  .nav-links { display: flex; gap: 24px; color: var(--muted); }
+  .nav-links a:hover { color: var(--lime); }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 999px; font-weight: 800; border: 0; cursor: pointer; background: var(--lime); color: #0b0b12; transition: transform .2s, box-shadow .2s; }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 0 30px -4px var(--lime); }
+  .btn.ghost { background: none; color: var(--text); border: 1px solid var(--line); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .hero { position: relative; padding: 60px 0 80px; overflow: hidden; }
+  .grid-bg { position: absolute; inset: 0; background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 48px 48px; mask-image: radial-gradient(ellipse at 50% 30%, #000 20%, transparent 70%); -webkit-mask-image: radial-gradient(ellipse at 50% 30%, #000 20%, transparent 70%); opacity: .6; }
+  .glow { position: absolute; width: 500px; height: 500px; border-radius: 50%; filter: blur(110px); opacity: .35; pointer-events: none; }
+  .glow.a { background: var(--pink); top: -200px; left: -150px; }
+  .glow.b { background: var(--cyan); top: 0; right: -200px; }
+  .hero .wrap { position: relative; text-align: center; }
+  .date-pill b { white-space: nowrap; }
+  .date-pill { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 2px 10px; border: 1px solid var(--line); background: rgba(16,16,31,.7); padding: 8px 16px; border-radius: 999px; font-size: .9rem; color: var(--muted); }
+  .date-pill b { color: var(--lime); }
+  .hero h1 { font-size: clamp(2.8rem, 10vw, 7.5rem); line-height: .92; letter-spacing: -.05em; font-weight: 900; margin: 22px 0; }
+  .hero h1 .outline { color: transparent; -webkit-text-stroke: 2px var(--text); }
+  .hero h1 .grad { background: linear-gradient(90deg, var(--lime), var(--cyan), var(--pink)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p { color: var(--muted); font-size: 1.15rem; max-width: 600px; margin: 0 auto 30px; }
+  .countdown { display: flex; justify-content: center; gap: clamp(8px, 2vw, 16px); margin: 34px 0; }
+  .cd { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 14px 6px; width: clamp(68px, 18vw, 110px); }
+  .cd b { display: block; font-size: clamp(1.8rem, 6vw, 3rem); font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .cd small { color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; }
+  .hero .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+  .marquee { border-block: 1px solid var(--line); overflow: hidden; padding: 16px 0; white-space: nowrap; }
+  .marquee div { display: inline-block; animation: scroll 30s linear infinite; font-weight: 800; font-size: 1.3rem; color: var(--muted); }
+  .marquee span { margin: 0 26px; }
+  .marquee span:nth-child(3n) { color: var(--lime); }
+  @keyframes scroll { to { transform: translateX(-50%); } }
+
+  section { padding: 90px 0; }
+  .sec-head { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: 30px; }
+  .sec-head h2 { font-size: clamp(2rem, 5vw, 3.4rem); letter-spacing: -.04em; line-height: 1; font-weight: 900; }
+  .sec-head p { color: var(--muted); max-width: 420px; }
+
+  .speakers { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 16px; }
+  .sp { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 14px; transition: border-color .3s, transform .3s; }
+  .sp:hover { border-color: var(--lime); transform: translateY(-4px); }
+  .sp .pic { aspect-ratio: 1; border-radius: 16px; display: grid; place-items: center; font-size: 4rem; margin-bottom: 12px; position: relative; overflow: hidden; }
+  .sp .pic::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 2px, transparent 2px 4px); }
+  .sp small { color: var(--muted); display: block; }
+  .sp .topic { margin-top: 8px; font-size: .85rem; color: var(--cyan); }
+
+  .days { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .day-btn { border: 1px solid var(--line); background: var(--card); padding: 10px 18px; border-radius: 14px; cursor: pointer; text-align: left; }
+  .day-btn small { display: block; color: var(--muted); font-size: .8rem; }
+  .day-btn.active { background: var(--lime); color: #0b0b12; border-color: var(--lime); }
+  .day-btn.active small { color: #1b2a00; }
+  .tracks { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+  .track-btn { border: 1px solid var(--line); background: none; padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: .85rem; color: var(--muted); }
+  .track-btn.active { border-color: var(--text); color: var(--text); }
+  .session { display: grid; grid-template-columns: 110px 1fr auto; gap: 18px; align-items: center; padding: 18px; border: 1px solid var(--line); border-radius: 18px; margin-bottom: 10px; background: var(--card); }
+  .session time { font-weight: 800; font-variant-numeric: tabular-nums; }
+  .session time small { display: block; color: var(--muted); font-weight: 400; font-size: .8rem; }
+  .session h3 { font-size: 1.05rem; }
+  .session .who { color: var(--muted); font-size: .9rem; }
+  .tag { font-size: .72rem; padding: 3px 10px; border-radius: 999px; font-weight: 700; display: inline-block; margin-bottom: 6px; }
+  .tag.AI { background: rgba(255,61,154,.15); color: var(--pink); }
+  .tag.Web { background: rgba(61,224,255,.15); color: var(--cyan); }
+  .tag.Produk { background: rgba(198,255,61,.15); color: var(--lime); }
+  .tag.Umum { background: rgba(255,255,255,.08); color: var(--muted); }
+  .save { width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--line); background: none; cursor: pointer; font-size: 1.1rem; }
+  .save.on { background: var(--pink); border-color: var(--pink); }
+  .my-count { color: var(--pink); font-weight: 700; }
+
+  .tickets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .tk { background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 24px; display: flex; flex-direction: column; gap: 10px; position: relative; }
+  .tk.best { border-color: var(--lime); box-shadow: 0 0 60px -30px var(--lime); }
+  .tk .price { font-size: 2rem; font-weight: 900; letter-spacing: -.03em; }
+  .tk .price s { color: var(--muted); font-size: .95rem; font-weight: 500; margin-left: 6px; }
+  .tk ul { list-style: none; color: var(--muted); font-size: .92rem; display: grid; gap: 6px; flex: 1; }
+  .tk li::before { content: "→ "; color: var(--lime); }
+  .stock { font-size: .8rem; color: var(--muted); }
+  .stock i { display: block; height: 5px; border-radius: 9px; background: var(--line); margin-top: 5px; overflow: hidden; }
+  .stock i span { display: block; height: 100%; background: linear-gradient(90deg, var(--lime), var(--pink)); }
+  .qty { display: flex; align-items: center; gap: 10px; }
+  .qty button { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: none; cursor: pointer; font-size: 1.1rem; }
+  .qty b { min-width: 20px; text-align: center; }
+  .checkout { margin-top: 22px; background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 22px; display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; }
+  .checkout .lines { font-size: .92rem; color: var(--muted); }
+  .checkout .total { font-size: 1.8rem; font-weight: 900; color: var(--text); }
+  .promo { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .promo input { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; text-transform: uppercase; width: 180px; max-width: 100%; }
+  .promo-msg { font-size: .85rem; margin-top: 6px; min-height: 1.2em; }
+  dialog { margin: auto; border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 24px; padding: 28px; width: min(420px, calc(100% - 32px)); text-align: center; }
+  dialog::backdrop { background: rgba(0,0,0,.7); }
+  .qr { width: 160px; height: 160px; margin: 16px auto; background: #fff; padding: 10px; border-radius: 12px; }
+  footer { border-top: 1px solid var(--line); padding: 30px 0; color: var(--muted); font-size: .9rem; }
+  @media (max-width: 860px) { .nav-links { display: none; } .tickets { grid-template-columns: 1fr; } .checkout { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) { .session { grid-template-columns: 1fr auto; gap: 8px 12px; } .session time { grid-column: 1 / -1; display: flex; gap: 8px; } .session time small { display: inline; } }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button, input, select { font-family: "Chivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .hero h1, .sec-head h2, .logo, .cd b, .tk .price, .marquee div { font-family: "Big Shoulders Display", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; letter-spacing: -.01em; }
+  .hero h1 { font-size: clamp(3.4rem, 13vw, 9.5rem); line-height: .86; }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="grid-bg"></div><div class="glow a"></div><div class="glow b"></div>
+  <div class="wrap">
+    <nav><div class="logo">NUSA<span>TECH</span>/26</div><div class="nav-links"><a href="#pembicara">Pembicara</a><a href="#jadwal">Jadwal</a><a href="#tiket">Tiket</a></div><a class="btn" href="#tiket">Beli Tiket</a></nav>
+    <div style="margin-top:40px"><span class="date-pill"><b>● 2 hari</b> <span id="event-date"></span> · JCC Senayan, Jakarta</span></div>
+    <h1><span class="outline">BANGUN</span><br><span class="grad">MASA DEPAN</span><br>DARI SINI.</h1>
+    <p>Dua hari, 3 panggung, 40+ pembicara dari ekosistem teknologi Indonesia dan Asia Tenggara. AI, web, dan produk — tanpa basa-basi.</p>
+    <div class="countdown" id="countdown" aria-label="Hitung mundur acara">
+      <div class="cd"><b id="cd-d">00</b><small>Hari</small></div>
+      <div class="cd"><b id="cd-h">00</b><small>Jam</small></div>
+      <div class="cd"><b id="cd-m">00</b><small>Menit</small></div>
+      <div class="cd"><b id="cd-s">00</b><small>Detik</small></div>
+    </div>
+    <div class="actions"><a class="btn" href="#tiket">Amankan Kursimu →</a><a class="btn ghost" href="#jadwal">Lihat Jadwal</a></div>
+  </div>
+</header>
+
+<div class="marquee" aria-hidden="true"><div id="marquee"></div></div>
+
+<section id="pembicara">
+  <div class="wrap">
+    <div class="sec-head"><h2>Pembicara<br>Utama</h2><p>Praktisi yang membangun produk dipakai jutaan orang, berbagi apa yang benar-benar berhasil.</p></div>
+    <div class="speakers" id="speakers"></div>
+  </div>
+</section>
+
+<section id="jadwal" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head"><h2>Jadwal</h2><p>Tandai ☆ sesi favoritmu untuk membuat agenda pribadi. <span class="my-count" id="my-count"></span></p></div>
+    <div class="days" id="days"></div>
+    <div class="tracks" id="tracks"></div>
+    <div id="sessions"></div>
+  </div>
+</section>
+
+<section id="tiket" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head"><h2>Tiket</h2><p>Harga early bird berlaku hingga kuota habis. Gunakan kode <b style="color:var(--lime)">DEVID</b> untuk diskon 10%.</p></div>
+    <div class="tickets" id="tickets"></div>
+    <div class="checkout">
+      <div>
+        <div class="lines" id="lines">Belum ada tiket dipilih.</div>
+        <div class="promo"><input id="promo" placeholder="Kode promo" aria-label="Kode promo"><button class="btn ghost" id="apply" type="button">Pakai</button></div>
+        <div class="promo-msg" id="promo-msg"></div>
+      </div>
+      <div style="text-align:right"><div class="total" id="total">Rp0</div><button class="btn" id="buy" disabled>Bayar Sekarang</button></div>
+    </div>
+  </div>
+</section>
+
+<dialog id="done">
+  <h2>Tiket terkonfirmasi 🎟️</h2>
+  <p style="color:var(--muted)" id="done-text"></p>
+  <svg class="qr" id="qr" viewBox="0 0 21 21" shape-rendering="crispEdges"></svg>
+  <p style="font-family:monospace;letter-spacing:.2em" id="done-code"></p>
+  <button class="btn" id="close-done" style="margin-top:16px">Selesai</button>
+</dialog>
+
+<footer><div class="wrap">© <span id="yr"></span> NusaTech Summit · Diselenggarakan oleh komunitas pengembang Indonesia</div></footer>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const rp = n => 'Rp' + Math.round(n).toLocaleString('id-ID');
+  // Acara: 45 hari dari sekarang, pukul 08.00 WIB
+  const eventStart = new Date(); eventStart.setDate(eventStart.getDate() + 45); eventStart.setHours(8, 0, 0, 0);
+  const day2 = new Date(eventStart.getTime() + 864e5);
+  $('event-date').textContent = `${eventStart.getDate()}–${day2.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+
+  function tick() {
+    let s = Math.max(0, Math.floor((eventStart - Date.now()) / 1000));
+    const d = Math.floor(s / 86400); s %= 86400;
+    const h = Math.floor(s / 3600); s %= 3600;
+    const m = Math.floor(s / 60); s %= 60;
+    [['cd-d', d], ['cd-h', h], ['cd-m', m], ['cd-s', s]].forEach(([id, v]) => $(id).textContent = String(v).padStart(2, '0'));
+  }
+  tick(); setInterval(tick, 1000);
+
+  const words = ['Kecerdasan Buatan', 'Web Modern', 'Startup', 'Open Source', 'Keamanan Siber', 'Produk Digital', 'Data', 'Cloud', 'Komunitas'];
+  $('marquee').innerHTML = [...words, ...words].map(w => `<span>${w} ✦</span>`).join('');
+
+  const SPEAKERS = [
+    { id: 'rara', name: 'Rara Anindita', role: 'Head of AI, LumbungData', emoji: '👩🏻‍💻', bg: 'linear-gradient(135deg,#ff3d9a,#7c3aed)', topic: 'LLM untuk bahasa daerah' },
+    { id: 'dimas', name: 'Dimas Arya', role: 'CTO, Ojekin', emoji: '👨🏽‍💻', bg: 'linear-gradient(135deg,#3de0ff,#2563eb)', topic: 'Skala 10 juta pengguna' },
+    { id: 'tiara', name: 'Tiara Siregar', role: 'Principal Engineer, BankKu', emoji: '👩🏽‍🔬', bg: 'linear-gradient(135deg,#c6ff3d,#16a34a)', topic: 'Web performa tinggi' },
+    { id: 'wayan', name: 'I Wayan Putra', role: 'Founder, TaniPintar', emoji: '👨🏾‍🌾', bg: 'linear-gradient(135deg,#f59e0b,#dc2626)', topic: 'Produk untuk desa' }
+  ];
+  $('speakers').innerHTML = SPEAKERS.map(s => `<div class="sp"><div class="pic" style="background:${s.bg}">${s.emoji}</div><b>${s.name}</b><small>${s.role}</small><div class="topic">“${s.topic}”</div></div>`).join('');
+
+  const SESSIONS = [
+    { id: 1, day: 0, time: '08:00', end: '09:00', track: 'Umum', title: 'Registrasi & Kopi Pagi', who: 'Lobi Utama' },
+    { id: 2, day: 0, time: '09:00', end: '09:45', track: 'Umum', title: 'Keynote: Ekonomi Digital Indonesia 2030', who: 'Rara Anindita' },
+    { id: 3, day: 0, time: '10:00', end: '10:45', track: 'AI', title: 'Melatih Model Bahasa untuk Bahasa Jawa dan Sunda', who: 'Rara Anindita' },
+    { id: 4, day: 0, time: '10:00', end: '10:45', track: 'Web', title: 'Core Web Vitals di Jaringan 3G', who: 'Tiara Siregar' },
+    { id: 5, day: 0, time: '11:00', end: '11:45', track: 'Produk', title: 'Riset Pengguna di Daerah Tanpa Sinyal', who: 'I Wayan Putra' },
+    { id: 6, day: 0, time: '13:00', end: '14:00', track: 'AI', title: 'Panel: Regulasi AI dan Pelindungan Data Pribadi', who: 'Panel praktisi & akademisi' },
+    { id: 7, day: 1, time: '09:00', end: '09:45', track: 'Umum', title: 'Keynote: Dari Garasi ke 10 Juta Pengguna', who: 'Dimas Arya' },
+    { id: 8, day: 1, time: '10:00', end: '10:45', track: 'Web', title: 'Arsitektur Offline-first untuk Aplikasi Kasir', who: 'Tiara Siregar' },
+    { id: 9, day: 1, time: '10:00', end: '10:45', track: 'Produk', title: 'Menentukan Harga Produk SaaS untuk UMKM', who: 'I Wayan Putra' },
+    { id: 10, day: 1, time: '13:00', end: '13:45', track: 'AI', title: 'Agen AI di Layanan Pelanggan: Studi Kasus', who: 'Dimas Arya' },
+    { id: 11, day: 1, time: '16:00', end: '17:00', track: 'Umum', title: 'Penutupan & Networking', who: 'Seluruh peserta' }
+  ];
+  let day = 0, track = 'Semua', mine = new Set();
+  try { mine = new Set(JSON.parse(localStorage.getItem('nusatech-mine') || '[]')); } catch (e) {}
+
+  function renderSchedule() {
+    $('days').innerHTML = [eventStart, day2].map((d, i) => `<button class="day-btn ${i === day ? 'active' : ''}" data-day="${i}">Hari ${i + 1}<small>${d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}</small></button>`).join('')
+      + `<button class="day-btn ${day === 'mine' ? 'active' : ''}" data-day="mine">★ Agenda Saya<small>${mine.size} sesi</small></button>`;
+    $('tracks').innerHTML = ['Semua', 'AI', 'Web', 'Produk', 'Umum'].map(t => `<button class="track-btn ${t === track ? 'active' : ''}" data-track="${t}">${t}</button>`).join('');
+    const list = SESSIONS.filter(s => (day === 'mine' ? mine.has(s.id) : s.day === day) && (track === 'Semua' || s.track === track));
+    $('sessions').innerHTML = list.length ? list.map(s => `<div class="session"><time>${s.time}<small>${day === 'mine' ? 'Hari ' + (s.day + 1) + ' · ' : ''}s.d. ${s.end}</small></time>
+      <div><span class="tag ${s.track}">${s.track}</span><h3>${s.title}</h3><div class="who">${s.who}</div></div>
+      <button class="save ${mine.has(s.id) ? 'on' : ''}" data-save="${s.id}" aria-label="Simpan sesi" aria-pressed="${mine.has(s.id)}">${mine.has(s.id) ? '★' : '☆'}</button></div>`).join('')
+      : `<p style="color:var(--muted);padding:20px 0">${day === 'mine' ? 'Belum ada sesi yang ditandai. Klik ☆ pada sesi untuk menambahkannya.' : 'Tidak ada sesi untuk filter ini.'}</p>`;
+    // Peringatan bentrok jadwal di agenda pribadi
+    const picked = SESSIONS.filter(s => mine.has(s.id));
+    const clash = picked.some(a => picked.some(b => a.id < b.id && a.day === b.day && a.time < b.end && b.time < a.end));
+    $('my-count').textContent = mine.size ? `${mine.size} sesi tersimpan${clash ? ' · ⚠ ada jadwal bentrok' : ''}` : '';
+  }
+  $('days').addEventListener('click', e => { const b = e.target.closest('.day-btn'); if (!b) return; day = b.dataset.day === 'mine' ? 'mine' : +b.dataset.day; renderSchedule(); });
+  $('tracks').addEventListener('click', e => { const b = e.target.closest('.track-btn'); if (!b) return; track = b.dataset.track; renderSchedule(); });
+  $('sessions').addEventListener('click', e => {
+    const b = e.target.closest('[data-save]'); if (!b) return;
+    const id = +b.dataset.save;
+    mine.has(id) ? mine.delete(id) : mine.add(id);
+    try { localStorage.setItem('nusatech-mine', JSON.stringify([...mine])); } catch (err) {}
+    renderSchedule();
+  });
+  renderSchedule();
+
+  const TICKETS = [
+    { id: 'reg', name: 'Reguler', price: 750000, was: 950000, stock: 62, feats: ['Akses 2 hari semua panggung', 'Makan siang & kopi', 'Sertifikat digital'] },
+    { id: 'pro', name: 'Pro', price: 1500000, was: 1900000, stock: 28, best: true, feats: ['Semua fasilitas Reguler', 'Workshop praktik (pilih 2)', 'Rekaman semua sesi', 'Kaos eksklusif'] },
+    { id: 'vip', name: 'VIP', price: 3500000, was: 4500000, stock: 9, feats: ['Semua fasilitas Pro', 'Makan malam dengan pembicara', 'Kursi barisan depan', 'Akses lounge'] }
+  ];
+  const cart = { reg: 0, pro: 0, vip: 0 };
+  let discount = 0;
+  function renderTickets() {
+    $('tickets').innerHTML = TICKETS.map(t => `<div class="tk ${t.best ? 'best' : ''}"><b style="font-size:1.2rem">${t.name}${t.best ? ' ⚡' : ''}</b>
+      <div class="price">${rp(t.price)}<s>${rp(t.was)}</s></div>
+      <ul>${t.feats.map(f => `<li>${f}</li>`).join('')}</ul>
+      <div class="stock">Sisa ${t.stock - cart[t.id]} tiket early bird<i><span style="width:${(t.stock - cart[t.id]) / 100 * 100}%"></span></i></div>
+      <div class="qty"><button data-dec="${t.id}" aria-label="Kurangi ${t.name}">−</button><b id="q-${t.id}">${cart[t.id]}</b><button data-inc="${t.id}" aria-label="Tambah ${t.name}">+</button></div></div>`).join('');
+    const sub = TICKETS.reduce((s, t) => s + t.price * cart[t.id], 0);
+    const disc = sub * discount;
+    const fee = sub ? 5000 : 0;
+    const chosen = TICKETS.filter(t => cart[t.id]);
+    $('lines').innerHTML = chosen.length ? chosen.map(t => `${cart[t.id]} × ${t.name} — ${rp(t.price * cart[t.id])}`).join('<br>') + (disc ? `<br>Diskon promo — −${rp(disc)}` : '') + `<br>Biaya layanan — ${rp(fee)}` : 'Belum ada tiket dipilih.';
+    $('total').textContent = rp(sub - disc + fee);
+    $('buy').disabled = !sub;
+  }
+  $('tickets').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const id = b.dataset.inc || b.dataset.dec, t = TICKETS.find(x => x.id === id);
+    if (b.dataset.inc && cart[id] < Math.min(5, t.stock)) cart[id]++;
+    if (b.dataset.dec && cart[id] > 0) cart[id]--;
+    renderTickets();
+  });
+  $('apply').addEventListener('click', () => {
+    const code = $('promo').value.trim().toUpperCase();
+    discount = code === 'DEVID' ? .1 : 0;
+    $('promo-msg').style.color = discount ? 'var(--lime)' : 'var(--pink)';
+    $('promo-msg').textContent = discount ? '✓ Diskon 10% diterapkan' : code ? 'Kode promo tidak valid' : '';
+    renderTickets();
+  });
+  $('buy').addEventListener('click', () => {
+    const n = Object.values(cart).reduce((a, b) => a + b, 0);
+    const code = 'NT26-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+    $('done-text').textContent = `${n} tiket untuk NusaTech Summit, total ${$('total').textContent}. E-tiket juga dikirim ke email Anda.`;
+    $('done-code').textContent = code;
+    // Pola mirip QR (hiasan) dibangkitkan dari kode tiket
+    let seed = [...code].reduce((a, c) => a * 31 + c.charCodeAt(0), 7) % 2147483647, cells = '';
+    const finder = (x, y) => `<rect x="${x}" y="${y}" width="7" height="7"/><rect x="${x + 1}" y="${y + 1}" width="5" height="5" fill="#fff"/><rect x="${x + 2}" y="${y + 2}" width="3" height="3"/>`;
+    for (let y = 0; y < 21; y++) for (let x = 0; x < 21; x++) {
+      if ((x < 8 && y < 8) || (x > 12 && y < 8) || (x < 8 && y > 12)) continue;
+      seed = seed * 16807 % 2147483647;
+      if (seed % 2) cells += `<rect x="${x}" y="${y}" width="1" height="1"/>`;
+    }
+    $('qr').innerHTML = cells + finder(0, 0) + finder(14, 0) + finder(0, 14);
+    $('done').showModal();
+    TICKETS.forEach(t => { t.stock -= cart[t.id]; cart[t.id] = 0; });
+    renderTickets();
+  });
+  $('close-done').addEventListener('click', () => $('done').close());
+  renderTickets();
+  $('yr').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>

@@ -112,7 +112,7 @@ Data ini memakai gaya model itu sendiri, jadi menjaga ketelitian model dasar dan
 | Pengaturan | v4-pilot | v4 penuh | Alasan |
 |---|---|---|---|
 | Titik awal | model dasar | model dasar | hasil bisa diulang, tidak mewarisi pergeseran adapter lama |
-| Data | own sekarang (103 sampel) | own + Python penuh + swa-distilasi | web selalu ikut |
+| Data | own sekarang (125 sampel) | own + Python penuh + swa-distilasi | web selalu ikut |
 | Epoch | 3 (sama dengan v3) | 2, dengan checkpoint tiap epoch | pilot memakai resep v3 persis, supaya perbedaan hasil pasti berasal dari data |
 | LoRA | r 16, alpha 32, lr 1e-4 cosine | sama | r 32 hanya dicoba jika uji menunjukkan underfit |
 | Panjang | `max_seq_len` 6144 (T4) | sama | semua sampel ≤ ±6.200 token |

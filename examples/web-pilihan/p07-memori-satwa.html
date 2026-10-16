@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memori Satwa Nusantara — Game Kartu Berpasangan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap">
+<style>
+  :root { --bg1: #134e4a; --bg2: #064e3b; --card-back1: #f59e0b; --card-back2: #ea580c; --face: #fffbeb; --text: #ecfdf5; --muted: #a7f3d0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; min-height: 100vh; background: radial-gradient(circle at 50% -10%, #0f766e, var(--bg2) 70%); color: var(--text); }
+  .wrap { width: min(600px, 100% - 24px); margin: 0 auto; padding: 22px 0 40px; }
+  h1 { text-align: center; font-size: clamp(1.6rem, 5vw, 2.4rem); letter-spacing: -.02em; }
+  .sub { text-align: center; color: var(--muted); margin: 4px 0 18px; }
+  .bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .stats { display: flex; gap: 8px; }
+  .stat { background: rgba(255,255,255,.1); border-radius: 12px; padding: 8px 14px; text-align: center; min-width: 76px; }
+  .stat small { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .stat b { font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+  .levels { display: flex; background: rgba(0,0,0,.2); border-radius: 12px; padding: 4px; }
+  .levels button { border: 0; background: none; color: var(--text); padding: 8px 12px; border-radius: 9px; cursor: pointer; font: inherit; font-weight: 600; }
+  .levels button.active { background: var(--face); color: #78350f; }
+  .board { display: grid; gap: clamp(6px, 1.6vw, 12px); perspective: 900px; }
+  .card { aspect-ratio: 3 / 4; border: 0; background: none; padding: 0; cursor: pointer; position: relative; transform-style: preserve-3d; transition: transform .45s cubic-bezier(.2, .8, .3, 1.2); }
+  .card.flip, .card.match { transform: rotateY(180deg); }
+  .card .side { position: absolute; inset: 0; border-radius: clamp(8px, 2vw, 14px); backface-visibility: hidden; display: grid; place-items: center; }
+  .card .back { background-color: #9a3412; background-image: radial-gradient(ellipse 22% 42% at 50% 0%, #f2b544 70%, transparent 72%), radial-gradient(ellipse 22% 42% at 50% 100%, #f2b544 70%, transparent 72%), radial-gradient(ellipse 42% 22% at 0% 50%, #e4952b 70%, transparent 72%), radial-gradient(ellipse 42% 22% at 100% 50%, #e4952b 70%, transparent 72%), radial-gradient(circle at 50% 50%, #7c2d12 12%, transparent 13%); background-size: 22px 22px; box-shadow: inset 0 0 0 4px rgba(255,255,255,.35), 0 6px 14px -6px rgba(0,0,0,.5); }
+  .card .back::after { content: ""; width: 26%; aspect-ratio: 1; border-radius: 50%; background: #7c2d12; box-shadow: 0 0 0 3px #fde68a, 0 0 0 7px #9a3412; }
+  .card .front { background: var(--face); transform: rotateY(180deg); flex-direction: column; color: #422006; box-shadow: 0 6px 14px -6px rgba(0,0,0,.5); }
+  .card .front span { font-size: clamp(1.5rem, 6vw, 2.8rem); line-height: 1; }
+  .card .front small { font-size: clamp(.55rem, 1.6vw, .75rem); font-weight: 700; margin-top: 4px; text-align: center; padding: 0 2px; }
+  .card.match .front { background: #d1fae5; animation: pop .5s; }
+  .card.shake { animation: shake .4s; }
+  @keyframes pop { 50% { transform: rotateY(180deg) scale(1.08); } }
+  @keyframes shake { 25% { transform: rotateY(180deg) translateX(-5px); } 75% { transform: rotateY(180deg) translateX(5px); } }
+  .card:focus-visible { outline: 3px solid #fff; outline-offset: 3px; border-radius: 14px; }
+  .actions { display: flex; justify-content: center; gap: 10px; margin-top: 18px; }
+  .btn { border: 0; background: var(--face); color: #78350f; font: inherit; font-weight: 700; padding: 12px 22px; border-radius: 12px; cursor: pointer; }
+  .btn.ghost { background: rgba(255,255,255,.12); color: var(--text); }
+  .fact { margin-top: 18px; background: rgba(0,0,0,.2); border-radius: 14px; padding: 14px 16px; min-height: 64px; font-size: .95rem; }
+  .fact b { color: #fde68a; }
+  .overlay { position: fixed; inset: 0; background: rgba(2, 44, 34, .75); display: none; place-items: center; z-index: 10; padding: 16px; }
+  .overlay.show { display: grid; }
+  .win { background: var(--face); color: #422006; border-radius: 24px; padding: 30px; text-align: center; max-width: 360px; width: 100%; animation: rise .5s; }
+  @keyframes rise { from { transform: translateY(30px) scale(.9); opacity: 0; } }
+  .win h2 { font-size: 1.8rem; }
+  .stars { font-size: 2.2rem; margin: 6px 0 10px; letter-spacing: 4px; }
+  .win p { margin-bottom: 6px; }
+  .win .best { color: #15803d; font-weight: 700; }
+  .confetti { position: fixed; top: -12px; width: 10px; height: 14px; z-index: 11; animation: fall linear forwards; pointer-events: none; }
+  @keyframes fall { to { transform: translateY(105vh) rotate(720deg); } }
+  /* Tipografi: Google Fonts, dengan font sistem sebagai cadangan saat offline */
+  body, button { font-family: "Baloo 2", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  h1 { font-weight: 800; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Memori Satwa Nusantara</h1>
+  <p class="sub">Temukan pasangan satwa khas Indonesia secepat mungkin.</p>
+  <div class="bar">
+    <div class="stats">
+      <div class="stat"><small>Waktu</small><b id="time">0:00</b></div>
+      <div class="stat"><small>Langkah</small><b id="moves">0</b></div>
+      <div class="stat"><small>Terbaik</small><b id="best">—</b></div>
+    </div>
+    <div class="levels" id="levels" role="group" aria-label="Tingkat kesulitan">
+      <button data-pairs="6">Mudah</button>
+      <button data-pairs="8" class="active">Sedang</button>
+      <button data-pairs="10">Sulit</button>
+    </div>
+  </div>
+  <div class="board" id="board" aria-label="Papan kartu"></div>
+  <div class="actions">
+    <button class="btn" id="restart">↻ Main Lagi</button>
+    <button class="btn ghost" id="hint">💡 Intip (3)</button>
+  </div>
+  <div class="fact" id="fact">Balik dua kartu. Jika gambarnya sama, kamu juga akan mendapat satu fakta menarik tentang satwa tersebut.</div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="win" role="dialog" aria-modal="true" aria-labelledby="win-title">
+    <h2 id="win-title">Hebat! 🎉</h2>
+    <div class="stars" id="stars"></div>
+    <p id="win-text"></p>
+    <p class="best" id="win-best"></p>
+    <button class="btn" id="again" style="background:#15803d;color:#fff;margin-top:12px">Main Lagi</button>
+  </div>
+</div>
+
+<script>
+  const ANIMALS = [
+    ['🦎', 'Komodo', 'Kadal terbesar di dunia, hanya hidup di Pulau Komodo, Rinca, Flores, dan sekitarnya.'],
+    ['🦧', 'Orangutan', 'Kera besar dari Sumatera dan Kalimantan yang berbagi sekitar 97% DNA dengan manusia.'],
+    ['🐅', 'Harimau Sumatera', 'Subspesies harimau terakhir yang tersisa di Indonesia, berstatus kritis.'],
+    ['🦏', 'Badak Jawa', 'Salah satu mamalia terlangka di dunia; populasinya hanya ada di Taman Nasional Ujung Kulon.'],
+    ['🐘', 'Gajah Sumatera', 'Gajah Asia yang lebih kecil, berperan menyebarkan biji tumbuhan di hutan.'],
+    ['🦜', 'Kakatua Jambul Kuning', 'Burung cerdas yang dapat hidup lebih dari 60 tahun.'],
+    ['🐦', 'Cenderawasih', 'Dijuluki “burung surga” karena bulunya yang indah, banyak ditemui di Papua.'],
+    ['🐒', 'Bekantan', 'Monyet berhidung panjang endemik Kalimantan yang pandai berenang.'],
+    ['🐢', 'Penyu Belimbing', 'Penyu terbesar di dunia; pantai Papua menjadi salah satu tempat bertelurnya.'],
+    ['🦅', 'Elang Jawa', 'Burung yang dianggap sebagai inspirasi lambang negara Garuda.'],
+    ['🐟', 'Ikan Arwana', 'Ikan purba dari sungai Kalimantan dan Papua yang dianggap pembawa keberuntungan.'],
+    ['🐄', 'Anoa', 'Kerbau kerdil endemik Sulawesi, tingginya kurang dari satu meter.']
+  ];
+  let pairs = 8, deck = [], open = [], matched = 0, moves = 0, seconds = 0, timer = null, lock = false, hints = 3;
+  const $ = id => document.getElementById(id);
+  const best = () => { try { return JSON.parse(localStorage.getItem('memori-best') || '{}'); } catch (e) { return {}; } };
+
+  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  const fmt = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+
+  function newGame() {
+    clearInterval(timer); timer = null;
+    open = []; matched = 0; moves = 0; seconds = 0; lock = false; hints = 3;
+    deck = shuffle(shuffle(ANIMALS.slice()).slice(0, pairs).flatMap((a, i) => [{ ...arr(a), pair: i }, { ...arr(a), pair: i }]));
+    const cols = pairs === 6 ? 4 : pairs === 8 ? 4 : 5;
+    $('board').style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    $('board').innerHTML = deck.map((c, i) => `
+      <button class="card" data-i="${i}" aria-label="Kartu tertutup">
+        <span class="side back"></span>
+        <span class="side front"><span>${c.emoji}</span><small>${c.name}</small></span>
+      </button>`).join('');
+    $('moves').textContent = 0; $('time').textContent = '0:00';
+    $('hint').textContent = `💡 Intip (${hints})`; $('hint').disabled = false;
+    const b = best()[pairs];
+    $('best').textContent = b ? fmt(b.time) : '—';
+    $('overlay').classList.remove('show');
+  }
+  function arr([emoji, name, fact]) { return { emoji, name, fact }; }
+
+  function flip(i) {
+    const el = $('board').children[i];
+    if (lock || el.classList.contains('flip') || el.classList.contains('match')) return;
+    if (!timer) timer = setInterval(() => { seconds++; $('time').textContent = fmt(seconds); }, 1000);
+    el.classList.add('flip');
+    el.setAttribute('aria-label', deck[i].name);
+    open.push(i);
+    if (open.length < 2) return;
+    moves++; $('moves').textContent = moves;
+    const [a, b] = open;
+    if (deck[a].pair === deck[b].pair) {
+      [a, b].forEach(k => { const c = $('board').children[k]; c.classList.add('match'); c.classList.remove('flip'); });
+      matched++;
+      $('fact').innerHTML = `<b>${deck[a].emoji} ${deck[a].name}:</b> ${deck[a].fact}`;
+      open = [];
+      if (matched === pairs) setTimeout(win, 500);
+    } else {
+      lock = true;
+      setTimeout(() => {
+        [a, b].forEach(k => { const c = $('board').children[k]; c.classList.add('shake'); });
+        setTimeout(() => {
+          [a, b].forEach(k => { const c = $('board').children[k]; c.classList.remove('flip', 'shake'); c.setAttribute('aria-label', 'Kartu tertutup'); });
+          open = []; lock = false;
+        }, 400);
+      }, 450);
+    }
+  }
+
+  function win() {
+    clearInterval(timer);
+    const perfect = pairs;
+    const stars = moves <= perfect * 1.4 ? 3 : moves <= perfect * 2 ? 2 : 1;
+    $('stars').textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+    $('win-text').textContent = `Selesai dalam ${fmt(seconds)} dengan ${moves} langkah.`;
+    const all = best(), prev = all[pairs];
+    if (!prev || seconds < prev.time) {
+      all[pairs] = { time: seconds, moves };
+      try { localStorage.setItem('memori-best', JSON.stringify(all)); } catch (e) {}
+      $('win-best').textContent = prev ? '🏆 Rekor baru!' : '🏆 Rekor pertama tercatat!';
+      $('best').textContent = fmt(seconds);
+    } else $('win-best').textContent = `Rekor terbaik: ${fmt(prev.time)}`;
+    $('overlay').classList.add('show');
+    confetti();
+    $('again').focus();
+  }
+
+  function confetti() {
+    const colors = ['#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#a855f7', '#fde68a'];
+    for (let i = 0; i < 60; i++) {
+      const c = document.createElement('i');
+      c.className = 'confetti';
+      c.style.left = Math.random() * 98 + 'vw';
+      c.style.background = colors[i % colors.length];
+      c.style.animationDuration = 1.8 + Math.random() * 1.8 + 's';
+      c.style.animationDelay = Math.random() * .6 + 's';
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 4500);
+    }
+  }
+
+  $('board').addEventListener('click', e => { const c = e.target.closest('.card'); if (c) flip(+c.dataset.i); });
+  $('levels').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    pairs = +b.dataset.pairs;
+    [...$('levels').children].forEach(x => x.classList.toggle('active', x === b));
+    newGame();
+  });
+  $('restart').addEventListener('click', newGame);
+  $('again').addEventListener('click', newGame);
+  $('hint').addEventListener('click', () => {
+    if (!hints || lock) return;
+    hints--;
+    $('hint').textContent = `💡 Intip (${hints})`;
+    $('hint').disabled = !hints;
+    lock = true;
+    const cards = [...$('board').children].filter(c => !c.classList.contains('match') && !c.classList.contains('flip'));
+    cards.forEach(c => c.classList.add('flip'));
+    setTimeout(() => { cards.forEach(c => c.classList.remove('flip')); lock = false; }, 900);
+  });
+
+  newGame();
+</script>
+</body>
+</html>

@@ -61,7 +61,7 @@ A100_UJI = {  # kunci: (folder hasil, script, argumen tambahan, label)
     "indopy-test": ("eval-indopy-test", "indopy_eval.py", ["--split", "test"], "IndoPy-test"),
 }
 POLA_OOM = r"CUDA out of memory|OutOfMemoryError"
-JUMLAH_SAMPEL = 103  # isi data/train.jsonl; training dengan jumlah lain berarti train.jsonl lama terpakai
+JUMLAH_SAMPEL = 125  # isi data/train.jsonl; training dengan jumlah lain berarti train.jsonl lama terpakai
 
 # Saran untuk pesan error yang sudah dikenal, dicocokkan dengan output langkah yang gagal.
 SARAN = [
@@ -205,7 +205,7 @@ def langkah_langkah(k, opsional=False):
                 "selesai": bool(run) and ringkasan_ada(k, folder, run) and ringkasan_ada(k, folder, nama_dasar(k, run))}
 
     daftar = [langkah_uji(*u[:2], u[2], u[3], u[4], "v3", k.v3, run_v3) for u in uji[:3]]
-    daftar.append({"kunci": "latih-v4", "judul": "Latih v4-pilot", "menit": 70, "butuh_v4": False, "opsional": False,
+    daftar.append({"kunci": "latih-v4", "judul": "Latih v4-pilot", "menit": 85, "butuh_v4": False, "opsional": False,
                    "argv": [script(k, "train_unsloth.py"), "train", "--out", str(k.out / "v4-pilot")],
                    "selesai": v4 is not None})
     daftar += [langkah_uji(*u[:2], u[2], u[3], u[4], "v4", v4, run_v4) for u in uji]
@@ -471,7 +471,7 @@ def latih_demo(k):
     (folder / "adapter_config.json").write_text(json.dumps({"demo": True}))
     (run / "status.json").write_text(json.dumps({
         "stage": "done", "max_seq_len": k.konteks,
-        "data": {"samples": JUMLAH_SAMPEL, "dropped": [], "longest": 6216, "total_steps": 39},
+        "data": {"samples": JUMLAH_SAMPEL, "dropped": [], "longest": 6231, "total_steps": 48},
         "result": {"train_runtime_min": 0.1, "train_loss": 0.5},
         "tests": {"bengkel": {"tokens": 5200, "finished": True}, "absensi": {"tokens": 7400, "finished": True}}}))
     teks = (f"data valid: {JUMLAH_SAMPEL} sampel dari demo\n{JUMLAH_SAMPEL} sampel dipakai, 0 dibuang karena > {k.konteks} token []\n"

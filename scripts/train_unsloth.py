@@ -15,15 +15,18 @@ Atau simpan sebagai file (sel diawali `%%writefile /content/train_unsloth.py`) l
     python train_unsloth.py train      # training + simpan adapter + website uji (bawaan, lihat CONFIG["command"])
     python train_unsloth.py test       # uji ulang adapter yang sudah tersimpan
     python train_unsloth.py gguf       # ekspor GGUF q4_k_m untuk Ollama / llama.cpp
+    python train_unsloth.py merge      # gabungkan adapter ke model 16-bit utuh (transformers / vLLM)
     Opsi CONFIG bisa diganti lewat argumen, misalnya: --dataset mix --load-in-4bit --max-seq-len 6144
 
-Semua hasil ditulis ke <out>/<model>-<dataset>/:
+Semua hasil ditulis ke <out>/<model>-<dataset>/, atau <out>/<model>-<name>/ jika --name diisi (misalnya --name V5):
     status.json      tahap yang sedang berjalan, step, loss, ETA, atau pesan error (dibaca untuk memantau)
     checkpoints/     checkpoint training; dilanjutkan dari yang terakhir jika data dan pengaturan masih sama
     arsip/           hasil training lama yang dipindahkan karena data atau pengaturan berubah
-    lora-adapter/    adapter LoRA hasil training
+    lora-adapter/    adapter LoRA hasil training (dengan --name: <model>-<name>-lora/)
+    epoch-<N>/       salinan adapter di akhir epoch N (hanya dengan --epoch-adapters), untuk memilih epoch terbaik
+    <model>-<name>-merged-16bit/  model utuh hasil perintah merge (hanya dengan --name)
     contoh-*.html    website yang dibuat model dari prompt uji (contoh-*.md berisi jawaban lengkapnya)
-    gguf/            hasil ekspor GGUF (opsional)
+    gguf/            hasil ekspor GGUF (opsional); dengan --name, nama file .gguf ikut memuat nama itu
 
 Training lanjutan (--init-adapter <folder lora-adapter>) memulai dari bobot adapter yang sudah ada, dengan optimizer
 dan jadwal learning rate baru. Hasilnya ditulis ke folder terpisah berakhiran -lanjut, jadi adapter asalnya tidak
@@ -48,11 +51,13 @@ os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 # ======================================================== CONFIG: ubah di sini ========================================
 CONFIG = {
-    "command": "train",             # dipakai jika tidak ada argumen: "train", "prepare", "test", "gguf", atau "info"
+    "command": "train",             # tanpa argumen: "train", "prepare", "test", "gguf", "merge", atau "info"
     "model": "qwen3.5-4b",          # "qwen3.5-4b" atau "qwen2.5-coder-7b" (pembanding)
     "dataset": "own",               # "own" = data/train.jsonl (disarankan), "mix" = ditambah dataset umum,
                                     # "bench" = hanya kelompok bench-support (HumanEval) di data/bench-support/,
-                                    # dipakai bersama --init-adapter untuk melanjutkan adapter hasil own
+                                    # dipakai bersama --init-adapter untuk melanjutkan adapter hasil own,
+                                    # "own+bench" = own dan bench-support dilatih bersama dari model dasar
+    "name": None,                   # nama hasil, misalnya "V5": folder <model>-V5, adapter <model>-V5-lora
     "out": "/content/drive/MyDrive/finetune-id",  # folder hasil; di Google Drive supaya aman saat sesi putus
     "data": None,                   # path train.jsonl; None = cari otomatis lalu unduh dari GitHub jika tidak ada
     "init_adapter": None,           # folder lora-adapter untuk training lanjutan; None = mulai dari model dasar
@@ -60,13 +65,14 @@ CONFIG = {
     "load_in_4bit": None,           # None = otomatis: 4-bit di GPU kecil tanpa bf16 (T4), selain itu bawaan model.
                                     # True = QLoRA 4-bit (hemat ±6 GB VRAM, akurasi Qwen3.5 sedikit turun)
     "max_seq_len": None,            # None = otomatis: 6144 di T4, 8192 di GPU lain. Sampel lebih panjang DIBUANG
-    "epochs": None,                 # None = 3 untuk own, 2 untuk mix
+    "epochs": None,                 # None = 2 untuk mix, 3 untuk yang lain
     "lr": 1e-4,
     "lora_r": 16,
     "lora_alpha": 32,
     "batch_size": 1,
     "grad_accum": 8,                # batch efektif = batch_size × grad_accum
     "save_steps": 10,               # checkpoint setiap N step
+    "epoch_adapters": False,        # True = simpan juga salinan adapter di akhir setiap epoch (untuk memilih epoch)
     "max_new_tokens": 6000,         # batas panjang jawaban saat uji
     "no_test": False,               # True = lewati pembuatan website uji setelah training
     "seed": 42,
@@ -207,9 +213,21 @@ def bench_data(args):
     return out
 
 
+def own_bench_data(args):
+    """Data untuk --dataset own+bench: own lalu bench-support dalam satu file, dilatih bersama dari model dasar."""
+    own = find_own_data(args)
+    merged = own.read_text(encoding="utf-8").rstrip("\n") + "\n" + bench_data(args).read_text(encoding="utf-8")
+    out = Path(args.out) / "train_own_bench.jsonl"
+    if not out.is_file() or out.read_text(encoding="utf-8") != merged:  # ditulis ulang hanya jika isinya berubah
+        out.write_text(merged, encoding="utf-8")
+    return out
+
+
 def data_file_for(args):
     if args.dataset == "bench":
         return bench_data(args)
+    if args.dataset == "own+bench":
+        return own_bench_data(args)
     own = find_own_data(args)
     if args.dataset == "own":
         return own
@@ -275,9 +293,13 @@ def render(tokenizer, template_kwargs, messages, **kw):
 
 def to_text(tokenizer, template_kwargs, messages):
     """Jawaban terakhir ditempel tepat setelah prompt inferensi, jadi format training sama dengan saat dipakai
-    (termasuk blok <think> kosong pada mode non-thinking Qwen3.5)."""
+    (termasuk blok <think> kosong pada mode non-thinking Qwen3.5). Jika jawaban sudah diawali <think> berisi
+    (ditulis lewat scripts/editor_think.py), blok kosong dari template dibuang supaya tidak ada dua blok <think>."""
     *history, last = messages
-    return render(tokenizer, template_kwargs, history, add_generation_prompt=True) + last["content"] + EOS
+    prompt = render(tokenizer, template_kwargs, history, add_generation_prompt=True)
+    if last["content"].startswith("<think>"):
+        prompt = re.sub(r"<think>\s*</think>\s*$", "", prompt)
+    return prompt + last["content"] + EOS
 
 
 def build_texts(tokenizer, template_kwargs, rows, max_seq_len):
@@ -394,6 +416,11 @@ def load_init_adapter(model, args):
     print(f"melanjutkan dari {folder}: {len(state)} tensor LoRA dimuat", flush=True)
 
 
+def adapter_dir(args, run_dir):
+    """Folder adapter LoRA. Dengan --name, namanya memuat nama itu supaya tetap jelas walaupun disalin ke tempat lain."""
+    return run_dir / (f"{args.model}-{args.name}-lora" if args.name else "lora-adapter")
+
+
 # ---------------------------------------------------------------- resume
 
 # Pengaturan yang menentukan hasil training; checkpoint hanya dilanjutkan jika semuanya sama.
@@ -407,7 +434,8 @@ def archive_stale_run(run_dir, ckpt_dir, fingerprint):
     fp_file = ckpt_dir / "fingerprint.json"
     if not ckpt_dir.exists() or (fp_file.exists() and fp_file.read_text() == fingerprint):
         return
-    old = [p for p in run_dir.iterdir() if p.name in ("checkpoints", "lora-adapter", "gguf") or p.name.startswith("contoh-")]
+    old = [p for p in run_dir.iterdir() if p.name in ("checkpoints", "lora-adapter", "gguf")
+           or p.name.endswith(("-lora", "-merged-16bit")) or p.name.startswith(("contoh-", "epoch-"))]
     if not old:
         return
     dest = run_dir / "arsip" / time.strftime("%Y%m%d-%H%M%S")
@@ -482,6 +510,17 @@ def cmd_train(args, cfg, status, run_dir):
                           loss=(logs or {}).get("loss", status.data.get("loss")),
                           elapsed_min=round(elapsed / 60, 1), eta_min=round(eta, 1) if eta is not None else None)
 
+    class EpochAdapterCallback(TrainerCallback):
+        """Simpan salinan adapter di akhir setiap epoch, supaya epoch terbaik bisa dipilih dari hasil uji."""
+
+        def on_epoch_end(self, a, state, control, model=None, **kw):
+            epoch = round(state.epoch or 0)
+            # epoch-<N>/<nama adapter>: script uji memberi nama run "<folder hasil>-epoch-<N>" dari path ini
+            folder = run_dir / f"epoch-{epoch}" / adapter_dir(args, run_dir).name
+            model.save_pretrained(str(folder))
+            tokenizer.save_pretrained(str(folder))
+            print(f"\nadapter epoch {epoch} disimpan: {folder}", flush=True)
+
     ckpt_dir = run_dir / "checkpoints"
     fingerprint = json.dumps({"data": sha256_file(data_file), **{k: getattr(args, k) for k in TRAINING_KEYS}},
                              sort_keys=True)
@@ -492,7 +531,7 @@ def cmd_train(args, cfg, status, run_dir):
         model=model,
         processing_class=tokenizer,
         train_dataset=Dataset.from_dict({"text": texts}),
-        callbacks=[StatusCallback()],
+        callbacks=[StatusCallback()] + ([EpochAdapterCallback()] if args.epoch_adapters else []),
         args=SFTConfig(
             output_dir=str(ckpt_dir),
             dataset_text_field="text",
@@ -530,11 +569,11 @@ def cmd_train(args, cfg, status, run_dir):
     stats = trainer.train(resume_from_checkpoint=last)
 
     status.update(stage="saving", message="menyimpan adapter")
-    adapter_dir = run_dir / "lora-adapter"
-    model.save_pretrained(str(adapter_dir))
-    tokenizer.save_pretrained(str(adapter_dir))
+    final_dir = adapter_dir(args, run_dir)
+    model.save_pretrained(str(final_dir))
+    tokenizer.save_pretrained(str(final_dir))
     result = {"train_runtime_min": round(stats.metrics["train_runtime"] / 60, 1),
-              "train_loss": round(stats.metrics["train_loss"], 4), "adapter": str(adapter_dir)}
+              "train_loss": round(stats.metrics["train_loss"], 4), "adapter": str(final_dir)}
     status.update(stage="trained", message="adapter tersimpan", result=result)
 
     if not args.no_test:
@@ -546,15 +585,36 @@ def cmd_train(args, cfg, status, run_dir):
 
 def cmd_test(args, cfg, status, run_dir):
     status.update(stage="testing", message="memuat adapter")
-    model, tokenizer = load_model(cfg, args, model_name=str(run_dir / "lora-adapter"))
+    model, tokenizer = load_model(cfg, args, model_name=str(adapter_dir(args, run_dir)))
     status.update(stage="done", message="uji selesai", tests=generate_tests(model, tokenizer, cfg, run_dir, args.max_new_tokens))
 
 
 def cmd_gguf(args, cfg, status, run_dir):
     status.update(stage="exporting", message="menggabungkan adapter dan membuat GGUF q4_k_m")
-    model, tokenizer = load_model(cfg, args, model_name=str(run_dir / "lora-adapter"))
-    model.save_pretrained_gguf(str(run_dir / "gguf"), tokenizer, quantization_method="q4_k_m")
-    status.update(stage="done", message="GGUF tersimpan", gguf=str(run_dir / "gguf"))
+    model, tokenizer = load_model(cfg, args, model_name=str(adapter_dir(args, run_dir)))
+    gguf_dir = run_dir / "gguf"
+    model.save_pretrained_gguf(str(gguf_dir), tokenizer, quantization_method="q4_k_m")
+    if args.name:
+        # Nama file bawaan Unsloth tidak memuat nama hasil, dan sebagian versi menulis ke folder <gguf>_gguf. File Q4_K_M
+        # dipindah ke gguf/ dengan nama seperti qwen3.5-4b-V5.Q4_K_M.gguf; GGUF perantara 16-bit (±8 GB) dihapus.
+        for f in sorted([*gguf_dir.glob("*.gguf"), *Path(f"{gguf_dir}_gguf").glob("*.gguf")]):
+            if "q4_k_m" not in f.name.lower():
+                print(f"menghapus GGUF perantara {f.name} ({f.stat().st_size / 1e9:.1f} GB)", flush=True)
+                f.unlink()
+            elif args.name not in f.name:
+                gguf_dir.mkdir(exist_ok=True)
+                shutil.move(str(f), str(gguf_dir / f"{args.model}-{args.name}.Q4_K_M.gguf"))
+    status.update(stage="done", message="GGUF tersimpan", gguf=sorted(str(f) for f in gguf_dir.glob("*.gguf")))
+
+
+def cmd_merge(args, cfg, status, run_dir):
+    """Gabungkan adapter ke bobot model dasar dan simpan model 16-bit utuh (±9 GB) yang bisa dimuat tanpa PEFT."""
+    status.update(stage="exporting", message="menggabungkan adapter ke model 16-bit")
+    model, tokenizer = load_model(cfg, args, model_name=str(adapter_dir(args, run_dir)))
+    name = f"{args.model}-{args.name}" if args.name else args.model
+    merged_dir = run_dir / f"{name}-merged-16bit"
+    model.save_pretrained_merged(str(merged_dir), tokenizer, save_method="merged_16bit")
+    status.update(stage="done", message="model 16-bit tersimpan", merged=str(merged_dir))
 
 
 def native_bf16(torch):
@@ -576,9 +636,10 @@ def detect_small_gpu():
 
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", nargs="?", choices=["info", "prepare", "train", "test", "gguf"])
+    parser.add_argument("command", nargs="?", choices=["info", "prepare", "train", "test", "gguf", "merge"])
     parser.add_argument("--model", choices=sorted(MODELS))
-    parser.add_argument("--dataset", choices=["own", "mix", "bench"])
+    parser.add_argument("--dataset", choices=["own", "mix", "bench", "own+bench"])
+    parser.add_argument("--name", help="nama hasil, misalnya V5 (folder, adapter, dan GGUF memuat nama ini)")
     parser.add_argument("--out", help="folder hasil, misalnya di Google Drive")
     parser.add_argument("--data", help="path train.jsonl (bawaan: cari otomatis, lalu unduh dari GitHub)")
     parser.add_argument("--init-adapter", help="folder lora-adapter untuk training lanjutan (hasil ke folder -lanjut)")
@@ -586,13 +647,15 @@ def parse_args():
     parser.add_argument("--load-in-4bit", action=argparse.BooleanOptionalAction, default=None,
                         help="QLoRA 4-bit (hemat VRAM); --no-load-in-4bit memaksa bawaan model")
     parser.add_argument("--max-seq-len", type=int, help="sampel yang lebih panjang dibuang")
-    parser.add_argument("--epochs", type=float, help="bawaan: 3 untuk own, 2 untuk mix")
+    parser.add_argument("--epochs", type=float, help="bawaan: 2 untuk mix, 3 untuk yang lain")
     parser.add_argument("--lr", type=float)
     parser.add_argument("--lora-r", type=int)
     parser.add_argument("--lora-alpha", type=int)
     parser.add_argument("--batch-size", type=int)
     parser.add_argument("--grad-accum", type=int)
     parser.add_argument("--save-steps", type=int)
+    parser.add_argument("--epoch-adapters", action="store_true", default=None,
+                        help="simpan salinan adapter di akhir setiap epoch ke epoch-<N>/")
     parser.add_argument("--max-new-tokens", type=int, help="batas panjang jawaban saat uji")
     parser.add_argument("--no-test", action="store_true", default=None, help="lewati website uji setelah training")
     parser.add_argument("--seed", type=int)
@@ -601,7 +664,7 @@ def parse_args():
     for key, value in CONFIG.items():
         if getattr(args, key, None) is None:
             setattr(args, key, value)
-    if args.command not in ("info", "prepare", "train", "test", "gguf"):
+    if args.command not in ("info", "prepare", "train", "test", "gguf", "merge"):
         raise ValueError(f"command tidak dikenal: {args.command!r}")
     if args.epochs is None:
         args.epochs = 2 if args.dataset == "mix" else 3
@@ -624,11 +687,11 @@ def main():
     suffix = "-4bit" if args.load_in_4bit and not cfg["load_in_4bit"] else ""
     if args.init_adapter:
         suffix += "-lanjut"
-    run_dir = Path(args.out) / f"{args.model}-{args.dataset}{suffix}"
+    run_dir = Path(args.out) / f"{args.model}-{args.name or args.dataset}{suffix}"
     if args.command == "info":
         print(json.dumps({"model": args.model, "dataset": args.dataset, "load_in_4bit": args.load_in_4bit,
-                          "max_seq_len": args.max_seq_len,
-                          "epochs": args.epochs, "run_dir": str(run_dir), "status": str(run_dir / "status.json")},
+                          "max_seq_len": args.max_seq_len, "epochs": args.epochs, "run_dir": str(run_dir),
+                          "adapter": str(adapter_dir(args, run_dir)), "status": str(run_dir / "status.json")},
                          indent=1))
         return
 
@@ -639,7 +702,7 @@ def main():
     status.update(stage="starting", message=args.command, command=args.command, model=args.model,
                   dataset=args.dataset, load_in_4bit=args.load_in_4bit, max_seq_len=args.max_seq_len,
                   pid=os.getpid())
-    commands = {"prepare": cmd_prepare, "train": cmd_train, "test": cmd_test, "gguf": cmd_gguf}
+    commands = {"prepare": cmd_prepare, "train": cmd_train, "test": cmd_test, "gguf": cmd_gguf, "merge": cmd_merge}
     try:
         commands[args.command](args, cfg, status, run_dir)
     except BaseException as e:

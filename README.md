@@ -6,13 +6,14 @@ Dataset instruksi berbahasa Indonesia untuk fine-tuning **Qwen3.5-4B** dalam mod
 
 | Kelompok | Sampel | Rata-rata token | Topik |
 |---|---|---|---|
-| Website one-shot (`web_oneshot`) | 26 | ±4.500 | landing page, portfolio, dashboard, toko online, game (termasuk game 3D WebGL), kalkulator, sistem kasir, form, undangan, dan lainnya |
+| Website one-shot (`web_oneshot`) | 43 | ±5.000 | landing page, portfolio, dashboard, toko online, game (termasuk game 3D WebGL), kalkulator, sistem kasir, form, undangan, aplikasi web, alat bantu hukum, dan lainnya |
 | Perbaikan bug website (`web_debug`) | 12 | ±3.650 | XSS, urutan operasi, timer di tab latar, `localStorage` rusak, overflow di HP, acak tidak aman, dan lainnya |
 | Python terverifikasi (`py_*`, `tech-023`) | 22 | ±2.000 | fungsi dengan kasus tepi, program lengkap dengan tes, debug dari traceback, olah data CSV/log, menulis tes, multi-giliran (Python 3.8, kebutuhan berubah), review keamanan, Python untuk web (Flask, generator HTML) |
 | Teknologi & pemrograman | 22 | ±700 | algoritma, struktur data, database, keamanan, sistem terdistribusi, Git, testing, AI |
-| Matematika & logika | 11 | ±800 | kalkulus, pembuktian, probabilitas, statistik, aljabar, teka-teki logika |
+| Matematika & logika | 15 | ±800 | kalkulus, pembuktian, probabilitas, statistik, aljabar, teka-teki logika, dan 4 sampel `matematika-*` dengan `<think>` |
+| Hukum | 1 | belum diukur | sengketa utang piutang, wanprestasi dan penipuan |
 | Sains | 10 | ±850 | fisika, biologi, kimia, ilmu bumi |
-| **Total** | **103** | | ±238 ribu token, sampel terpanjang ±6.200 token |
+| **Total** | **125** | | ±329 ribu token, sampel terpanjang ±6.200 token |
 
 Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 
@@ -46,6 +47,21 @@ Jumlah token dihitung dengan tokenizer Qwen2.5 setelah chat template diterapkan.
 | web-024 | Kasir kafe | dine-in/take away, PBJT dan service, tunai/QRIS/debit, antrean dapur |
 | web-025 | Portofolio bergaya surat perjanjian | pasal dan ayat, filter karya, tanda tangan di kanvas untuk membuka kontak, mode gelap |
 | web-026 | Game blok 3D "Dunia Kubus" (mirip Minecraft) | WebGL murni, dunia prosedural, tabrakan, gali dan pasang blok, kontrol sentuh |
+| web-027 | Landing page agensi kreatif | filter portofolio, angka beranimasi saat di-scroll, testimoni bergilir berlabel contoh, validasi form |
+| web-028 | Aplikasi cuaca (data simulasi) | combobox kota dengan keyboard, grafik SVG 24 jam, prakiraan 7 hari, °C/°F, WIB/WITA/WIT |
+| web-029 | Pemutar musik Web Audio | lagu disusun dari tangga nada slendro/pelog, penjadwalan *lookahead*, visualizer, pintasan keyboard |
+| web-030 | Situs resep Nusantara | cari bahan, takaran ikut porsi (pecahan dapur), favorit, timer di dalam `<dialog>` |
+| web-031 | Perencana liburan | filter pulau dan anggaran, rencana tersimpan, estimasi biaya per orang |
+| web-032 | Game 2048 bertema rempah | animasi geser/gabung, geser layar, undo, skor terbaik |
+| web-033 | Klinik gigi + reservasi | wizard 4 langkah, jadwal dokter, validasi nomor WA, sesuai Permenkes 1787/2010 dan UU PDP |
+| web-034 | Kalkulator pesangon | 18 alasan PHK menurut PP 35/2021, UPMK, UPH, kompensasi PKWT, PPh 21 final PP 68/2009 |
+| web-035 | Habit tracker | streak, rekor, heatmap ala GitHub, tanggal lokal tanpa geser zona waktu |
+| web-036 | Sudoku | generator dengan solusi tunggal, catatan pensil, petunjuk, undo |
+| web-037 | Landing page SaaS absensi & payroll | tab ARIA, kalkulator penghematan, harga tahunan diskon 20%, contoh PPh 21 TER |
+| web-038 | CV online | dwibahasa, mode gelap, filter pengalaman, siap cetak A4 |
+| web-039 | Aplikasi menggambar | pena bertekanan, spidol, bentuk, ember cat, undo/redo, latar berpola, simpan PNG |
+| web-040 | UI chat | balasan otomatis, indikator mengetik, centang dibaca, emoji, reaksi |
+| web-041 | Game pecah bata | 4 level, bata berlapis, 4 power-up, suara Web Audio, kontrol sentuh |
 
 ## Format
 
@@ -102,13 +118,42 @@ python scripts/build_python_samples.py --check   # pastikan train.jsonl sama den
 python scripts/decontaminate.py                  # pastikan tidak ada tumpang tindih dengan soal uji
 ```
 
+## Mode penalaran
+
+Dataset ini sekarang punya dua jenis jawaban:
+
+- **Tanpa penalaran** (sebagian besar): jawaban langsung, seperti sebelumnya.
+- **Dengan penalaran**: jawaban diawali blok `<think>…</think>`, lalu baris kosong, lalu jawaban yang dibaca pengguna. Contoh:
+
+  ```
+  <think>
+  Harga awal Rp250.000. Diskon 20% ... sisa 200.000. Diskon 10% dari 200.000 ... 180.000.
+  </think>
+
+  Harga akhirnya **Rp180.000**. ...
+  ```
+
+Pemisahan dibuat di `data/kelompok/`:
+
+- `penalaran.jsonl`: 6 sampel dengan `<think>` (`matematika-001` sampai `matematika-004`, `web-042`, dan `web-043`).
+- `tanpa-penalaran.jsonl`: 119 sampel lainnya.
+
+`data/train.jsonl` tetap berisi semua 125 sampel, sehingga pengaturan training dan `mix_general.py` tidak berubah.
+
+Catatan untuk training:
+- `scripts/train_unsloth.py` merender jawaban yang diawali `<think>` dalam mode thinking (`enable_thinking=True`). Jawaban lainnya tetap memakai blok kosong seperti sebelumnya.
+- Jalur LLaMA-Factory (`dataset_info.json` dan file yaml) memakai `train.jsonl` penuh, sehingga 6 sampel ber-`<think>` ikut dilatih lewat template `qwen3_5_nothink`. Cara template itu menangani teks `<think>` di jawaban belum diuji. Sampai diuji, gunakan `train_unsloth.py` untuk data dengan penalaran.
+- Untuk `qwen2.5-coder-7b` (`train_unsloth.py`), sampel `<think>` dilatih sebagai teks biasa, karena template-nya tidak punya opsi thinking.
+- Enam sampel belum cukup untuk membuat model belajar mode thinking secara andal. Kelompok `penalaran.jsonl` perlu diperbesar dulu.
+- Angka token di tabel *Isi* belum dihitung ulang setelah penambahan sampel baru.
+
 ## Mencampur dengan dataset umum
 
-Melatih model hanya dengan 103 sampel berisiko membuat model "terlalu fokus", misalnya selalu menjawab dengan file HTML walaupun pertanyaannya bukan soal website. Selain itu, kemampuan umumnya bisa menurun. Karena itu, config training memakai data campuran yang dibuat oleh `scripts/mix_general.py`:
+Melatih model hanya dengan 125 sampel berisiko membuat model "terlalu fokus", misalnya selalu menjawab dengan file HTML walaupun pertanyaannya bukan soal website. Selain itu, kemampuan umumnya bisa menurun. Karena itu, config training memakai data campuran yang dibuat oleh `scripts/mix_general.py`:
 
 | Sumber | Jumlah bawaan | Isi |
 |---|---|---|
-| Dataset ini (`data/train.jsonl`) | 103 | semua sampel, tanpa dikurangi |
+| Dataset ini (`data/train.jsonl`) | 125 | semua sampel, tanpa dikurangi |
 | [`CohereForAI/aya_dataset`](https://huggingface.co/datasets/CohereForAI/aya_dataset), bagian bahasa Indonesia | 600 | tanya-jawab umum yang ditulis manusia |
 | [`ise-uiuc/Magicoder-Evol-Instruct-110K`](https://huggingface.co/datasets/ise-uiuc/Magicoder-Evol-Instruct-110K) | 200 | instruksi pemrograman (bahasa Inggris) |
 | [`HuggingFaceH4/ultrachat_200k`](https://huggingface.co/datasets/HuggingFaceH4/ultrachat_200k), split `train_sft` | 100 | percakapan umum multi-turn (bahasa Inggris) |
@@ -130,7 +175,7 @@ Hal-hal yang dilakukan script:
   - Percakapan dengan urutan giliran yang rusak dibuang.
   - Jawaban yang menyebut identitas model lain ("ChatGPT", "OpenAI", "sebagai model bahasa AI") dibuang, supaya tidak bertentangan dengan identitas Qwen.
 - **Deduplikasi:** prompt yang sama, termasuk yang sudah ada di dataset ini, hanya diambil sekali.
-- **Ringkasan:** jumlah sampel dan perkiraan porsi token setiap sumber dicetak di akhir. Sampel web di dataset ini panjang (±4.200 token), jadi meskipun jumlah sampelnya kecil, porsi tokennya tetap besar. Targetkan porsi dataset sendiri sekitar 20–30% dari total token, dan ubah jumlah per sumber jika perlu.
+- **Ringkasan:** jumlah sampel dan perkiraan porsi token setiap sumber dicetak di akhir. Sampel web di dataset ini panjang (±5.000 token), jadi meskipun jumlah sampelnya kecil, porsi tokennya tetap besar. Targetkan porsi dataset sendiri sekitar 20–30% dari total token, dan ubah jumlah per sumber jika perlu.
 - **Skema dicek saat dijalankan:** jika pengelola dataset sumber mengubah nama kolom, script berhenti dan menampilkan kolom yang tersedia. Sesuaikan entri `SOURCES` di dalam script.
 
 `data/train_mix.jsonl` tidak di-commit (ada di `.gitignore`) karena isinya data pihak ketiga. Buat ulang file itu di mesin training.
@@ -148,7 +193,10 @@ Folder `data/bench-support/` berisi sampel latihan dari benchmark kode, terpisah
 
 Setiap solusi diverifikasi oleh `scripts/build_bench_support.py` dengan dua cara: tes resmi HumanEval, dan pemeriksaan silang dengan solusi asli HumanEval pada 111 ribu input tambahan HumanEval+. Lewat pemeriksaan ini ditemukan 15 solusi asli HumanEval yang keliru dan satu soal yang kedua solusi referensinya gagal. Rinciannya ada di `data/bench-support/README.md`.
 
-Kelompok ini dilatih **sendiri, tanpa `own`**, sebagai training lanjutan di atas adapter yang sudah dilatih dengan `own` (misalnya v3):
+Ada dua cara memakai kelompok ini:
+
+- **Dicampur dengan `own` dalam satu run dari model dasar (`--dataset own+bench`, dipakai V5).** Panduannya ada di [`docs/PANDUAN_V5_A100.md`](docs/PANDUAN_V5_A100.md). Adapter epoch 2 dan 3 disimpan, lalu yang dipakai dipilih dari uji yang bersih: MBPP+, IndoPy-dev, dan Web-eval.
+- **Dilatih sendiri, tanpa `own`**, sebagai training lanjutan di atas adapter yang sudah dilatih dengan `own` (misalnya v3). Cara ini dipakai percobaan bench-lanjut, yang skornya turun (lihat `data/bench-support/README.md`):
 
 ```bash
 python scripts/train_unsloth.py train --dataset bench \
@@ -164,14 +212,14 @@ Dua hal yang perlu diingat:
 
 ## Pilihan data: `own` atau `mix`
 
-- **`own`**: hanya `data/train.jsonl`, 103 sampel, 3 epoch, ±710 ribu token diproses.
+- **`own`**: hanya `data/train.jsonl`, 125 sampel, 3 epoch, ±980 ribu token diproses.
 - **`mix`**: dataset ini ditambah ±900 sampel umum dari `scripts/mix_general.py`, 2 epoch, ±1 juta token dilatih.
 
 Mulailah dengan **`own`**, lalu beralih ke `mix` jika hasilnya menunjukkan gejala lupa kemampuan umum.
 
 - **Alasan memulai dengan `own`:**
-  - Qwen3.5-4B sudah dilatih dengan data umum dalam jumlah sangat besar. 103 sampel dengan LoRA rank 16 hanya mengubah sedikit bobot, jadi risiko model melupakan kemampuan umumnya kecil.
-  - Sekitar 70% token di dataset ini adalah sampel website, baik one-shot maupun perbaikan bug, dan 18% sampel Python terverifikasi. Keduanya memang kemampuan utama yang ingin diajarkan.
+  - Qwen3.5-4B sudah dilatih dengan data umum dalam jumlah sangat besar. 125 sampel dengan LoRA rank 16 hanya mengubah sedikit bobot, jadi risiko model melupakan kemampuan umumnya kecil.
+  - Sekitar 77% token di dataset ini adalah sampel website, baik one-shot maupun perbaikan bug, dan 13% sampel Python terverifikasi. Keduanya memang kemampuan utama yang ingin diajarkan.
   - Training di T4 butuh ±30–90 menit, tidak berjam-jam, jadi cepat untuk iterasi.
 - **Kapan beralih ke `mix`.** Jika setelah training dengan `own` muncul salah satu gejala berikut:
   - Setiap pertanyaan dijawab dengan HTML.
@@ -181,7 +229,7 @@ Mulailah dengan **`own`**, lalu beralih ke `mix` jika hasilnya menunjukkan gejal
 
 ## Training di Google Colab
 
-**Panduan langkah demi langkah: [`docs/PANDUAN_TRAINING.md`](docs/PANDUAN_TRAINING.md).**
+**Panduan langkah demi langkah: [`docs/PANDUAN_TRAINING.md`](docs/PANDUAN_TRAINING.md).** Untuk GPU A100 dengan data own + HumanEval, checkpoint dan hasil di Google Drive, serta model bernama V5, pakai [`docs/PANDUAN_V5_A100.md`](docs/PANDUAN_V5_A100.md) atau [notebook-nya](notebooks/v5_a100_colab.ipynb).
 
 Seluruh proses training ada di satu file mandiri, [`scripts/train_unsloth.py`](scripts/train_unsloth.py), dengan pengaturan di blok `CONFIG`. File ini tidak butuh clone repo: jika `train.jsonl` tidak ditemukan, file itu diunduh dari repo publik ini. Ada dua cara memakainya, dan keduanya tidak perlu menghubungkan Colab ke GitHub:
 
@@ -207,9 +255,9 @@ Script ini memakai [Unsloth](https://github.com/unslothai/unsloth):
 
 Perkiraan waktu training Qwen3.5-4B, belum termasuk instalasi dan unduh model (±10–15 menit):
 
-| GPU | `own` (±710 ribu token) | `mix` (±1 juta token) |
+| GPU | `own` (±980 ribu token) | `mix` (±1 juta token) |
 |---|---|---|
-| T4 gratis (QLoRA 4-bit, float32, konteks 6144) | ±45–50 menit (v3 dengan 78 sampel terukur 42,7 menit) | ±1,5–3 jam |
+| T4 gratis (QLoRA 4-bit, float32, konteks 6144) | ±60–70 menit (v3 dengan 78 sampel terukur 42,7 menit) | ±1,5–3 jam |
 | L4 (bf16) | ±10–20 menit | ±40–80 menit |
 
 Angka T4 untuk `own` diukur langsung di Colab. Angka lainnya masih perkiraan, dan ETA di progress bar menunjukkan waktu yang sebenarnya. Di T4, script otomatis memakai QLoRA 4-bit dan `max_seq_len` 6144, karena 16-bit maupun 4-bit dengan konteks 8192 kehabisan memori di sana. Semua sampel dijaga di bawah batas itu, jadi tidak ada yang terbuang. Colab gratis membatasi lama sesi dan ketersediaan GPU, jadi data `mix` di T4 kemungkinan butuh lebih dari satu sesi.
@@ -264,12 +312,12 @@ Script ini memeriksa struktur JSON, urutan role, ID dan prompt duplikat, kelengk
 
 ## Catatan penting
 
-- **Ukuran dataset kecil.** Fine-tuning dengan 103 sampel terutama membentuk gaya dan format jawaban, misalnya kebiasaan menghasilkan satu file HTML lengkap dengan penjelasan berbahasa Indonesia. Pengetahuan baru tidak banyak bertambah. Karena itu, config bawaan memakai data campuran dengan dataset umum (lihat bagian *Mencampur dengan dataset umum*).
+- **Ukuran dataset kecil.** Fine-tuning dengan 125 sampel terutama membentuk gaya dan format jawaban, misalnya kebiasaan menghasilkan satu file HTML lengkap dengan penjelasan berbahasa Indonesia. Pengetahuan baru tidak banyak bertambah. Karena itu, config bawaan memakai data campuran dengan dataset umum (lihat bagian *Mencampur dengan dataset umum*).
 - **Hindari overfitting.** Pantau training loss. Dengan data sekecil ini, terlalu banyak epoch membuat model sekadar menghafal jawaban.
 
 ## Melihat dan menguji website
 
-Ke-26 website juga tersedia sebagai file terpisah di `examples/web/`, isinya identik dengan yang ada di `data/train.jsonl`. Buka saja file `.html`-nya di browser untuk melihat hasilnya.
+Ke-41 website juga tersedia sebagai file terpisah di `examples/web/`, isinya identik dengan yang ada di `data/train.jsonl`. Buka saja file `.html`-nya di browser untuk melihat hasilnya.
 
 Untuk menjalankan ulang tes otomatis (Chromium, desktop 1280px dan HP 375px):
 
@@ -282,6 +330,60 @@ node test_web.mjs 04-          # satu website saja
 ```
 
 Tes gagal jika ada error JavaScript, request ke luar, scroll horizontal, atau skenario interaksi di `tests/interactions.mjs` yang tidak terpenuhi. Screenshot disimpan di `tests/screenshots/`.
+
+### Koleksi tambahan: `examples/web-pilihan/`
+
+Folder ini berisi 20 website single-file untuk etalase. Tidak ada CDN atau gambar dari luar. Satu-satunya sumber luar adalah Google Fonts; tanpa internet, website tetap berjalan dengan font sistem.
+
+**Yang masuk dataset.** 15 website sudah dijadikan sampel `web-027`–`web-041`. Versi datanya ada di `examples/web/27-`…`41-`, dan berbeda dari versi etalase dalam tiga hal:
+- Google Fonts dibuang, karena sampel latihan tidak boleh membuat request eksternal.
+- Website yang terlalu panjang dipadatkan sampai ±5.500 token HTML, supaya tetap muat di batas 6144 token T4.
+- Bagian khusus pratinjau iframe dihapus.
+
+Perubahan pada file di folder ini **tidak** otomatis masuk dataset.
+
+**Yang sengaja tidak dimasukkan.** Lima website tidak dijadikan sampel karena jenis tugasnya sama dengan soal Web-eval, sehingga skor Web-eval tidak lagi bersih:
+
+| Website etalase | Soal Web-eval yang tumpang tindih |
+|---|---|
+| `p06` | `pengeluaran` |
+| `p07` | `memori` |
+| `p13` | `galeri` |
+| `p18` | `seminar` |
+| `p19` | `konversi-satuan` |
+
+| File | Jenis | Fitur utama |
+|---|---|---|
+| `p01-agensi-kreatif` | Landing page agensi | filter portofolio, animasi angka, testimoni bergilir, validasi form |
+| `p02-cuaca` | Aplikasi cuaca | cari kota (keyboard), grafik 24 jam SVG, prakiraan 7 hari, °C/°F |
+| `p03-pemutar-musik` | Pemutar musik | lagu disintesis Web Audio, visualizer, acak/ulang, pintasan keyboard |
+| `p04-resep-nusantara` | Situs resep | cari bahan, takaran ikut jumlah porsi, favorit, timer memasak |
+| `p05-wisata-nusantara` | Perencana liburan | filter pulau & anggaran, rencana perjalanan, estimasi biaya |
+| `p06-catatan-keuangan` | Pencatat keuangan | grafik donat, batas anggaran, per bulan, ekspor CSV, mode gelap |
+| `p07-memori-satwa` | Game kartu memori | 3 tingkat, rekor, fakta satwa endemik |
+| `p08-2048` | Game 2048 | animasi ubin, geser layar, urungkan, skor terbaik |
+| `p09-klinik-gigi` | Situs klinik + reservasi | wizard 4 langkah, jadwal dokter, validasi nomor WA |
+| `p10-kalkulator-pesangon` | Kalkulator hukum | pesangon/UPMK/UPH per alasan PHK (PP 35/2021), kompensasi PKWT, PPh 21 final |
+| `p11-pelacak-kebiasaan` | Habit tracker | streak, heatmap hingga setahun, progres harian |
+| `p12-sudoku` | Game sudoku | generator dengan solusi tunggal, catatan, petunjuk, urungkan |
+| `p13-galeri-seni` | Galeri | karya generatif canvas, lightbox keyboard/geser, unduh PNG |
+| `p14-landing-saas` | Landing page SaaS | tab fitur, kalkulator penghematan, harga bulanan/tahunan |
+| `p15-cv-online` | CV / resume | dwibahasa, mode gelap, siap cetak A4 |
+| `p16-papan-gambar` | Aplikasi gambar | pena, spidol, bentuk, ember cat, undo/redo, simpan PNG |
+| `p17-aplikasi-chat` | UI chat | balasan otomatis, indikator mengetik, emoji, reaksi |
+| `p18-konferensi-teknologi` | Situs acara | hitung mundur, agenda pribadi, deteksi bentrok, tiket + promo |
+| `p19-konverter-satuan` | Konverter | 8 kategori termasuk tumbak/bata/ubin, dua arah, riwayat |
+| `p20-pecah-bata` | Game arkade | 4 level, power-up, efek suara, kontrol sentuh |
+
+Kalkulator pesangon hanya memberi estimasi hak minimal, bukan nasihat hukum. Dasar hukumnya dicantumkan per baris perhitungan.
+
+Tesnya memakai runner yang sama, dengan skenario interaksi di `tests/interactions_pilihan.mjs`:
+
+```bash
+cd tests
+WEB_DIR=web-pilihan node test_web.mjs        # ke-20 website
+WEB_DIR=web-pilihan node test_web.mjs p10    # satu website
+```
 
 Sampel perbaikan bug diuji dengan `node test_debug.mjs`. Untuk setiap sampel, tes memeriksa tiga hal:
 1. Blok SEARCH/REPLACE di jawaban, bila diterapkan ke kode di prompt, menghasilkan website asli di `examples/web` persis sama.
@@ -323,6 +425,38 @@ Batasan yang perlu diketahui:
   - Blok yang tetap tidak cocok dilaporkan dan dilewati, tidak diterapkan sembarangan.
   - Setiap versi disimpan di `<workdir>/.versi/`, dan perubahan bisa dibatalkan dengan `/undo`.
 
+## Menulis isi `<think>` sendiri (`scripts/editor_think.py`)
+
+Isi tag `<think>` untuk sampel dataset own ditulis manusia lewat editor ini. **Cara termudah:** buka [notebook editor di Colab](https://colab.research.google.com/github/PvzKing/Dataset/blob/main/notebooks/editor_think_colab.ipynb), isi nama, email, dan sandi, lalu jalankan satu sel. Langkah membuat token GitHub ada di notebook itu. Editor tidak membuat atau menyarankan isi apa pun.
+
+- **Isi editor.** Setiap sampel ditampilkan dengan prompt dan jawabannya, ditambah kotak untuk menulis isi `<think>`. Sampel multi-giliran punya satu kotak per jawaban.
+- **Saat Simpan:**
+  1. Teks ditulis ke `data/think/<id>-<n>.md`, yaitu isi `<think>` untuk jawaban assistant ke-n.
+  2. `scripts/think_tags.py` memasangnya ke `data/train.jsonl` sebagai `<think>\n...\n</think>\n\n` di awal jawaban.
+  3. `scripts/validate.py` dijalankan.
+  4. Jika kotak **Commit & push** dicentang, perubahan di-commit lalu di-push ke GitHub.
+- **Menghapus.** Kosongkan teks lalu Simpan untuk menghapus `<think>` dari sampel itu.
+- **Aman saat build ulang.** `build_python_samples.py` ikut memasang isi `data/think/`, jadi membangun ulang sampel Python tidak menghapusnya.
+
+Di Colab (CPU saja cukup), simpan token GitHub fine-grained dengan izin *Contents: Read and write* untuk repo ini di **Secrets** dengan nama `GITHUB_TOKEN`, lalu jalankan:
+
+```python
+import os
+from google.colab import userdata
+os.environ["GITHUB_TOKEN"] = userdata.get("GITHUB_TOKEN")
+!git clone -q https://github.com/PvzKing/Dataset.git /content/Dataset
+!pip install -q "gradio>=5"
+!git -C /content/Dataset config user.name "Nama Anda" && git -C /content/Dataset config user.email "email@contoh.com"
+%run /content/Dataset/scripts/editor_think.py --share --auth penulis:ganti-sandi
+```
+
+Di laptop: `python scripts/editor_think.py` dari clone repo, lalu buka `http://127.0.0.1:7861`. Push ke `main` adalah bawaan; pakai `--branch <nama>` untuk cabang lain, atau `--no-push` untuk menyimpan saja. Token tidak disimpan ke git config dan tidak ditampilkan di layar.
+
+**Dampaknya ke training.**
+- Sampel yang berisi `<think>` dilatih dengan isi itu: blok `<think>` kosong dari template mode non-thinking dibuang, jadi model belajar menulis penalarannya sendiri sebelum menjawab.
+- Saat dipakai dengan `enable_thinking=False`, template menyisipkan `<think>` kosong, sehingga model langsung menjawab. Untuk memakai penalaran yang dipelajari, jalankan inferensi dengan `enable_thinking=True`.
+- Sampel tanpa `<think>` tetap dilatih seperti sebelumnya.
+
 ## Menambah sampel
 
 1. Tambahkan satu baris JSON ke `data/train.jsonl` dengan `id` unik. Untuk sampel Python, buat folder di `data/python-src/` lalu jalankan `python scripts/build_python_samples.py`.
@@ -332,7 +466,9 @@ Batasan yang perlu diketahui:
 ## Struktur repo
 
 ```
-data/train.jsonl                      dataset (format messages)
+data/train.jsonl                      dataset (format messages), semua sampel
+data/kelompok/penalaran.jsonl         sampel dengan blok <think> (mode thinking)
+data/kelompok/tanpa-penalaran.jsonl   sampel tanpa blok <think>
 data/train_mix.jsonl                  hasil scripts/mix_general.py (tidak di-commit)
 data/dataset_info.json                registrasi dataset untuk LLaMA-Factory
 train/qwen3.5-4b-lora.yaml            konfigurasi LoRA Qwen3.5-4B untuk LLaMA-Factory
@@ -346,6 +482,8 @@ docs/PANDUAN_TRAINING.md              panduan training lengkap untuk pengguna
 docs/RUNBOOK_CLAUDE.md                aturan kerja Claude saat mengontrol training di Colab
 docs/RENCANA_PYTHON.md                rencana adapter v4: jago Python sekaligus jago membuat website
 docs/PROSEDUR_V4.md                   panduan Colab langkah demi langkah: ukur v3, latih v4-pilot, papan skor
+docs/PANDUAN_V5_A100.md               panduan Colab A100 untuk V5: own + HumanEval, checkpoint di Drive, pilih epoch, ekspor GGUF
+notebooks/v5_a100_colab.ipynb         notebook Colab V5 (dibangun dari PANDUAN_V5_A100.md)
 notebooks/v4_pilot_interaktif.ipynb   panel Colab interaktif v4-pilot: siapkan, jalankan otomatis, progres, laporan
 scripts/panel_v4.py                   logika panel (mode pilot dan a100): langkah, status dari Drive, saran saat gagal
 scripts/build_panel_notebook.py       membangun notebook panel interaktif
@@ -364,8 +502,10 @@ data/python-src/                      sumber sampel Python: teks giliran, kode, 
 data/bench-support/                   kelompok dataset bench-support, lisensi, dan catatan perubahannya
 humaneval-bench-script/               script uji skor HumanEval+ dan MBPP+ (harness resmi EvalPlus, uji McNemar)
 eval-suite/                           IndoPy (60 soal Python berbahasa Indonesia), Web-eval (10 website), papan skor
-examples/web/*.html                   26 website dari sampel web, siap dibuka di browser
+examples/web/*.html                   41 website dari sampel web, siap dibuka di browser
+examples/web-pilihan/*.html           20 website etalase; 15 di antaranya punya versi dataset di examples/web/27–41
 tests/test_web.mjs                    tes otomatis website dengan Playwright
 tests/interactions.mjs                skenario interaksi per website
+tests/interactions_pilihan.mjs        skenario interaksi untuk examples/web-pilihan
 tests/test_debug.mjs                  tes sampel perbaikan bug (web_debug)
 ```

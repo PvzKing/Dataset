@@ -18,7 +18,7 @@ Buka **[notebook panel interaktif](https://colab.research.google.com/github/PvzK
 
 Setiap langkah berjalan sebagai proses terpisah, jadi memori GPU selalu bersih dan sesi tidak perlu di-restart. Kalau sebuah langkah gagal, panel berhenti dan menampilkan saran perbaikannya. Output setiap langkah juga disimpan di `finetune-id/panel-log/`.
 
-**Punya akses A100, atau memakai akun Google baru yang belum menyimpan adapter v3?** Ikuti [`PROSEDUR_V4_A100.md`](PROSEDUR_V4_A100.md). Panduan itu melatih v4 dari model dasar dengan LoRA 16-bit dan konteks 16.384, lalu mengukurnya tanpa pembanding. Panduan T4 di bawah butuh adapter v3 yang sudah ada di Drive.
+**Punya akses A100, atau memakai akun Google baru yang belum menyimpan adapter v3?** Ikuti [`PROSEDUR_V4_A100.md`](PROSEDUR_V4_A100.md). Panduan itu melatih v4 dan pembandingnya (v3-ulang) dari model dasar dengan LoRA 16-bit dan konteks 16.384, lalu mengukur semua model di A100. Panduan T4 di bawah butuh adapter v3 yang sudah ada di Drive.
 
 Bagian di bawah ini adalah **cara manual**, sel demi sel. Gunanya untuk memahami apa yang dikerjakan panel, membaca arti output setiap langkah, atau menjalankan satu uji dengan opsi lain. Versi notebook-nya: [notebook manual](https://colab.research.google.com/github/PvzKing/Dataset/blob/main/notebooks/v4_pilot_colab.ipynb).
 <!-- /hanya-md -->
@@ -27,7 +27,7 @@ Bagian di bawah ini adalah **cara manual**, sel demi sel. Gunanya untuk memahami
 
 Yang akan dikerjakan:
 1. **Mengukur v3 dan model dasar** dengan empat uji: HumanEval+, IndoPy-dev, Web-eval, dan MBPP+.
-2. **Melatih v4-pilot**, yaitu adapter baru dengan dataset own terbaru (103 sampel, termasuk 21 sampel Python baru). Resepnya sama persis dengan v3, jadi perbedaan hasilnya berasal dari data.
+2. **Melatih v4-pilot**, yaitu adapter baru dengan dataset own terbaru (125 sampel, termasuk 21 sampel Python dan 15 sampel website baru). Resepnya sama persis dengan v3, jadi perbedaan hasilnya berasal dari data.
 3. **Mengukur v4-pilot** dengan empat uji yang sama.
 4. **Membaca papan skor**: apakah v4-pilot lolos gerbang G1 (Python umum tidak turun) dan G3 (website tidak kalah dari v3).
 
@@ -196,7 +196,7 @@ Uji yang belum dijalankan tercatat `belum diuji` atau `BELUM DIUKUR`, dan itu wa
 
 Mulai sesi baru: jalankan Sel 1 jika runtime-nya baru, lalu Sel 2 dan Sel cek progres.
 
-### D1. Training (±55–65 menit, ditambah ±10 menit untuk website uji)
+### D1. Training (±75–90 menit, ditambah ±10 menit untuk website uji)
 
 ```python
 !python /content/train_unsloth.py train --out /content/drive/MyDrive/finetune-id/v4-pilot
@@ -208,11 +208,11 @@ Output penting yang perlu dicek, berurutan:
 |---|---|
 | `folder hasil: /content/drive/MyDrive/finetune-id/v4-pilot/qwen3.5-4b-own-4bit` | hasil masuk ke folder baru, jadi v3 tidak tersentuh |
 | `GPU kecil tanpa bf16 terdeteksi (misalnya T4): ...` | QLoRA 4-bit dan konteks 6144 dipakai otomatis, sama dengan v3 |
-| `data valid: 103 sampel dari ...` | **wajib 103.** Angka lain berarti `train.jsonl` yang terunduh bukan versi terbaru (lihat Bagian H) |
-| `103 sampel dipakai, 0 dibuang karena > 6144 token []` | semua sampel ikut dilatih |
-| `token per epoch: ...` dan `3 epoch = 39 step` | 103 sampel ÷ 8 per step, dibulatkan ke atas = 13 step per epoch |
+| `data valid: 125 sampel dari ...` | **wajib 125.** Angka lain berarti `train.jsonl` yang terunduh bukan versi terbaru (lihat Bagian H) |
+| `125 sampel dipakai, 0 dibuang karena > 6144 token []` | semua sampel ikut dilatih |
+| `token per epoch: ...` dan `3 epoch = 48 step` | 125 sampel ÷ 8 per step = 16 step per epoch (dibulatkan ke atas) |
 | `perkiraan T4 (kalibrasi dari run v3): ...` | perkiraan lama training |
-| progress bar sampai `39/39` | training berjalan. Loss dicetak berkala |
+| progress bar sampai `48/48` | training berjalan. Loss dicetak berkala |
 | `[status] trained: adapter tersimpan` | adapter v4-pilot sudah tersimpan di Drive |
 | `[status] done: selesai` | dua website uji (`contoh-*.html`) juga sudah dibuat |
 
@@ -349,7 +349,7 @@ Dari situ saya menganalisis jenis kesalahannya dan menyusun sampel Fase 3.
 | `CUDA out of memory` | memori dari uji atau training sebelumnya | Restart session, Sel 2, lalu ulangi perintah yang sama |
 | Colab terputus di tengah uji | sesi habis atau idle | sesi baru: Sel 1 (jika runtime baru), Sel 2, lalu perintah yang sama. Jawaban yang tersimpan dilewati |
 | Colab terputus di tengah training | sesi habis | jalankan D1 lagi. Training dilanjutkan dari checkpoint terakhir |
-| `data valid: 82 sampel` atau angka lain selain 103 | `train.jsonl` lama dipakai | hapus `MyDrive/finetune-id/v4-pilot/train.jsonl`, lalu ulangi D1 |
+| `data valid: N sampel` dengan N selain 125 | `train.jsonl` lama dipakai | hapus `MyDrive/finetune-id/v4-pilot/train.jsonl`, lalu ulangi D1 |
 | `data atau pengaturan berubah: hasil lama dipindah ke .../arsip/...` | training ulang dengan data atau pengaturan berbeda | wajar. Hasil lama diarsipkan, dan training dimulai dari awal |
 | `stop_strings tidak didukung ...` | versi transformers | tidak perlu tindakan. Generate tetap jalan, hanya sedikit lebih lambat |
 | Skor v4-pilot janggal setelah dilatih ulang | jawaban uji dari adapter lama dipakai ulang | hapus subfolder `v4-pilot-qwen3.5-4b-own-4bit` di setiap folder `eval-*`, lalu ulangi Bagian E dan F |

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Klinik Gigi Senyum Sehat — Reservasi Online</title>
+<style>
+  :root { --soft: #f0f7ff; --text: #0f1f3d; --muted: #5a6b8c; --primary: #2563eb; --mint: #0f9488; --line: #e2e9f5; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: #fff; line-height: 1.6; }
+  button, input, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .wrap { width: min(1100px, 100% - 32px); margin: 0 auto; }
+
+  header { position: sticky; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid var(--line); }
+  .nav { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+  .logo { font-weight: 800; text-decoration: none; color: inherit; }
+  .nav ul { display: flex; gap: 24px; list-style: none; }
+  .nav ul a { text-decoration: none; color: var(--muted); }
+  .menu-btn { display: none; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; }
+
+  .btn { display: inline-block; border: 0; background: var(--primary); color: #fff; padding: 12px 20px; border-radius: 12px; font-weight: 600; cursor: pointer; text-decoration: none; }
+  .btn.ghost { background: var(--soft); color: var(--primary); }
+  .btn:disabled { opacity: .5; }
+
+  section { padding: 64px 0; }
+  .hero { background: var(--soft); }
+  .hero h1 { font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.15; }
+  .hero p { color: var(--muted); margin: 16px 0 24px; }
+  h2 { font-size: clamp(1.6rem, 4vw, 2.3rem); margin-bottom: 28px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 16px; }
+  .card { border: 1px solid var(--line); border-radius: 18px; padding: 22px; background: #fff; }
+  .card small { display: block; color: var(--muted); }
+  .days { color: var(--mint); font-weight: 600; margin-top: 8px; }
+
+  .booking { background: var(--text); color: #fff; border-radius: 24px; padding: clamp(18px, 4vw, 40px); display: grid; grid-template-columns: .8fr 1.2fr; gap: 32px; }
+  .booking .lead { color: #c7d2fe; margin: 12px 0 20px; }
+  .steps-ind { display: flex; gap: 6px; list-style: none; font-size: .8rem; }
+  .steps-ind li { flex: 1; border-top: 5px solid #475569; color: #c7d2fe; }
+  .steps-ind li.on { border-color: #2dd4bf; }
+  .panel { background: #fff; color: var(--text); border-radius: 18px; padding: 20px; min-width: 0; }
+  .panel h3 { margin-bottom: 12px; }
+  .opt-list { display: grid; gap: 8px; }
+  .opt { display: flex; justify-content: space-between; gap: 10px; width: 100%; text-align: left; border: 2px solid var(--line); border-radius: 12px; padding: 10px 14px; background: #fff; cursor: pointer; }
+  .opt small { display: block; color: var(--muted); }
+  .dates { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 12px; }
+  .slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px; }
+  .date, .slot { border: 2px solid var(--line); border-radius: 10px; padding: 6px 0; background: #fff; cursor: pointer; font-size: .8rem; }
+  .date b { display: block; }
+  [aria-pressed="true"] { border-color: var(--primary); background: var(--soft); font-weight: 700; }
+  .date:disabled, .slot:disabled { opacity: .35; cursor: not-allowed; text-decoration: line-through; }
+  .field { display: grid; gap: 4px; font-size: .9rem; color: var(--muted); }
+  .field input, .field textarea { border: 2px solid var(--line); border-radius: 10px; padding: 10px 12px; color: var(--text); }
+  .field [aria-invalid="true"] { border-color: #dc2626; }
+  .err { color: #dc2626; font-size: .85rem; min-height: 1.5em; }
+  .summary { background: var(--soft); border-radius: 12px; padding: 12px 14px; font-size: .9rem; }
+  .summary div { display: flex; justify-content: space-between; gap: 10px; }
+  .summary dt { color: var(--muted); }
+  .code { font-size: 1.5rem; letter-spacing: .15em; text-align: center; border: 2px dashed var(--primary); border-radius: 12px; padding: 8px; margin: 12px 0; }
+  .note { color: var(--muted); font-size: .85rem; }
+  .nav-steps { display: flex; justify-content: space-between; gap: 10px; margin-top: 16px; }
+
+  .faq { max-width: 760px; }
+  details { border-bottom: 1px solid var(--line); padding: 16px 0; }
+  summary { cursor: pointer; font-weight: 600; }
+  details p { color: var(--muted); margin-top: 8px; }
+  footer { background: var(--text); color: #c7d2fe; padding: 32px 0; }
+
+  @media (max-width: 860px) {
+    .booking { grid-template-columns: 1fr; }
+    .menu-btn { display: block; }
+    .nav ul { display: none; position: absolute; top: 64px; left: 0; right: 0; flex-direction: column; gap: 0; background: #fff; border-bottom: 1px solid var(--line); }
+    .nav ul.open { display: flex; }
+    .nav ul a { display: block; padding: 14px 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <nav class="wrap nav" aria-label="Navigasi utama">
+    <a class="logo" href="#">🦷 Senyum Sehat</a>
+    <button class="menu-btn" id="menu-btn" aria-label="Buka menu" aria-expanded="false" aria-controls="menu">☰</button>
+    <ul id="menu">
+      <li><a href="#layanan">Layanan</a></li>
+      <li><a href="#dokter">Dokter</a></li>
+      <li><a href="#reservasi">Reservasi</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <h1>Perawatan gigi yang nyaman untuk seluruh keluarga.</h1>
+      <p>Dokter gigi berpengalaman, harga transparan. Buka Senin–Sabtu 09.00–20.00.</p>
+      <a href="#reservasi" class="btn">Reservasi Sekarang</a>
+    </div>
+  </section>
+
+  <section id="layanan">
+    <div class="wrap">
+      <h2>Layanan &amp; tarif mulai</h2>
+      <div class="grid" id="services"></div>
+    </div>
+  </section>
+
+  <section id="dokter" style="background: var(--soft)">
+    <div class="wrap">
+      <h2>Dokter &amp; jadwal praktik</h2>
+      <div class="grid" id="doctors"></div>
+    </div>
+  </section>
+
+  <section id="reservasi">
+    <div class="wrap booking">
+      <div>
+        <h2>Reservasi online</h2>
+        <p class="lead">Pilih layanan, dokter, dan jadwal, lalu tunjukkan kodenya ke resepsionis.</p>
+        <ol class="steps-ind" id="steps-ind">
+          <li>Layanan</li><li>Dokter</li><li>Jadwal</li><li>Data</li>
+        </ol>
+        <p class="lead">📍 Jl. Contoh No. 88, Semarang (alamat contoh)<br>☎ 0812-0000-0000 (nomor contoh)</p>
+      </div>
+
+      <div class="panel" id="panel">
+        <div class="step" data-step="1">
+          <h3 tabindex="-1">1. Pilih layanan</h3>
+          <div class="opt-list" id="svc-list"></div>
+        </div>
+        <div class="step" data-step="2">
+          <h3 tabindex="-1">2. Pilih dokter</h3>
+          <div class="opt-list" id="doc-list"></div>
+        </div>
+        <div class="step" data-step="3">
+          <h3 tabindex="-1">3. Pilih tanggal &amp; jam</h3>
+          <div class="dates" id="dates" aria-label="Tanggal"></div>
+          <div class="slots" id="slots" aria-label="Jam"></div>
+        </div>
+        <div class="step" data-step="4">
+          <h3 tabindex="-1">4. Data pasien</h3>
+          <label class="field">Nama lengkap
+            <input id="p-name" autocomplete="name" aria-describedby="e-name">
+          </label>
+          <div class="err" id="e-name" aria-live="polite"></div>
+          <label class="field">Nomor WhatsApp
+            <input id="p-phone" type="tel" autocomplete="tel" placeholder="08xxxxxxxxxx" aria-describedby="e-phone">
+          </label>
+          <div class="err" id="e-phone" aria-live="polite"></div>
+          <label class="field">Keluhan (opsional)
+            <textarea id="p-note" rows="2"></textarea>
+          </label>
+          <dl class="summary" id="summary"></dl>
+        </div>
+        <div class="step" data-step="5">
+          <h3 tabindex="-1">🎉 Reservasi berhasil!</h3>
+          <div class="code" id="code"></div>
+          <dl class="summary" id="summary-final"></dl>
+          <p class="note">Datanglah 10 menit lebih awal.</p>
+        </div>
+        <div class="nav-steps">
+          <button class="btn ghost" id="back" type="button">← Kembali</button>
+          <button class="btn" id="next" type="button" disabled>Lanjut →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap faq">
+      <h2>Pertanyaan umum</h2>
+      <details>
+        <summary>Apakah klinik menerima BPJS Kesehatan?</summary>
+        <p>Ya, untuk layanan dasar bila klinik ini terdaftar sebagai faskes pertama Anda.</p>
+      </details>
+      <details>
+        <summary>Apakah scaling terasa sakit?</summary>
+        <p>Umumnya hanya ngilu ringan. Untuk gigi sensitif, dokter dapat memberi gel anestesi.</p>
+      </details>
+      <details>
+        <summary>Bisakah anak-anak dirawat di sini?</summary>
+        <p>Bisa, bersama dokter gigi spesialis anak kami.</p>
+      </details>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">© <span id="yr"></span> Klinik Gigi Senyum Sehat · Situs contoh</div>
+</footer>
+
+<script>
+  const services = [
+    { id: 'periksa', ic: '🔍', name: 'Pemeriksaan & Konsultasi', price: 100000, dur: 30 },
+    { id: 'scaling', ic: '✨', name: 'Scaling Karang Gigi', price: 350000, dur: 45 },
+    { id: 'behel', ic: '😁', name: 'Behel / Ortodonti', price: 6500000, dur: 60 },
+    { id: 'anak', ic: '🧸', name: 'Perawatan Gigi Anak', price: 150000, dur: 30 }
+  ];
+  // days: hari praktik, 0 = Minggu … 6 = Sabtu
+  const doctors = [
+    { id: 'ayu', name: 'drg. Ayu Pratiwi', spec: 'Dokter Gigi Umum', days: [1, 2, 3, 4, 5], skills: ['periksa', 'scaling'] },
+    { id: 'reza', name: 'drg. Reza Mahendra, Sp.Ort', spec: 'Spesialis Ortodonti', days: [2, 4, 6], skills: ['periksa', 'behel'] },
+    { id: 'nadia', name: 'drg. Nadia Putri, Sp.KGA', spec: 'Spesialis Gigi Anak', days: [1, 3, 5, 6], skills: ['periksa', 'anak'] }
+  ];
+  const DAYS = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+  const SLOTS = ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '19:00'];
+  const $ = id => document.getElementById(id);
+  const rp = n => 'Rp' + n.toLocaleString('id-ID');
+  const practice = d => 'Praktik ' + d.days.map(i => DAYS[i]).join(', ');
+
+  // Markup dibuat dari data tetap di atas, bukan dari input pengguna
+  $('services').innerHTML = services.map(s => `
+    <article class="card"><h3>${s.ic} ${s.name}</h3>
+      <small>± ${s.dur} menit</small><p>mulai <b>${rp(s.price)}</b></p></article>`).join('');
+  $('doctors').innerHTML = doctors.map(d => `
+    <article class="card"><h3>${d.name}</h3><small>${d.spec}</small>
+      <p class="days">${practice(d)}</p></article>`).join('');
+
+  const state = { step: 1, svc: null, doc: null, date: null, time: null };
+
+  // Simulasi slot terisi: tetap (deterministik) per tanggal, dokter, dan jam
+  function taken(date, docId, slot) {
+    return (date.getDate() * 31 + docId.length * 7 + SLOTS.indexOf(slot) * 13) % 5 === 0;
+  }
+
+  function choice(cls, key, value, selected, label, disabled = false) {
+    return `<button type="button" class="${cls}" data-${key}="${value}" aria-pressed="${selected}"${disabled ? ' disabled' : ''}>${label}</button>`;
+  }
+
+  function renderStep() {
+    if (state.step === 1) {
+      $('svc-list').innerHTML = services.map(s => choice('opt', 'svc', s.id, state.svc === s.id,
+        `<span>${s.ic} <b>${s.name}</b></span>${rp(s.price)}`)).join('');
+    }
+    if (state.step === 2) {
+      $('doc-list').innerHTML = doctors.filter(d => d.skills.includes(state.svc)).map(d => choice('opt', 'doc', d.id, state.doc === d.id,
+        `<span><b>${d.name}</b><small>${d.spec} · ${practice(d)}</small></span>`)).join('');
+    }
+    if (state.step === 3) renderSchedule();
+    if (state.step === 4) $('summary').innerHTML = summaryHTML();
+  }
+
+  // Tujuh hari ke depan; tanggal di luar hari praktik dokter dinonaktifkan
+  function renderSchedule() {
+    const doc = doctors.find(d => d.id === state.doc);
+    const now = new Date();
+    let html = '';
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+      html += choice('date', 'date', d.getTime(), state.date?.getTime() === d.getTime(),
+        `${DAYS[d.getDay()]}<b>${d.getDate()}</b>`, !doc.days.includes(d.getDay()));
+    }
+    $('dates').innerHTML = html;
+    $('slots').innerHTML = state.date
+      ? SLOTS.map(s => choice('slot', 'time', s, state.time === s, s, taken(state.date, doc.id, s))).join('')
+      : '<p class="note" style="grid-column: 1 / -1">Pilih tanggal dulu. Tanggal dicoret: dokter tidak praktik.</p>';
+  }
+
+  function summaryHTML() {
+    const s = services.find(x => x.id === state.svc);
+    const d = doctors.find(x => x.id === state.doc);
+    const when = state.date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+    return `<div><dt>Layanan</dt><dd>${s.name}</dd></div><div><dt>Dokter</dt><dd>${d.name}</dd></div>
+      <div><dt>Jadwal</dt><dd>${when}, ${state.time}</dd></div><div><dt>Estimasi biaya</dt><dd>${rp(s.price)}</dd></div>`;
+  }
+
+  function go(step, moveFocus = true) {
+    state.step = step;
+    document.querySelectorAll('.step').forEach(el => { el.hidden = +el.dataset.step !== step; });
+    [...$('steps-ind').children].forEach((el, i) => {
+      el.classList.toggle('on', i < step);
+      el.toggleAttribute('aria-current', i === step - 1);
+    });
+    renderStep();
+    $('back').hidden = step === 1 || step === 5;
+    $('next').textContent = step === 4 ? 'Konfirmasi' : step === 5 ? 'Reservasi Baru' : 'Lanjut →';
+    updateNext();
+    if (moveFocus) document.querySelector(`.step[data-step="${step}"] h3`).focus();
+  }
+
+  function updateNext() {
+    const ready = { 1: state.svc, 2: state.doc, 3: state.date && state.time }[state.step];
+    $('next').disabled = state.step < 4 && !ready;
+  }
+
+  // Menerima 08…, 628…, atau +628… lalu 8–11 digit; spasi dan tanda hubung diabaikan
+  function validWA(raw) {
+    return /^(\+62|62|0)8\d{8,11}$/.test(raw.replace(/[\s-]/g, ''));
+  }
+
+  function showError(input, errEl, message) {
+    errEl.textContent = message;
+    input.setAttribute('aria-invalid', message ? 'true' : 'false');
+  }
+
+  $('panel').addEventListener('click', e => {
+    const b = e.target.closest('button[data-svc], button[data-doc], button[data-date], button[data-time]');
+    if (!b) return;
+    const { svc, doc, date, time } = b.dataset;
+    // Mengganti pilihan di langkah awal mengosongkan pilihan sesudahnya
+    if (svc && svc !== state.svc) Object.assign(state, { svc, doc: null, date: null, time: null });
+    if (doc && doc !== state.doc) Object.assign(state, { doc, date: null, time: null });
+    if (date) Object.assign(state, { date: new Date(+date), time: null });
+    if (time) state.time = time;
+    renderStep();
+    updateNext();
+  });
+
+  $('back').addEventListener('click', () => go(state.step - 1));
+
+  $('next').addEventListener('click', () => {
+    if (state.step === 4) {
+      const name = $('p-name').value.trim();
+      showError($('p-name'), $('e-name'), name.length >= 3 ? '' : 'Isi nama lengkap (minimal 3 huruf).');
+      showError($('p-phone'), $('e-phone'), validWA($('p-phone').value) ? '' : 'Nomor WhatsApp tidak valid. Contoh: 081234567890');
+      if ($('e-name').textContent || $('e-phone').textContent) return;
+      $('code').textContent = 'SS-' + Math.random().toString(36).slice(2, 7).toUpperCase();
+      $('summary-final').innerHTML = '<div><dt>Pasien</dt><dd></dd></div>' + summaryHTML();
+      $('summary-final').querySelector('dd').textContent = name;
+      return go(5);
+    }
+    if (state.step === 5) {
+      Object.assign(state, { svc: null, doc: null, date: null, time: null });
+      ['p-name', 'p-phone', 'p-note'].forEach(id => { $(id).value = ''; });
+      return go(1);
+    }
+    go(state.step + 1);
+  });
+
+  $('menu-btn').addEventListener('click', () => {
+    const open = $('menu').classList.toggle('open');
+    $('menu-btn').setAttribute('aria-expanded', open);
+  });
+  $('menu').addEventListener('click', e => {
+    if (e.target.tagName !== 'A') return;
+    $('menu').classList.remove('open');
+    $('menu-btn').setAttribute('aria-expanded', 'false');
+  });
+
+  $('yr').textContent = new Date().getFullYear();
+  go(1, false);
+</script>
+</body>
+</html>

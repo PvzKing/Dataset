@@ -48,7 +48,10 @@ File hanya ditulis jika semua soal lolos verifikasi. Menjalankan ulang `python s
 
 - **Pasang EvalPlus dari commit master.** Versi 0.3.1 di PyPI selalu menilai HumanEval/32 gagal, bahkan untuk solusi resminya. Script berhenti dengan pesan jelas jika versi itu yang terpasang.
 - **Perbandingan dengan model dasar otomatis.** Setiap run juga menjawab soal dengan adapter dimatikan, lalu mencetak selisih skor, soal yang hanya lolos dengan adapter, dan regresinya. Jalankan juga dengan adapter v3 (`--adapter <folder v3>`) untuk perbandingan yang bersih.
-- **Skor adapter bench-lanjut tidak bersih**, sesuai peringatan di atas: model sudah melihat soal dan jawabannya. Hasil ujinya pun tidak naik: 78,0% HumanEval dan 72,0% HumanEval+, dibanding model dasar 82,3% dan 73,8%. Model meniru gaya ringkas jawaban latihan tanpa menguasai isinya. Karena itu kelompok ini tidak dipakai lagi untuk training (lihat `docs/RENCANA_PYTHON.md`).
+- **Skor adapter bench-lanjut tidak bersih**, sesuai peringatan di atas: model sudah melihat soal dan jawabannya. Hasil ujinya pun tidak naik: 78,0% HumanEval dan 72,0% HumanEval+, dibanding model dasar 82,3% dan 73,8%. Model meniru gaya ringkas jawaban latihan tanpa menguasai isinya. Karena itu kelompok ini tidak lagi dilatih sendiri sebagai lanjutan (lihat `docs/RENCANA_PYTHON.md`). V5 memakainya dengan cara lain ([`docs/PANDUAN_V5_A100.md`](../../docs/PANDUAN_V5_A100.md)):
+  - dicampur dengan `own` dalam satu run dari model dasar (`--dataset own+bench`);
+  - adapter epoch 2 dan 3 disimpan, lalu yang dipakai dipilih dari uji yang bersih (MBPP+, IndoPy-dev, Web-eval);
+  - skor HumanEval V5 tetap ditandai terkontaminasi.
 
 ## Lisensi dan perubahan
 
