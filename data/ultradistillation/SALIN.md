@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (14 dari 20)
+# Pertanyaan ultradistillation yang belum dijawab (13 dari 20)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-007 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Buat fungsi Python `jadwal_angsuran(pokok: int, bunga_tahunan: float, tenor: int) -> list[dict]` untuk jadwal cicilan anuitas. `bunga_tahunan` dalam persen (12 berarti 12% per tahun), `tenor` dalam bulan. Aturannya: angsuran tetap = `round()` dari rumus anuitas `P·r / (1 − (1 + r)^−n)` dengan `r` bunga per bulan (atau `P / n` jika bunga 0); bunga tiap bulan = `round(sisa × r)`; pokok bulan itu = angsuran tetap − bunga, kecuali di bulan terakhir pokoknya sama dengan seluruh sisa supaya utang lunas tepat nol. Setiap baris berisi `bulan` (mulai 1), `angsuran`, `bunga`, `pokok`, dan `sisa`, semuanya bilangan bulat rupiah. Lempar `ValueError` jika pokok ≤ 0, bunga negatif, atau tenor ≤ 0.
-````
 
 ## ud-008 · python
 
