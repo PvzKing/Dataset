@@ -1,28 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (10 dari 20)
+# Pertanyaan ultradistillation yang belum dijawab (9 dari 20)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-011 · python_debug
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Fungsi ini seharusnya menghitung rata-rata tertimbang, tapi `rata_rata_tertimbang([80, 90], [1, 3])` menghasilkan 135, padahal seharusnya 87.5.
-
-```python
-def rata_rata_tertimbang(nilai, bobot):
-    total = 0
-    for i in range(1, len(nilai)):
-        total += nilai[i] * bobot[i]
-    return total / len(bobot)
-```
-
-Tolong cari semua kesalahannya, jelaskan, lalu berikan versi yang benar. Fungsi juga harus melempar `ValueError` jika panjang `nilai` dan `bobot` berbeda, daftarnya kosong, atau total bobotnya 0.
-````
 
 ## ud-012 · hukum
 
