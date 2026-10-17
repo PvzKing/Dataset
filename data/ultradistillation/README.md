@@ -41,6 +41,8 @@ Baca bagian ini sebelum mengisi jawaban. Hak cipta atas jawaban AI di Indonesia 
 | Model bobot terbuka yang lisensinya mengizinkan (misalnya keluarga Qwen dengan Apache 2.0, DeepSeek dengan lisensi MIT), dijalankan sendiri | lisensi bobot mengatur, dan umumnya tidak membatasi pemakaian output. Situs chat resmi penyedianya punya syarat layanan sendiri yang tetap harus dibaca |
 | Ditulis atau disunting sendiri oleh pemilik repo | paling aman |
 
+**Status saat ini:** semua jawaban berasal dari *stealth model* yang identitasnya belum diverifikasi dan tanpa lisensi. Tanpa lisensi berarti tidak ada izin tertulis untuk memakai atau membagikan outputnya, dan syarat layanan platform tempat model itu diakses (misalnya OpenRouter atau LMArena) tetap berlaku. Kelompok ini hanya untuk eksperimen pribadi: jangan bagikan `ultradistillation.jsonl` atau model yang dilatih dengannya.
+
 Karena itu setiap jawaban **wajib** mencatat `sumber`, supaya sampel dari sumber tertentu bisa dibuang belakangan jika ternyata tidak boleh dipakai. Jangan mendistribusikan `ultradistillation.jsonl` atau model yang dilatih dengannya sebelum status sumbernya jelas.
 
 Data pribadi: semua pertanyaan memakai data fiktif. Jangan mengganti contoh dengan data klien atau perkara sungguhan (UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi, dan kewajiban kerahasiaan advokat menurut Pasal 19 UU No. 18 Tahun 2003 tentang Advokat).
