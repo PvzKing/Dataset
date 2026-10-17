@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (5 dari 20)
+# Pertanyaan ultradistillation yang belum dijawab (4 dari 20)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-016 · hukum
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: pisahkan fakta, isu hukum, dasar hukum, analisis, dan langkah yang bisa diambil. Sebut nama peraturan, pasal, dan ayat hanya jika yakin; jika tidak yakin nomornya, katakan demikian. Akhiri dengan satu kalimat bahwa ini informasi umum, bukan nasihat hukum untuk kasus konkret.
-
----
-
-Buatkan draf surat somasi pertama dari kuasa hukum kepada kontraktor renovasi rumah yang berhenti bekerja setelah menerima uang muka 50% (Rp60.000.000) dan tidak bisa dihubungi selama 5 minggu. Ada perjanjian tertulis yang menyebut pekerjaan selesai dalam 3 bulan. Pakai nama dan alamat fiktif, dan beri tenggat 7 hari.
-````
 
 ## ud-017 · matematika
 
