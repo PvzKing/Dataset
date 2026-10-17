@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (7 dari 20)
+# Pertanyaan ultradistillation yang belum dijawab (6 dari 20)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-014 · hukum
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: pisahkan fakta, isu hukum, dasar hukum, analisis, dan langkah yang bisa diambil. Sebut nama peraturan, pasal, dan ayat hanya jika yakin; jika tidak yakin nomornya, katakan demikian. Akhiri dengan satu kalimat bahwa ini informasi umum, bukan nasihat hukum untuk kasus konkret.
-
----
-
-Aplikasi pinjaman online menagih utang adik saya dengan cara mengirim pesan ke semua kontak di HP-nya, termasuk atasan di kantornya, disertai kata-kata yang mempermalukan. Pelanggaran apa saja yang terjadi, dan ke mana kami bisa melapor?
-````
 
 ## ud-015 · hukum
 
