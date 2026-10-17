@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (13 dari 20)
+# Pertanyaan ultradistillation yang belum dijawab (12 dari 20)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-008 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Tulis fungsi `normalisasi_npwp(teks: str) -> str | None` di Python. NPWP lama punya 15 digit dan harus dikembalikan dalam format `99.999.999.9-999.999`. NPWP 16 digit (berbasis NIK) dikembalikan sebagai 16 digit tanpa pemisah. Masukan boleh memakai titik, tanda minus, dan spasi sebagai pemisah, di posisi mana pun. Jika ada karakter lain, atau jumlah digitnya bukan 15 atau 16, kembalikan `None`.
-````
 
 ## ud-009 · python
 
