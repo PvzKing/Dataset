@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (12 dari 20)
+# Pertanyaan ultradistillation yang belum dijawab (11 dari 20)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-009 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Saya butuh fungsi Python `pecah_tagihan(total: int, porsi: dict[str, float]) -> dict[str, int]` untuk membagi tagihan dalam rupiah secara proporsional. Contohnya `porsi = {"Budi": 2, "Ani": 1}` berarti Budi menanggung dua kali bagian Ani. Hasilnya bilangan bulat dan jumlahnya harus tepat sama dengan `total`. Caranya: bulatkan ke bawah dulu, lalu sisa rupiahnya dibagikan satu per satu ke orang dengan pecahan desimal terbesar; jika pecahannya sama, urutkan menurut nama. Lempar `ValueError` jika total negatif, `porsi` kosong, atau ada porsi yang ≤ 0.
-````
 
 ## ud-010 · python
 
