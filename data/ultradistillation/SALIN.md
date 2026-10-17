@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (16 dari 20)
+# Pertanyaan ultradistillation yang belum dijawab (15 dari 20)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-005 · web
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: satu kalimat pembuka, lalu satu dokumen HTML lengkap dalam satu blok ```html. CSS dan JavaScript ada di dalam file itu, tanpa library, font, gambar, atau file dari luar. Halaman harus responsif sampai lebar 375 px, tanpa error JavaScript, dan akses localStorage dibungkus try/catch. Setelah kode, tulis bagian **Cek kebutuhan** berupa daftar `- **<hal yang diminta>** → <bagian kode yang memenuhinya>` untuk setiap permintaan, lalu **Catatan teknis** singkat.
-
----
-
-Buat dashboard pemantauan sensor gudang dalam satu file HTML dengan data simulasi: suhu dan kelembapan dari 3 ruangan yang diperbarui setiap detik, grafik garis real-time 60 detik terakhir dengan canvas, batas aman yang bisa diatur, kartu yang berubah merah jika melewati batas, log peringatan, dan tombol jeda/lanjut.
-````
 
 ## ud-006 · python
 
