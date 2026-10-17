@@ -7,6 +7,7 @@ Jawaban dari AI lain untuk pertanyaan di `pertanyaan.jsonl`. Jawabannya dikirim 
 | `pertanyaan.jsonl` | pertanyaan: `id`, `kategori`, `prompt`; soal Python juga punya `entry` dan `tes` tersembunyi, soal website punya `simpan` |
 | `instruksi-awal.md` | format jawaban yang diminta ke AI. Ditempel saat menyalin, tetapi tidak disimpan di dataset |
 | `SALIN.md` | pertanyaan yang belum dijawab, sudah digabung dengan instruksi awal (dibuat oleh `salin`) |
+| `jawaban/asli/<id>.md` | versi asli jawaban yang disunting Claude; suntingannya tercatat di `disunting` dan di `source` hasil |
 | `jawaban/<id>.md` | jawaban apa adanya, dengan `sumber`, `tanggal`, dan untuk hukum `diperiksa` di bagian depan berkas |
 | `ultradistillation.jsonl` | hasil `bangun`: hanya jawaban yang lolos pemeriksaan |
 

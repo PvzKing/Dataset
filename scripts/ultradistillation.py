@@ -18,6 +18,7 @@ Pemakaian:
     python scripts/ultradistillation.py salin
     python scripts/ultradistillation.py simpan ud-001 --sumber "Nama AI versi X" < jawaban.md
     python scripts/ultradistillation.py sumber ud-001 "Nama AI versi X"   # sumber yang belum disebut saat dikirim
+    python scripts/ultradistillation.py sunting ud-003 --cari "'tangan'" --ganti "'tenda'" --catatan "alasan"
     python scripts/ultradistillation.py tolak ud-003 "alasan"            # cacat saat ditinjau: tetap tersimpan, tidak dipakai
     python scripts/ultradistillation.py uji-manual ud-003 "catatan"      # sudah diuji tangan di browser
     python scripts/ultradistillation.py periksa ud-012            # tandai jawaban hukum sudah diperiksa pemilik
@@ -136,6 +137,25 @@ def ubah_meta(qid, **nilai):
     tulis_jawaban(qid, meta, isi)
 
 
+def cmd_sunting(args):
+    """Perbaikan kecil oleh Claude: ganti teks persis, simpan versi asli di jawaban/asli/, dan catat di metadata."""
+    j = baca_jawaban(args.id)
+    if j is None:
+        sys.exit(f"{args.id} belum punya jawaban")
+    meta, isi = j
+    n = isi.count(args.cari)
+    if n != 1 and not args.semua:
+        sys.exit(f"teks yang dicari muncul {n} kali; harus tepat 1 (atau pakai --semua)")
+    asli = JAWABAN / "asli" / f"{args.id}.md"
+    if not asli.is_file():
+        asli.parent.mkdir(exist_ok=True)
+        asli.write_text(isi + "\n", encoding="utf-8")
+    meta.pop("ditolak", None)
+    meta["disunting"] = "; ".join(filter(None, [meta.get("disunting"), f"{date.today().isoformat()} Claude: {args.catatan}"]))
+    tulis_jawaban(args.id, meta, isi.replace(args.cari, args.ganti))
+    print(f"{args.id} disunting ({n} tempat); versi asli di {asli}")
+
+
 def cmd_tolak(args):
     ubah_meta(args.id, ditolak=args.alasan)
     print(f"{args.id} ditolak: {args.alasan}")
@@ -226,7 +246,8 @@ def cmd_bangun(args):
         if not ok:
             continue
         meta, isi = baca_jawaban(qid)
-        rows.append({"id": qid, "category": f"ud_{kat}", "source": f"ultradistillation: {meta['sumber']}",
+        sumber = meta["sumber"] + (f" · disunting: {meta['disunting']}" if meta.get("disunting") else "")
+        rows.append({"id": qid, "category": f"ud_{kat}", "source": f"ultradistillation: {sumber}",
                      "messages": [{"role": "user", "content": qs[qid]["prompt"]},
                                   {"role": "assistant", "content": isi}]})
     HASIL.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
@@ -247,6 +268,12 @@ def main(argv=None):
     s = sub.add_parser("sumber", help="isi atau ganti sumber jawaban yang sudah tersimpan")
     s.add_argument("id")
     s.add_argument("sumber")
+    s = sub.add_parser("sunting", help="perbaikan kecil oleh Claude; versi asli disimpan di jawaban/asli/")
+    s.add_argument("id")
+    s.add_argument("--cari", required=True)
+    s.add_argument("--ganti", required=True)
+    s.add_argument("--catatan", required=True)
+    s.add_argument("--semua", action="store_true", help="ganti semua kemunculan")
     s = sub.add_parser("tolak", help="tolak jawaban yang cacat saat ditinjau (tetap tersimpan, tidak dipakai)")
     s.add_argument("id")
     s.add_argument("alasan")
@@ -261,7 +288,7 @@ def main(argv=None):
         s.add_argument("--tanpa-mbppplus", action="store_true", help="jangan unduh MBPP+ untuk cek kontaminasi")
         s.add_argument("--chromium", help="path Chromium jika bukan bawaan Playwright")
     args = p.parse_args(argv)
-    {"salin": cmd_salin, "simpan": cmd_simpan, "sumber": cmd_sumber, "tolak": cmd_tolak, "uji-manual": cmd_uji_manual,
+    {"salin": cmd_salin, "simpan": cmd_simpan, "sumber": cmd_sumber, "sunting": cmd_sunting, "tolak": cmd_tolak, "uji-manual": cmd_uji_manual,
      "periksa": cmd_periksa, "cek": cmd_cek, "bangun": cmd_bangun}[args.perintah](args)
 
 
