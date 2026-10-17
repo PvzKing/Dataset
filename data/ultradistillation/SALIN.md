@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (4 dari 20)
+# Pertanyaan ultradistillation yang belum dijawab (3 dari 20)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-017 · matematika
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Berapa peluang minimal dua orang di sebuah kelas berisi 30 siswa berulang tahun di hari yang sama (anggap satu tahun 365 hari dan setiap hari sama mungkinnya)? Jelaskan cara menghitungnya langkah demi langkah, lalu cari berapa orang minimal supaya peluangnya lebih dari 50%. Kenapa hasilnya terasa tidak masuk akal bagi kebanyakan orang?
-````
 
 ## ud-018 · machine_learning
 
