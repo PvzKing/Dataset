@@ -8,7 +8,7 @@ Alur:
   4. `cek`     memeriksa setiap jawaban:
                  python, python_debug  kode lulus tes tersembunyi di pertanyaan.jsonl (pengambil kode sama dengan IndoPy)
                  web                   lolos pemeriksaan Chromium yang sama dengan sulingan V7 dan punya Cek kebutuhan
-                 hukum                 wajib ditandai `diperiksa: ya` oleh pemilik (pasal dan ayat tidak bisa dicek otomatis)
+                 hukum                 wajib ditandai `diperiksa: ya` oleh pemilik, atau oleh Claude jika pemilik memintanya (pasal dan ayat tidak bisa dicek otomatis)
                  semua                 tidak kosong, tanpa tag <think>, tanpa basa-basi "sebagai AI", dan tidak punya
                                        13-gram yang sama dengan soal uji (IndoPy, Web-eval, HumanEval+, MBPP+)
   5. `bangun`  menulis data/ultradistillation/ultradistillation.jsonl dari jawaban yang lolos, dalam format train.jsonl.
@@ -173,8 +173,11 @@ def cmd_periksa(args):
     meta, isi = j
     meta["diperiksa"] = "ya"
     meta["diperiksa_tanggal"] = date.today().isoformat()
+    meta["diperiksa_oleh"] = args.oleh
+    if args.catatan:
+        meta["diperiksa_catatan"] = args.catatan
     tulis_jawaban(args.id, meta, isi)
-    print(f"{args.id} ditandai sudah diperiksa pemilik")
+    print(f"{args.id} ditandai sudah diperiksa ({args.oleh})")
 
 
 def periksa_semua(args):
@@ -247,6 +250,8 @@ def cmd_bangun(args):
             continue
         meta, isi = baca_jawaban(qid)
         sumber = meta["sumber"] + (f" · disunting: {meta['disunting']}" if meta.get("disunting") else "")
+        if meta.get("diperiksa_oleh", "pemilik") != "pemilik":
+            sumber += f" · diperiksa: {meta['diperiksa_oleh']}"
         rows.append({"id": qid, "category": f"ud_{kat}", "source": f"ultradistillation: {sumber}",
                      "messages": [{"role": "user", "content": qs[qid]["prompt"]},
                                   {"role": "assistant", "content": isi}]})
@@ -280,8 +285,10 @@ def main(argv=None):
     s = sub.add_parser("uji-manual", help="catat uji tangan di browser (melewati heuristik localStorage)")
     s.add_argument("id")
     s.add_argument("catatan")
-    s = sub.add_parser("periksa", help="tandai jawaban hukum sudah diperiksa pemilik")
+    s = sub.add_parser("periksa", help="tandai jawaban hukum sudah diperiksa")
     s.add_argument("id")
+    s.add_argument("--oleh", default="pemilik", help='siapa yang memeriksa, mis. "Claude (riset web) atas permintaan pemilik"')
+    s.add_argument("--catatan", help="sumber atau temuan pemeriksaan")
     for nama in ("cek", "bangun"):
         s = sub.add_parser(nama)
         s.add_argument("--tanpa-browser", action="store_true", help="lewati pemeriksaan Chromium (jawaban web tidak lolos)")
