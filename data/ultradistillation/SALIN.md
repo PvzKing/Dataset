@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (15 dari 20)
+# Pertanyaan ultradistillation yang belum dijawab (14 dari 20)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-006 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Tulis fungsi Python `klasemen(hasil: list[str]) -> list[tuple[str, int, int, int]]` untuk menyusun klasemen liga sepak bola. Setiap string berformat `"Tim A 2-1 Tim B"`: nama tim boleh mengandung spasi, dan skor ditulis dengan tanda minus di antara dua angka. Menang dapat 3 poin, seri 1, kalah 0. Kembalikan daftar `(tim, main, selisih_gol, poin)` yang diurutkan dari poin terbanyak; jika poin sama, selisih gol lebih besar di atas; jika masih sama, jumlah gol memasukkan lebih banyak di atas; jika masih sama, nama tim menurut abjad. String yang formatnya salah membuat fungsi melempar `ValueError`.
-````
 
 ## ud-007 · python
 
