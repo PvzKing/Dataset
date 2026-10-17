@@ -18,6 +18,8 @@ Pemakaian:
     python scripts/ultradistillation.py salin
     python scripts/ultradistillation.py simpan ud-001 --sumber "Nama AI versi X" < jawaban.md
     python scripts/ultradistillation.py sumber ud-001 "Nama AI versi X"   # sumber yang belum disebut saat dikirim
+    python scripts/ultradistillation.py tolak ud-003 "alasan"            # cacat saat ditinjau: tetap tersimpan, tidak dipakai
+    python scripts/ultradistillation.py uji-manual ud-003 "catatan"      # sudah diuji tangan di browser
     python scripts/ultradistillation.py periksa ud-012            # tandai jawaban hukum sudah diperiksa pemilik
     python scripts/ultradistillation.py cek [--tanpa-browser] [--tanpa-mbppplus]
     python scripts/ultradistillation.py bangun
@@ -125,6 +127,25 @@ def cmd_sumber(args):
     print(f"sumber {args.id}: {args.sumber}")
 
 
+def ubah_meta(qid, **nilai):
+    j = baca_jawaban(qid)
+    if j is None:
+        sys.exit(f"{qid} belum punya jawaban")
+    meta, isi = j
+    meta.update(nilai)
+    tulis_jawaban(qid, meta, isi)
+
+
+def cmd_tolak(args):
+    ubah_meta(args.id, ditolak=args.alasan)
+    print(f"{args.id} ditolak: {args.alasan}")
+
+
+def cmd_uji_manual(args):
+    ubah_meta(args.id, uji_manual=f"{date.today().isoformat()}: {args.catatan}")
+    print(f"{args.id}: uji manual dicatat")
+
+
 def cmd_periksa(args):
     j = baca_jawaban(args.id)
     if j is None:
@@ -156,7 +177,9 @@ def periksa_semua(args):
             q = qs[qid]
             kand = {"text": isi, "selesai": True}
             alasan = None
-            if meta.get("sumber", "").lower() in ("", BELUM):
+            if meta.get("ditolak"):
+                alasan = "ditolak saat ditinjau: " + meta["ditolak"]
+            elif meta.get("sumber", "").lower() in ("", BELUM):
                 alasan = "sumber jawaban belum dicatat"
             elif "<think>" in isi or "</think>" in isi:
                 alasan = "berisi tag think"
@@ -171,7 +194,10 @@ def periksa_semua(args):
                 if browser is None:
                     alasan = "pemeriksaan Chromium dilewati (--tanpa-browser)"
                 else:
-                    ok, why, _ = sulingan.check_web({**q, "simpan": q.get("simpan")}, kand, browser, situs)
+                    # localStorage yang baru terisi setelah satu permainan selesai tidak terdeteksi pemeriksaan umum;
+                    # uji-manual mencatat bahwa penyimpanannya sudah diuji tangan.
+                    simpan = q.get("simpan") and not meta.get("uji_manual")
+                    ok, why, _ = sulingan.check_web({**q, "simpan": simpan}, kand, browser, situs)
                     alasan = None if ok else why
             elif q["kategori"] == "hukum" and meta.get("diperiksa") != "ya":
                 alasan = "menunggu pemeriksaan pemilik (pasal, ayat, dan nomor peraturan)"
@@ -221,6 +247,12 @@ def main(argv=None):
     s = sub.add_parser("sumber", help="isi atau ganti sumber jawaban yang sudah tersimpan")
     s.add_argument("id")
     s.add_argument("sumber")
+    s = sub.add_parser("tolak", help="tolak jawaban yang cacat saat ditinjau (tetap tersimpan, tidak dipakai)")
+    s.add_argument("id")
+    s.add_argument("alasan")
+    s = sub.add_parser("uji-manual", help="catat uji tangan di browser (melewati heuristik localStorage)")
+    s.add_argument("id")
+    s.add_argument("catatan")
     s = sub.add_parser("periksa", help="tandai jawaban hukum sudah diperiksa pemilik")
     s.add_argument("id")
     for nama in ("cek", "bangun"):
@@ -229,7 +261,8 @@ def main(argv=None):
         s.add_argument("--tanpa-mbppplus", action="store_true", help="jangan unduh MBPP+ untuk cek kontaminasi")
         s.add_argument("--chromium", help="path Chromium jika bukan bawaan Playwright")
     args = p.parse_args(argv)
-    {"salin": cmd_salin, "simpan": cmd_simpan, "sumber": cmd_sumber, "periksa": cmd_periksa, "cek": cmd_cek, "bangun": cmd_bangun}[args.perintah](args)
+    {"salin": cmd_salin, "simpan": cmd_simpan, "sumber": cmd_sumber, "tolak": cmd_tolak, "uji-manual": cmd_uji_manual,
+     "periksa": cmd_periksa, "cek": cmd_cek, "bangun": cmd_bangun}[args.perintah](args)
 
 
 if __name__ == "__main__":
