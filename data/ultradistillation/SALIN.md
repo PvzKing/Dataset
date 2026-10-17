@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (9 dari 20)
+# Pertanyaan ultradistillation yang belum dijawab (8 dari 20)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-012 · hukum
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: pisahkan fakta, isu hukum, dasar hukum, analisis, dan langkah yang bisa diambil. Sebut nama peraturan, pasal, dan ayat hanya jika yakin; jika tidak yakin nomornya, katakan demikian. Akhiri dengan satu kalimat bahwa ini informasi umum, bukan nasihat hukum untuk kasus konkret.
-
----
-
-Saya menyewakan ruko. Penyewa sudah 3 bulan tidak bayar sewa, padahal di perjanjian tertulis sewa dibayar tiap tanggal 5. Saya kesal dan ingin langsung mengganti gembok ruko dan mengeluarkan barang-barangnya. Boleh tidak secara hukum? Kalau tidak, langkah apa yang benar?
-````
 
 ## ud-013 · hukum
 
