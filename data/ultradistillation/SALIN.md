@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (20 dari 20)
+# Pertanyaan ultradistillation yang belum dijawab (19 dari 20)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-001 · web
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: satu kalimat pembuka, lalu satu dokumen HTML lengkap dalam satu blok ```html. CSS dan JavaScript ada di dalam file itu, tanpa library, font, gambar, atau file dari luar. Halaman harus responsif sampai lebar 375 px, tanpa error JavaScript, dan akses localStorage dibungkus try/catch. Setelah kode, tulis bagian **Cek kebutuhan** berupa daftar `- **<hal yang diminta>** → <bagian kode yang memenuhinya>` untuk setiap permintaan, lalu **Catatan teknis** singkat.
-
----
-
-Buatkan aplikasi buku utang-piutang untuk warung kelontong dalam satu file HTML. Pemilik bisa menambah pelanggan, mencatat utang baru dan pembayaran per pelanggan dengan tanggal dan keterangan, melihat saldo utang tiap pelanggan dan total piutang warung, mencari pelanggan, dan mengekspor riwayat ke CSV. Data tersimpan di localStorage dan tetap ada setelah halaman dimuat ulang.
-````
 
 ## ud-002 · web
 

@@ -119,9 +119,16 @@ def pick(seed, key, items):
 
 
 def berulang(text):
-    """Jawaban yang mengulang baris yang sama berkali-kali (tanda degenerasi)."""
-    lines = [l.strip() for l in text.splitlines() if len(l.strip()) > 20]
-    return bool(lines) and max(lines.count(l) for l in set(lines)) >= 6
+    """Tanda degenerasi: satu baris, atau blok 2-3 baris, berulang minimal 4 kali berturut-turut. Baris yang sama di
+    tempat berbeda (misalnya enam <label class="field"> di satu form) wajar dan tidak dihitung."""
+    lines = [l.strip() for l in text.splitlines() if len(l.strip()) > 10]
+    for period in (1, 2, 3):
+        run = 0
+        for i in range(period, len(lines)):
+            run = run + 1 if lines[i] == lines[i - period] else 0
+            if run >= 3 * period:  # pola sepanjang `period` baris muncul 4 kali berturut-turut
+                return True
+    return False
 
 
 # ---------------------------------------------------------------- soal

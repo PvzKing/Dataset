@@ -17,6 +17,7 @@ Alur:
 Pemakaian:
     python scripts/ultradistillation.py salin
     python scripts/ultradistillation.py simpan ud-001 --sumber "Nama AI versi X" < jawaban.md
+    python scripts/ultradistillation.py sumber ud-001 "Nama AI versi X"   # sumber yang belum disebut saat dikirim
     python scripts/ultradistillation.py periksa ud-012            # tandai jawaban hukum sudah diperiksa pemilik
     python scripts/ultradistillation.py cek [--tanpa-browser] [--tanpa-mbppplus]
     python scripts/ultradistillation.py bangun
@@ -37,6 +38,7 @@ PERTANYAAN = FOLDER / "pertanyaan.jsonl"
 JAWABAN = FOLDER / "jawaban"
 HASIL = FOLDER / "ultradistillation.jsonl"
 INSTRUKSI = FOLDER / "instruksi-awal.md"
+BELUM = "belum disebut"  # jawaban sudah dikirim, tetapi nama AI-nya belum; tidak lolos sampai diisi dengan `sumber`
 BASA_BASI = re.compile(r"\b(sebagai (sebuah )?(ai|model bahasa|asisten ai)|as an ai|as a language model|"
                        r"saya adalah (sebuah )?(ai|model bahasa)|i am an ai)\b", re.I)
 
@@ -113,6 +115,16 @@ def cmd_simpan(args):
     print(f"tersimpan: {JAWABAN / (args.id + '.md')} ({len(isi)} karakter, sumber {args.sumber})")
 
 
+def cmd_sumber(args):
+    j = baca_jawaban(args.id)
+    if j is None:
+        sys.exit(f"{args.id} belum punya jawaban")
+    meta, isi = j
+    meta["sumber"] = args.sumber
+    tulis_jawaban(args.id, meta, isi)
+    print(f"sumber {args.id}: {args.sumber}")
+
+
 def cmd_periksa(args):
     j = baca_jawaban(args.id)
     if j is None:
@@ -144,7 +156,7 @@ def periksa_semua(args):
             q = qs[qid]
             kand = {"text": isi, "selesai": True}
             alasan = None
-            if not meta.get("sumber"):
+            if meta.get("sumber", "").lower() in ("", BELUM):
                 alasan = "sumber jawaban belum dicatat"
             elif "<think>" in isi or "</think>" in isi:
                 alasan = "berisi tag think"
@@ -206,6 +218,9 @@ def main(argv=None):
     s.add_argument("--sumber", required=True, help="nama AI dan versinya, misalnya \"DeepSeek-V3.2 (bobot terbuka)\"")
     s.add_argument("--berkas")
     s.add_argument("--timpa", action="store_true")
+    s = sub.add_parser("sumber", help="isi atau ganti sumber jawaban yang sudah tersimpan")
+    s.add_argument("id")
+    s.add_argument("sumber")
     s = sub.add_parser("periksa", help="tandai jawaban hukum sudah diperiksa pemilik")
     s.add_argument("id")
     for nama in ("cek", "bangun"):
@@ -214,7 +229,7 @@ def main(argv=None):
         s.add_argument("--tanpa-mbppplus", action="store_true", help="jangan unduh MBPP+ untuk cek kontaminasi")
         s.add_argument("--chromium", help="path Chromium jika bukan bawaan Playwright")
     args = p.parse_args(argv)
-    {"salin": cmd_salin, "simpan": cmd_simpan, "periksa": cmd_periksa, "cek": cmd_cek, "bangun": cmd_bangun}[args.perintah](args)
+    {"salin": cmd_salin, "simpan": cmd_simpan, "sumber": cmd_sumber, "periksa": cmd_periksa, "cek": cmd_cek, "bangun": cmd_bangun}[args.perintah](args)
 
 
 if __name__ == "__main__":

@@ -13,6 +13,7 @@ Jawaban dari AI lain untuk pertanyaan di `pertanyaan.jsonl`. Jawabannya dikirim 
 ```bash
 python scripts/ultradistillation.py salin                 # tulis SALIN.md
 python scripts/ultradistillation.py simpan ud-001 --sumber "Nama AI versi X" < jawaban.md
+python scripts/ultradistillation.py sumber ud-001 "Nama AI versi X"   # jika sumber belum disebut saat dikirim
 python scripts/ultradistillation.py periksa ud-012         # jawaban hukum sudah diperiksa pemilik
 python scripts/ultradistillation.py bangun                 # cek semua jawaban lalu tulis ultradistillation.jsonl
 ```
