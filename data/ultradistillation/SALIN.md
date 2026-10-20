@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (30 dari 50)
+# Pertanyaan ultradistillation yang belum dijawab (29 dari 50)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-021 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Buat fungsi Python `terbilang(n: int) -> str` yang mengubah bilangan bulat menjadi kata-kata bahasa Indonesia, misalnya untuk kuitansi. Contohnya, `terbilang(2_150_000)` menghasilkan `"dua juta seratus lima puluh ribu"`. Aturannya: `0` menjadi `"nol"`, bilangan negatif diawali `"minus"`, 10 dan 11 menjadi `"sepuluh"` dan `"sebelas"`, 100 menjadi `"seratus"`, dan 1.000 menjadi `"seribu"` (tetapi 101.000 menjadi `"seratus satu ribu"`). Satuan besar yang dipakai adalah ribu, juta, miliar, dan triliun. Semua huruf kecil dengan satu spasi antarkata. Lempar `ValueError` jika nilai mutlaknya 10^15 atau lebih.
-````
 
 ## ud-022 · python
 
