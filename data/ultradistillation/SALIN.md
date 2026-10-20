@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (2 dari 20)
+# Pertanyaan ultradistillation yang belum dijawab (1 dari 20)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-019 · python_konsep
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Jelaskan cara kerja manajemen memori di Python: reference counting, garbage collector generasional, dan kapan memory leak tetap bisa terjadi walaupun ada garbage collector. Sertakan contoh kode singkat untuk menunjukkan referensi melingkar dan cara memeriksanya dengan modul `gc` dan `weakref`.
-````
 
 ## ud-020 · database
 
