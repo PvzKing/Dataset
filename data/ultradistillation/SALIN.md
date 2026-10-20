@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (29 dari 50)
+# Pertanyaan ultradistillation yang belum dijawab (28 dari 50)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-022 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Saya perlu fungsi `info_nik(nik: str, tahun_acuan: int) -> dict | None` untuk membaca NIK (Nomor Induk Kependudukan) 16 digit. Strukturnya: 6 digit kode wilayah (provinsi, kabupaten/kota, dan kecamatan, masing-masing 2 digit), 6 digit tanggal lahir `DDMMYY`, lalu 4 digit nomor urut. Untuk perempuan, tanggal lahirnya ditambah 40 (lahir tanggal 5 ditulis 45). Tahun dua digit dibaca sebagai 20YY jika hasilnya tidak melewati `tahun_acuan`, selain itu 19YY. Kembalikan dict berisi `kode_wilayah` (string 6 digit), `tanggal_lahir` (`datetime.date`), `jenis_kelamin` (`"L"` atau `"P"`), dan `nomor_urut` (string 4 digit). Kembalikan `None` jika panjangnya bukan 16, ada karakter selain angka 0–9, salah satu bagian kode wilayah bernilai `00`, nomor urutnya `0000`, atau tanggalnya tidak ada di kalender.
-````
 
 ## ud-023 · python
 
