@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (23 dari 50)
+# Pertanyaan ultradistillation yang belum dijawab (22 dari 50)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-028 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Tulis fungsi `stasiun_terdekat(lokasi: tuple[float, float], stasiun: dict[str, tuple[float, float]], k: int) -> list[tuple[str, float]]` untuk mencari `k` stasiun KRL terdekat dari posisi pengguna. Koordinat berupa (lintang, bujur) dalam derajat. Hitung jarak dengan rumus haversine dan jari-jari bumi 6.371 km, bulatkan ke 2 angka desimal, lalu urutkan dari yang terdekat; jika jaraknya sama, urutkan menurut nama. Jika `k` lebih besar dari jumlah stasiun, kembalikan semuanya. Lempar `ValueError` jika `k` kurang dari 1.
-````
 
 ## ud-029 · python
 
