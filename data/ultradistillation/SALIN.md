@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (15 dari 50)
+# Pertanyaan ultradistillation yang belum dijawab (14 dari 50)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-036 · web
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: satu kalimat pembuka, lalu satu dokumen HTML lengkap dalam satu blok ```html. CSS dan JavaScript ada di dalam file itu, tanpa library, font, gambar, atau file dari luar. Halaman harus responsif sampai lebar 375 px, tanpa error JavaScript, dan akses localStorage dibungkus try/catch. Setelah kode, tulis bagian **Cek kebutuhan** berupa daftar `- **<hal yang diminta>** → <bagian kode yang memenuhinya>` untuk setiap permintaan, lalu **Catatan teknis** singkat.
-
----
-
-Buatkan pembuat invoice untuk usaha jasa dalam satu file HTML. Isiannya: data penjual dan pembeli, nomor invoice otomatis berformat INV/tahun/bulan/urut, tanggal dan jatuh tempo, daftar item (deskripsi, jumlah, harga satuan), diskon, dan persentase pajak yang bisa diubah. Hitung subtotal, pajak, dan total dalam format rupiah, tampilkan total dalam huruf (terbilang), dan sediakan tampilan cetak yang rapi di kertas A4 lewat `window.print()`. Riwayat invoice tersimpan di localStorage dan bisa dibuka kembali.
-````
 
 ## ud-037 · web
 
