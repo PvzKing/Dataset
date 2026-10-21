@@ -120,8 +120,9 @@ def pick(seed, key, items):
 
 def berulang(text):
     """Tanda degenerasi: satu baris, atau blok 2-3 baris, berulang minimal 4 kali berturut-turut. Baris yang sama di
-    tempat berbeda (misalnya enam <label class="field"> di satu form) wajar dan tidak dihitung."""
-    lines = [l.strip() for l in text.splitlines() if len(l.strip()) > 10]
+    tempat berbeda (misalnya enam <label class="field"> di satu form) wajar dan tidak dihitung, begitu juga baris tanpa
+    kata (misalnya baris papan catur `"........" +` di literal posisi awal)."""
+    lines = [l.strip() for l in text.splitlines() if len(l.strip()) > 10 and sum(ch.isalnum() for ch in l) >= 4]
     for period in (1, 2, 3):
         run = 0
         for i in range(period, len(lines)):
