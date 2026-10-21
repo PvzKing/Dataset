@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (12 dari 50)
+# Pertanyaan ultradistillation yang belum dijawab (11 dari 50)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-039 · web
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: satu kalimat pembuka, lalu satu dokumen HTML lengkap dalam satu blok ```html. CSS dan JavaScript ada di dalam file itu, tanpa library, font, gambar, atau file dari luar. Halaman harus responsif sampai lebar 375 px, tanpa error JavaScript, dan akses localStorage dibungkus try/catch. Setelah kode, tulis bagian **Cek kebutuhan** berupa daftar `- **<hal yang diminta>** → <bagian kode yang memenuhinya>` untuk setiap permintaan, lalu **Catatan teknis** singkat.
-
----
-
-Buat simulasi tata surya beranimasi dalam satu file HTML pakai canvas: matahari dan 8 planet mengorbit dengan kecepatan relatif sesuai periode orbitnya (skala jarak boleh tidak nyata, tetapi urutannya benar), bulan yang mengitari bumi, dan cincin Saturnus. Sediakan slider kecepatan waktu, tombol jeda, zoom dengan scroll atau pinch, dan klik planet untuk menampilkan info singkatnya: diameter, jarak rata-rata ke matahari, dan periode orbit.
-````
 
 ## ud-040 · web
 
