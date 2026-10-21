@@ -208,7 +208,7 @@ def periksa_semua(args):
                 alasan = "berisi tag think"
             elif BASA_BASI.search(isi):
                 alasan = f"basa-basi identitas AI: \"{BASA_BASI.search(isi)[0]}\""
-            elif hits := {i for g in grams(q["prompt"] + "\n" + isi) for i in index.get(g, ())}:
+            elif hits := {i for g in grams(q["prompt"] + "\n" + isi) if not sulingan.umum(g) for i in index.get(g, ())}:
                 alasan = "tumpang tindih dengan soal uji: " + ", ".join(sorted(hits)[:3])
             elif q["kategori"] in ("python", "python_debug"):
                 ok, why = sulingan.check_python({"entry": q["entry"], "tests": q["tes"]}, kand, 10)

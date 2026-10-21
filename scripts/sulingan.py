@@ -444,6 +444,19 @@ def run_source(args, kind):
             playwright.stop()
 
 
+KALENDER = set("januari februari maret april mei juni juli agustus september oktober november desember "
+               "jan feb mar apr jun jul agu agt sep okt nov des senin selasa rabu kamis jumat sabtu minggu "
+               "january february march may june july august october december monday tuesday wednesday "
+               "thursday friday saturday sunday".split())
+
+
+def umum(gram):
+    """13-gram yang hampir seluruhnya nama bulan atau hari (misalnya `bulan januari ... desember`) ada di banyak
+    teks dan tidak membocorkan isi soal uji, jadi tidak dihitung sebagai tumpang tindih."""
+    words = gram.split()
+    return sum(w in KALENDER for w in words) >= len(words) - 1
+
+
 def contamination_index(demo):
     """13-gram soal uji: MBPP+, HumanEval+ (tanpa teks template EvalPlus), IndoPy, dan Web-eval."""
     sys.path.insert(0, str(ROOT / "scripts"))
@@ -485,7 +498,7 @@ def combine(args):
             sample = {"id": f"sul-{'py' if kind == 'python' else 'web'}-{r['id']}", "category": f"sulingan_{kind}",
                       "source": f"{r['source']} (jawaban model dasar Qwen3.5-4B, lolos pemeriksaan otomatis)",
                       "messages": [{"role": "user", "content": r["user"]}, {"role": "assistant", "content": best["text"]}]}
-            hits = {i for g in grams(r["user"] + "\n" + best["text"]) for i in index.get(g, ())}
+            hits = {i for g in grams(r["user"] + "\n" + best["text"]) if not umum(g) for i in index.get(g, ())}
             if hits:
                 dropped.append((sample["id"], sorted(hits)[:3]))
                 continue
