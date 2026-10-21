@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (18 dari 50)
+# Pertanyaan ultradistillation yang belum dijawab (17 dari 50)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-033 · web
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: satu kalimat pembuka, lalu satu dokumen HTML lengkap dalam satu blok ```html. CSS dan JavaScript ada di dalam file itu, tanpa library, font, gambar, atau file dari luar. Halaman harus responsif sampai lebar 375 px, tanpa error JavaScript, dan akses localStorage dibungkus try/catch. Setelah kode, tulis bagian **Cek kebutuhan** berupa daftar `- **<hal yang diminta>** → <bagian kode yang memenuhinya>` untuk setiap permintaan, lalu **Catatan teknis** singkat.
-
----
-
-Buatkan aplikasi jadwal proyek berbentuk Gantt chart dalam satu file HTML. Setiap tugas punya nama, penanggung jawab, tanggal mulai, durasi dalam hari, persentase progres, dan boleh bergantung pada tugas lain (tugas itu baru boleh mulai setelah tugas yang ditunggunya selesai). Tampilkan batang setiap tugas pada skala hari beserta garis hari ini, warnai tugas yang terlambat, dan tolak ketergantungan yang melingkar. Data tersimpan di localStorage, dan sertakan data contoh proyek renovasi kantor.
-````
 
 ## ud-034 · web
 
