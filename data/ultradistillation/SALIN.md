@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (24 dari 50)
+# Pertanyaan ultradistillation yang belum dijawab (23 dari 50)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-027 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Saya membuat aplikasi info angkot. Data trayeknya berbentuk dict, misalnya `{"M01": ["Terminal", "Pasar", "Kampus"], "M02": ["Kampus", "RSUD"]}`: setiap trayek melewati halte-halte itu ke dua arah, dan penumpang bisa naik atau turun di halte mana pun. Tulis fungsi `transit_minimum(rute: dict[str, list[str]], asal: str, tujuan: str) -> int` yang mengembalikan jumlah angkot paling sedikit yang perlu dinaiki dari `asal` ke `tujuan`. Jika asal sama dengan tujuan, hasilnya 0. Jika tidak mungkin sampai, termasuk karena haltenya tidak dilewati trayek mana pun, hasilnya -1.
-````
 
 ## ud-028 · python
 
