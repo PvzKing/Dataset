@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (10 dari 50)
+# Pertanyaan ultradistillation yang belum dijawab (9 dari 50)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-041 · hukum
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: pisahkan fakta, isu hukum, dasar hukum, analisis, dan langkah yang bisa diambil. Sebut nama peraturan, pasal, dan ayat hanya jika yakin; jika tidak yakin nomornya, katakan demikian. Akhiri dengan satu kalimat bahwa ini informasi umum, bukan nasihat hukum untuk kasus konkret.
-
----
-
-Ayah saya meninggal dan meninggalkan sebidang tanah bersertifikat atas namanya. Ahli warisnya ibu dan kami empat bersaudara, semuanya beragama Islam. Kakak sulung diam-diam menjual tanah itu ke orang lain tanpa tanda tangan kami, dengan alasan dia anak tertua dan yang menyimpan sertifikat. Apakah penjualan itu sah, dan apa yang bisa kami lakukan?
-````
 
 ## ud-042 · hukum
 
