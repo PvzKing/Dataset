@@ -217,10 +217,13 @@ def periksa_semua(args):
                 if browser is None:
                     alasan = "pemeriksaan Chromium dilewati (--tanpa-browser)"
                 else:
-                    # localStorage yang baru terisi setelah satu permainan selesai tidak terdeteksi pemeriksaan umum;
-                    # uji-manual mencatat bahwa penyimpanannya sudah diuji tangan.
+                    # localStorage yang baru terisi setelah satu permainan selesai, atau permainan yang tidak berubah
+                    # saat 30 tombol pertama diklik berurutan (petak catur lawan), tidak terdeteksi pemeriksaan umum;
+                    # uji-manual mencatat bahwa keduanya sudah diuji tangan. Error JS dan tata letak tetap diperiksa.
                     simpan = q.get("simpan") and not meta.get("uji_manual")
                     ok, why, _ = sulingan.check_web({**q, "simpan": simpan}, kand, browser, situs)
+                    if not ok and meta.get("uji_manual") and "tidak berubah" in why:
+                        ok = True
                     alasan = None if ok else why
             elif q["kategori"] == "hukum" and meta.get("diperiksa") != "ya":
                 alasan = "menunggu pemeriksaan pemilik (pasal, ayat, dan nomor peraturan)"
@@ -282,7 +285,7 @@ def main(argv=None):
     s = sub.add_parser("tolak", help="tolak jawaban yang cacat saat ditinjau (tetap tersimpan, tidak dipakai)")
     s.add_argument("id")
     s.add_argument("alasan")
-    s = sub.add_parser("uji-manual", help="catat uji tangan di browser (melewati heuristik localStorage)")
+    s = sub.add_parser("uji-manual", help="catat uji tangan di browser (melewati heuristik localStorage dan klik berurutan)")
     s.add_argument("id")
     s.add_argument("catatan")
     s = sub.add_parser("periksa", help="tandai jawaban hukum sudah diperiksa")

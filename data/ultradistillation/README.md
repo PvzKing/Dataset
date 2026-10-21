@@ -24,7 +24,7 @@ python scripts/ultradistillation.py bangun                 # cek semua jawaban l
 | Kategori | Lolos jika |
 |---|---|
 | `python`, `python_debug` | kode di blok ```python lulus tes tersembunyi di `pertanyaan.jsonl`, dengan pengambil kode yang sama dengan IndoPy |
-| `web` | lolos pemeriksaan Chromium yang sama dengan sulingan V7: tanpa error saat dibuka dan dipakai, halaman berubah setelah tombol diklik, responsif di 375 px, localStorage jika diminta, dan ada **Cek kebutuhan** dan Claude menguji fiturnya dengan tangan. Jika localStorage baru terisi setelah satu permainan selesai, uji tangan dicatat dengan `uji-manual` |
+| `web` | lolos pemeriksaan Chromium yang sama dengan sulingan V7: tanpa error saat dibuka dan dipakai, halaman berubah setelah tombol diklik, responsif di 375 px, localStorage jika diminta, dan ada **Cek kebutuhan** dan Claude menguji fiturnya dengan tangan. Jika localStorage baru terisi setelah satu permainan selesai, atau halaman tidak berubah saat tombol diklik berurutan (misalnya papan catur), uji tangan dicatat dengan `uji-manual`; error JS dan tata letak 375 px tetap diperiksa |
 | `hukum` | pasal, ayat, dan nomor peraturannya sudah diperiksa, lalu ditandai dengan `periksa`. Pemeriksanya pemilik, atau Claude lewat riset web jika pemilik memintanya (`--oleh` dan `--catatan` mencatat siapa dan sumbernya). Ini tidak bisa diperiksa otomatis, dan AI sering salah menyebut nomor pasal |
 | semua | tidak ditolak saat ditinjau (`tolak`, misalnya bug yang lolos pemeriksaan otomatis), sumber tercatat, tanpa tag `<think>`, tanpa basa-basi "sebagai AI", dan tidak punya 13-gram yang sama dengan IndoPy, Web-eval, HumanEval+, atau MBPP+ |
 
