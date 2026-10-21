@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (13 dari 50)
+# Pertanyaan ultradistillation yang belum dijawab (12 dari 50)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-038 · web
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: satu kalimat pembuka, lalu satu dokumen HTML lengkap dalam satu blok ```html. CSS dan JavaScript ada di dalam file itu, tanpa library, font, gambar, atau file dari luar. Halaman harus responsif sampai lebar 375 px, tanpa error JavaScript, dan akses localStorage dibungkus try/catch. Setelah kode, tulis bagian **Cek kebutuhan** berupa daftar `- **<hal yang diminta>** → <bagian kode yang memenuhinya>` untuk setiap permintaan, lalu **Catatan teknis** singkat.
-
----
-
-Buatkan generator surat kuasa khusus untuk perkara perdata dalam satu file HTML, untuk dipakai kantor advokat. Formnya berisi data pemberi kuasa (nama, NIK, alamat), satu atau beberapa penerima kuasa (nama advokat, nomor kartu tanda anggota advokat, alamat kantor), pihak lawan, pengadilan negeri, pokok perkara, dan pilihan hak substitusi. Pratinjau surat berubah langsung saat form diisi, tanggal ditulis dalam format Indonesia, ada tempat tanda tangan dan meterai, dan tampilan cetaknya rapi di kertas A4. Profil kantor advokat tersimpan di localStorage supaya tidak perlu diisi ulang.
-````
 
 ## ud-039 · web
 
