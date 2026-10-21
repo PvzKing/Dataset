@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (22 dari 50)
+# Pertanyaan ultradistillation yang belum dijawab (21 dari 50)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-029 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Guru matematika butuh fungsi `distribusi_frekuensi(data: list[int], k: int) -> list[tuple[int, int, int]]` untuk membuat tabel distribusi frekuensi nilai ulangan. Lebar kelas adalah `(maks − min + 1) / k` yang dibulatkan ke atas. Kelas pertama dimulai dari nilai minimum, setiap kelas mencakup batas bawah sampai batas atasnya (inklusif), dan selalu ada tepat `k` kelas meskipun kelas terakhir melewati nilai maksimum. Kembalikan daftar `(batas_bawah, batas_atas, frekuensi)`. Lempar `ValueError` jika `data` kosong atau `k` kurang dari 1.
-````
 
 ## ud-030 · python
 
