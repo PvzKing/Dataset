@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (9 dari 50)
+# Pertanyaan ultradistillation yang belum dijawab (8 dari 50)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-042 · hukum
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: pisahkan fakta, isu hukum, dasar hukum, analisis, dan langkah yang bisa diambil. Sebut nama peraturan, pasal, dan ayat hanya jika yakin; jika tidak yakin nomornya, katakan demikian. Akhiri dengan satu kalimat bahwa ini informasi umum, bukan nasihat hukum untuk kasus konkret.
-
----
-
-Tahun 2015 saya membeli tanah dari Pak Darto seharga Rp150 juta, tetapi hanya dengan kuitansi bermeterai dan surat jual beli di bawah tangan, tanpa akta PPAT. Sertifikatnya masih atas nama Pak Darto. Sekarang beliau sudah meninggal, dan anak-anaknya menolak membantu balik nama, bahkan mengklaim tanah itu sebagai warisan. Bagaimana posisi hukum saya, dan langkah apa yang harus saya tempuh?
-````
 
 ## ud-043 · hukum
 
