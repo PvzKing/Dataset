@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (21 dari 50)
+# Pertanyaan ultradistillation yang belum dijawab (20 dari 50)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-030 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Untuk pelajaran olahraga, tulis fungsi `bagi_tim_seimbang(pemain: dict[str, int]) -> tuple[list[str], list[str]]` yang membagi pemain menjadi dua tim berdasarkan skor kemampuannya. Jumlah anggota kedua tim boleh berbeda paling banyak satu, dan selisih total skor kedua tim harus sekecil mungkin. Nama di dalam setiap tim diurutkan menurut abjad, dan tim yang memuat nama pertama menurut abjad ditulis lebih dulu. Jumlah pemain paling banyak 20. Lempar `ValueError` jika pemain kurang dari 2.
-````
 
 ## ud-031 · web
 
