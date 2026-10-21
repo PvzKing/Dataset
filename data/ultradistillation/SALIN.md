@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (26 dari 50)
+# Pertanyaan ultradistillation yang belum dijawab (25 dari 50)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-025 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Untuk alat bantu hitung warisan menurut KUHPerdata (khusus ahli waris golongan I, tanpa wasiat, dari perkawinan pertama), tulis fungsi `bagian_waris(pasangan_hidup: bool, anak: list) -> dict[str, Fraction]`. Aturannya: anak-anak mendapat bagian sama besar, suami atau istri yang hidup terlama mendapat bagian sama dengan satu anak, dan anak yang sudah meninggal lebih dulu digantikan oleh keturunannya (penggantian tempat), yang membagi rata bagian orang tuanya. Setiap elemen `anak` berupa string nama untuk anak yang masih hidup, atau dict `{"nama": ..., "keturunan": [...]}` untuk anak yang sudah meninggal, dengan `keturunan` berformat sama dan bisa bertingkat sampai cicit. Anak yang meninggal tanpa keturunan yang berhak tidak dihitung. Hasilnya dict nama → `fractions.Fraction` dengan kunci `"pasangan"` untuk suami atau istri, dan jumlah semua bagian tepat 1. Jika tidak ada ahli waris golongan I sama sekali, kembalikan dict kosong.
-````
 
 ## ud-026 · python
 
