@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (16 dari 50)
+# Pertanyaan ultradistillation yang belum dijawab (15 dari 50)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-035 · web
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: satu kalimat pembuka, lalu satu dokumen HTML lengkap dalam satu blok ```html. CSS dan JavaScript ada di dalam file itu, tanpa library, font, gambar, atau file dari luar. Halaman harus responsif sampai lebar 375 px, tanpa error JavaScript, dan akses localStorage dibungkus try/catch. Setelah kode, tulis bagian **Cek kebutuhan** berupa daftar `- **<hal yang diminta>** → <bagian kode yang memenuhinya>` untuk setiap permintaan, lalu **Catatan teknis** singkat.
-
----
-
-Buatkan spreadsheet mini dalam satu file HTML: grid kolom A–J dan baris 1–20 yang bisa diedit. Sel boleh berisi angka, teks, atau rumus yang diawali `=`, misalnya `=A1+B2*2`, `=SUM(A1:A5)`, `=AVERAGE(B1:B3)`, `=MIN(...)`, dan `=MAX(...)`. Hasil rumus ikut diperbarui saat sel yang dirujuk berubah, rumus yang saling merujuk secara melingkar menampilkan `#SIKLUS`, dan rumus yang salah menampilkan `#ERROR`. Jangan memakai `eval` atau `Function`. Isi sel tersimpan di localStorage.
-````
 
 ## ud-036 · web
 
