@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (27 dari 50)
+# Pertanyaan ultradistillation yang belum dijawab (26 dari 50)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-024 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Panitia turnamen futsal antarkelas butuh fungsi `jadwal_round_robin(tim: list[str]) -> list[list[tuple[str, str]]]`. Setiap tim harus bertemu setiap tim lain tepat satu kali, dan dalam satu putaran setiap tim bermain paling banyak sekali. Jika jumlah tim genap, buat n−1 putaran yang semua timnya bermain; jika ganjil, buat n putaran dan di setiap putaran tepat satu tim libur (tim yang libur tidak dicantumkan). Hasilnya daftar putaran, dan setiap putaran berisi pasangan `(tim_a, tim_b)`. Kurang dari 2 tim menghasilkan `[]`, dan nama tim yang kembar membuat fungsi melempar `ValueError`.
-````
 
 ## ud-025 · python
 
