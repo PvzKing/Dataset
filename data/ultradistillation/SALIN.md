@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (28 dari 50)
+# Pertanyaan ultradistillation yang belum dijawab (27 dari 50)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-023 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Tulis fungsi `validasi_isbn(teks: str) -> bool` untuk aplikasi katalog perpustakaan. Tanda hubung dan spasi diabaikan. ISBN-10 terdiri atas 9 angka dan satu karakter cek yang boleh berupa `X` atau `x` (bernilai 10); ISBN-10 valid jika jumlah setiap digit dikali bobot 10, 9, …, 1 habis dibagi 11. ISBN-13 terdiri atas 13 angka, harus diawali 978 atau 979, dan valid jika jumlah digit dengan bobot bergantian 1 dan 3 habis dibagi 10. Selain itu, termasuk jika ada karakter lain atau panjangnya salah, hasilnya `False`.
-````
 
 ## ud-024 · python
 
