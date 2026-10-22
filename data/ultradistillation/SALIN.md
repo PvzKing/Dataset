@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (37 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (36 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-044 · matematika
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Tentukan grup Galois polinom f(x) = x⁵ − 4x + 2 atas ℚ. Buktikan langkah demi langkah: ketakteruraian f (misalnya dengan kriteria Eisenstein), banyaknya akar real (lewat analisis turunan), mengapa grup Galoisnya memuat sikel-5 dan sebuah transposisi, dan mengapa keduanya membangkitkan S₅. Lalu jelaskan akibatnya: mengapa akar-akar f tidak dapat dinyatakan dengan radikal, dengan menyebut teorema yang dipakai dan alasan S₅ tidak terselesaikan (solvable).
-````
 
 ## ud-045 · matematika
 
