@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (30 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (29 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-051 · sains
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Gunakan metode orbital molekul Hückel untuk sistem π benzena. Tuliskan determinan sekulernya, turunkan keenam energi orbital π dalam α dan β (ingat β < 0), gambarkan diagram tingkat energinya beserta degenerasinya, lalu hitung energi total elektron π dan energi delokalisasi dibandingkan dengan tiga ikatan rangkap etena yang terisolasi. Jelaskan kaitan hasil ini dengan aturan 4n + 2 Hückel, dan bandingkan dengan siklobutadiena.
-````
 
 ## ud-052 · sains
 
