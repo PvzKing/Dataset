@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (34 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (33 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-047 · matematika
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Polinom siklotomik Φₙ(x) adalah hasil kali (x − ζ) atas semua akar primitif ke-n dari satu. (a) Tuliskan Φ₁, Φ₂, Φ₃, Φ₄, dan Φ₆, lalu hitung Φ₁₂(x) secara eksplisit dengan memakai xⁿ − 1 = ∏_{d∣n} Φ_d(x). (b) Buktikan bahwa jika p prima, p ∤ n, dan p membagi Φₙ(a) untuk suatu bilangan bulat a, maka orde a modulo p tepat n, sehingga p ≡ 1 (mod n). (c) Gunakan (b) untuk membuktikan bahwa untuk setiap bilangan bulat positif n ada tak hingga banyak bilangan prima p ≡ 1 (mod n).
-````
 
 ## ud-048 · matematika
 
