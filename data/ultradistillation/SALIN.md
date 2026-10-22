@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (36 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (35 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-045 · matematika
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Hitung grup homologi ruang proyektif real ℝPⁿ dengan koefisien ℤ dan dengan koefisien ℤ/2, memakai struktur CW yang punya tepat satu sel di setiap dimensi 0 sampai n. Turunkan derajat peta lekat (attaching map) sehingga operator batas selulernya dₖ = 1 + (−1)ᵏ, tuliskan kompleks rantainya, lalu nyatakan hasilnya terpisah untuk n genap dan n ganjil. Sebagai pemeriksaan, hitung karakteristik Euler ℝPⁿ dari kedua hasil, dan jelaskan mengapa ℝPⁿ terorientasi tepat ketika n ganjil.
-````
 
 ## ud-046 · matematika
 
