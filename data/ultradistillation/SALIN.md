@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (35 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (34 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-046 · matematika
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Buktikan dengan integrasi kontur bahwa untuk 0 < a < 1 berlaku ∫₀^∞ x^(a−1)/(1 + x) dx = π / sin(πa). Jelaskan pemilihan konturnya (misalnya kontur lubang kunci), cabang logaritma yang dipakai, perhitungan residunya, dan mengapa integral pada lingkaran besar dan lingkaran kecil menuju nol. Kemudian gunakan hasil ini untuk menurunkan rumus refleksi Euler Γ(a)Γ(1 − a) = π / sin(πa), dan hitung Γ(1/2) sebagai akibatnya.
-````
 
 ## ud-047 · matematika
 
