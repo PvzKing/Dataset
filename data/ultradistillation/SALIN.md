@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (31 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (30 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-050 · matematika
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Torus di ℝ³ diparametrisasi oleh X(u, v) = ((R + r cos v) cos u, (R + r cos v) sin u, r sin v) dengan 0 < r < R. Hitung bentuk fundamental pertama dan kedua, kelengkungan Gauss K, dan kelengkungan rata-rata H. Tentukan bagian torus tempat K positif, negatif, dan nol, beserta tafsiran geometrisnya. Hitung ∬ K dA atas seluruh torus dan cocokkan hasilnya dengan teorema Gauss–Bonnet lewat karakteristik Euler torus. Hitung juga luas permukaan torus.
-````
 
 ## ud-051 · sains
 
