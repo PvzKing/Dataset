@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (33 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (32 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-048 · matematika
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Misalkan X₁, X₂, … peubah acak i.i.d. dengan E[X₁] = μ dan E[X₁⁴] < ∞. Buktikan hukum kuat bilangan besar: (X₁ + ⋯ + Xₙ)/n → μ hampir pasti. Gunakan pendekatan momen keempat: tunjukkan bahwa E[(Sₙ − nμ)⁴] ≤ Cn² untuk suatu konstanta C, lalu pakai ketaksamaan Markov dan lemma Borel–Cantelli. Jelaskan dengan cermat suku mana saja yang lenyap saat pangkat empat itu dijabarkan, dan mengapa argumen serupa dengan momen kedua saja hanya menghasilkan hukum lemah. Terakhir, beri contoh barisan peubah acak yang konvergen dalam peluang tetapi tidak konvergen hampir pasti.
-````
 
 ## ud-049 · matematika
 
