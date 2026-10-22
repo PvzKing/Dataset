@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (29 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (28 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-052 · sains
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Turunkan persamaan Michaelis–Menten dari mekanisme E + S ⇌ ES → E + P dengan pendekatan keadaan tunak (steady state) Briggs–Haldane, dan jelaskan kapan Km sama dengan konstanta disosiasi kompleks ES. Lalu analisis data berikut (konsentrasi substrat dalam mM, laju awal dalam µM/menit). Tanpa inhibitor: [S] = 0,5; 1; 2; 4; 8 memberi v = 2,50; 4,00; 5,71; 7,27; 8,42. Dengan inhibitor 10 µM pada [S] yang sama: v = 1,43; 2,50; 4,00; 5,71; 7,27. Tentukan Vmax dan Km (atau Km semu) untuk kedua kondisi, jenis inhibisinya, dan Ki. Tunjukkan perhitungannya, misalnya lewat plot Lineweaver–Burk.
-````
 
 ## ud-053 · sains
 
