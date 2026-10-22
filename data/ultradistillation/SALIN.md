@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (32 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (31 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-049 · matematika
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Susun tabel karakter grup simetri S₄ lengkap dengan kelas konjugasi dan ukurannya, dan jelaskan asal setiap baris: representasi trivial, tanda, standar, standar ⊗ tanda, dan representasi berdimensi 2 yang berasal dari S₃ lewat homomorfisme S₄ → S₃. Periksa tabelnya dengan relasi ortogonalitas baris dan kolom. Lalu uraikan representasi permutasi S₄ pada keenam pasangan tak berurut {i, j} ⊂ {1, 2, 3, 4} menjadi jumlah langsung representasi tak tereduksi, dengan menghitung karakternya dan memakai hasil kali dalam karakter.
-````
 
 ## ud-050 · matematika
 
