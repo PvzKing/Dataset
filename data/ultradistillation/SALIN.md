@@ -1,34 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (19 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (18 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-062 · python_debug
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Fungsi di bawah ini seharusnya mengelompokkan peristiwa klik menjadi sesi per pengguna. Masukannya list `(pengguna, waktu)` dengan waktu dalam detik (bilangan bulat, urutannya belum tentu naik). Untuk setiap pengguna, peristiwanya diurutkan menurut waktu, lalu sesi baru dimulai jika selisih dengan peristiwa sebelumnya lebih dari `jeda` detik (selisih yang tepat sama dengan `jeda` masih satu sesi). Hasilnya dict `pengguna → list[(mulai, selesai)]` yang urut menurut waktu. `jeda` negatif → `ValueError`, dan list masukan tidak boleh diubah. Tim QA melaporkan hasilnya kacau: kadang sesi terakhir hilang, panggilan kedua ikut memuat data panggilan pertama, dan data dari server yang tidak urut menghasilkan sesi yang aneh. Temukan semua bug-nya, jelaskan penyebab masing-masing, lalu tulis versi yang benar dengan nama fungsi yang sama.
-
-```python
-def kelompokkan_sesi(peristiwa, jeda, hasil={}):
-    terakhir = {}
-    for pengguna, waktu in peristiwa:
-        if pengguna not in hasil:
-            hasil[pengguna] = []
-        if pengguna in terakhir and waktu - terakhir[pengguna][1] >= jeda:
-            hasil[pengguna].append(tuple(terakhir[pengguna]))
-            terakhir[pengguna] = [waktu, waktu]
-        elif pengguna in terakhir:
-            terakhir[pengguna][1] = waktu
-        else:
-            terakhir[pengguna] = [waktu, waktu]
-    return hasil
-``` Gunakan hanya pustaka standar Python.
-````
 
 ## ud-063 · python
 
