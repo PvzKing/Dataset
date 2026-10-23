@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (22 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (21 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-059 · sains
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Model mangsa–pemangsa Lotka–Volterra ditulis dx/dt = αx − βxy dan dy/dt = δxy − γy dengan semua parameter positif. Tentukan titik-titik kesetimbangan, linearkan sistem di sekitar setiap titik, dan klasifikasikan kestabilannya. Tunjukkan bahwa V(x, y) = δx − γ ln x + βy − α ln y konstan sepanjang lintasan sehingga orbitnya tertutup, lalu turunkan periode osilasi kecil T ≈ 2π/√(αγ). Untuk α = 1,0; β = 0,02; γ = 0,5; δ = 0,01 (waktu dalam tahun), hitung titik kesetimbangan dan periodenya. Jelaskan juga kelemahan ekologis model ini dan satu modifikasi yang lebih realistis, misalnya pertumbuhan logistik mangsa atau respons fungsional Holling tipe II.
-````
 
 ## ud-060 · sains
 
