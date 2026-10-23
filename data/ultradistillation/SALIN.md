@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (20 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (19 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-061 · fisika
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Untuk osilator harmonik kuantum satu dimensi H = p²/2m + ½mω²x², definisikan operator tangga a dan a†. Turunkan [a, a†] = 1, tuliskan H dalam a dan a†, dan buktikan bahwa spektrum energinya Eₙ = ħω(n + ½) tanpa menyelesaikan persamaan diferensial. Tentukan fungsi gelombang keadaan dasar dari syarat a|0⟩ = 0. Hitung ⟨x⟩, ⟨x²⟩, dan ⟨p²⟩ pada keadaan |n⟩, lalu periksa bahwa Δx·Δp = ħ(n + ½). Terakhir, hitung ⟨x⁴⟩ pada keadaan dasar dan gunakan untuk mencari koreksi energi orde pertama akibat gangguan H′ = λx⁴.
-````
 
 ## ud-062 · fisika
 
