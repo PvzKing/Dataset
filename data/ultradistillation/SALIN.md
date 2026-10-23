@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (27 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (26 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-054 · sains
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Dalam populasi besar yang kawin acak, alel resesif a bersifat letal pada homozigot (individu aa mati sebelum bereproduksi), sedangkan AA dan Aa sama bugarnya. Turunkan rumus frekuensi alel a pada generasi berikutnya, q′ = q/(1 + q), lalu buktikan bahwa setelah t generasi qₜ = q₀/(1 + t·q₀). Berapa generasi yang dibutuhkan agar frekuensi a turun dari 0,1 menjadi 0,01, dan berapa frekuensi heterozigot pembawa saat itu? Jelaskan mengapa seleksi terhadap alel resesif yang langka menjadi sangat lambat, dan bagaimana mutasi baru menghasilkan keseimbangan seleksi–mutasi dengan perkiraan q ≈ √(μ/s).
-````
 
 ## ud-055 · sains
 
