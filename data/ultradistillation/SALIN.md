@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (24 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (23 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-057 · sains
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Sebuah sampel batuan vulkanik mengandung ⁴⁰K dan ⁴⁰Ar radiogenik dengan rasio mol ⁴⁰Ar*/⁴⁰K = 0,0500. ⁴⁰K meluruh dengan konstanta peluruhan total λ = 5,543 × 10⁻¹⁰ per tahun, dan hanya fraksi λₑ/λ = 0,1048 (cabang penangkapan elektron) yang menghasilkan ⁴⁰Ar. Turunkan persamaan umur t = (1/λ) ln[1 + (λ/λₑ)(⁴⁰Ar*/⁴⁰K)], lalu hitung umur batuan dan waktu paruh ⁴⁰K. Jelaskan asumsi metode ini (sistem tertutup, tanpa argon awal) dan bagaimana metode ⁴⁰Ar/³⁹Ar mengatasi sebagian kelemahannya.
-````
 
 ## ud-058 · sains
 
