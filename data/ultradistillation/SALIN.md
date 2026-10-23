@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (21 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (20 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-060 · sains
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Asam fosfat adalah asam triprotik dengan pKa₁ = 2,15; pKa₂ = 7,20; pKa₃ = 12,35. Sebanyak 50,0 mL H₃PO₄ 0,100 M dititrasi dengan NaOH 0,100 M pada 25 °C. Hitung pH pada awal titrasi dan setelah penambahan 25,0 mL, 50,0 mL (titik ekuivalen pertama), 75,0 mL, dan 100,0 mL NaOH. Jelaskan pendekatan yang dipakai di setiap titik dan kapan pendekatan itu kurang tepat (misalnya pada awal titrasi dan titik setengah ekuivalen pertama, karena disosiasi pertama cukup besar). Mengapa titik ekuivalen ketiga sulit diamati dalam titrasi biasa?
-````
 
 ## ud-061 · fisika
 
