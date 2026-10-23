@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (18 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (17 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-063 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Tulis fungsi `jalankan_dag(tugas: dict[str, tuple[Callable[[dict], object], list[str]]], pekerja: int) -> tuple[dict, dict, set]` yang menjalankan kumpulan tugas berdependensi secara paralel dengan thread. Setiap entri berbentuk `nama: (fungsi, dependensi)`, dan `fungsi` dipanggil dengan satu argumen berupa dict hasil dependensi langsungnya (`{nama_dependensi: hasil}`). Aturannya: (1) paling banyak `pekerja` fungsi berjalan bersamaan; (2) sebuah tugas langsung dijalankan begitu semua dependensinya selesai dengan sukses, tanpa menunggu tugas lain yang tidak berkaitan (jangan memproses per tingkat); (3) jika sebuah fungsi melempar `Exception`, catat exception itu dan jangan jalankan tugas apa pun yang bergantung padanya, langsung maupun tidak langsung, sementara tugas lain tetap berjalan; (4) kembalikan `(hasil, gagal, dilewati)`, yaitu dict nama → nilai kembalian untuk tugas yang sukses, dict nama → objek exception untuk tugas yang gagal, dan himpunan nama tugas yang tidak dijalankan karena dependensinya gagal. Sebelum menjalankan apa pun, lempar `ValueError` jika `pekerja < 1`, ada dependensi ke nama yang tidak ada, atau ada siklus (termasuk tugas yang bergantung pada dirinya sendiri). Rantai dependensi sepanjang ribuan tugas harus tertangani tanpa rekursi yang dalam. Gunakan hanya pustaka standar Python.
-````
 
 ## ud-064 · python
 

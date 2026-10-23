@@ -269,7 +269,11 @@ def check_python(task, cand, timeout):
         return False, "tanpa penjelasan"
     if "<think>" in text or "</think>" in text:
         return False, "berisi tag think"
-    ok, why = indopy.run_tests("import math\n" + indopy.extract_code(text, task["entry"]), task["tests"], timeout)
+    kode = indopy.extract_code(text, task["entry"])
+    # `from __future__` harus di awal berkas, jadi naikkan ke atas sebelum menyisipkan `import math`.
+    masa_depan = re.findall(r"^from __future__ import [^\n]*\n", kode, re.M)
+    kode = "".join(masa_depan) + "import math\n" + re.sub(r"^from __future__ import [^\n]*\n", "", kode, flags=re.M)
+    ok, why = indopy.run_tests(kode, task["tests"], timeout)
     return ok, why or "lolos"
 
 
