@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (17 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (16 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-064 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Tulis fungsi `verifikasi_jwt(token: str, kunci: bytes, sekarang: int, audiens: str | None = None, toleransi: int = 0) -> dict` yang memverifikasi JSON Web Token bertanda tangan HMAC-SHA256 dan mengembalikan payload-nya, atau melempar `ValueError` jika token tidak boleh dipercaya. Token terdiri atas tepat tiga segmen base64url tanpa padding (RFC 7515); karakter di luar alfabet base64url, termasuk `=`, `+`, dan `/`, ditolak. Header harus objek JSON dengan `alg` persis `"HS256"`: tolak `none`, `HS512`, huruf kecil, atau `alg` yang hilang, sekalipun tanda tangannya cocok untuk algoritme itu. Tanda tangan dihitung atas byte ASCII `header.payload` dan dibandingkan dengan perbandingan waktu-konstan. Payload harus objek JSON. Klaim `exp` dan `nbf`, jika ada, harus bilangan (int atau float, bukan bool); tolak jika `sekarang >= exp + toleransi` atau `sekarang < nbf - toleransi`. Klaim `aud` boleh berupa string atau list string: jika `audiens` diberikan, `aud` wajib ada dan memuatnya; jika token punya `aud` tetapi `audiens` tidak diberikan, tolak juga (RFC 7519 §4.1.3). Jelaskan juga serangan apa yang dicegah oleh setiap aturan. Gunakan hanya pustaka standar Python.
-````
 
 ## ud-065 · python
 
