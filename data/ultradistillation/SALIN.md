@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (23 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (22 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-058 · sains
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Sebuah obat diberikan sebagai bolus intravena 500 mg setiap 8 jam. Volume distribusinya 40 L dan waktu paruh eliminasinya 6 jam (model satu kompartemen, kinetika orde satu). Turunkan rumus konsentrasi puncak dan lembah pada keadaan tunak, lalu hitung C_maks,ss, C_min,ss, konsentrasi rata-rata pada keadaan tunak, faktor akumulasi, dan berapa jam (serta berapa dosis) sampai 90% keadaan tunak tercapai. Terakhir, tentukan dosis muatan (loading dose) agar konsentrasi puncak keadaan tunak langsung tercapai sejak dosis pertama.
-````
 
 ## ud-059 · sains
 
