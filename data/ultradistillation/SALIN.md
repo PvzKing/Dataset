@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (14 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (13 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-067 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Rancang penyimpan kunci–nilai di memori yang mendukung transaksi bersarang. Tulis sebuah kelas dan fungsi `buat_penyimpan()` yang mengembalikan objek baru dari kelas itu, dengan metode: `atur(kunci, nilai)`; `ambil(kunci)` yang mengembalikan nilai atau `None`; `hapus(kunci)` (tanpa error jika kunci tidak ada); `hitung(nilai)` yang mengembalikan banyaknya kunci yang saat ini bernilai itu; `mulai()` yang membuka transaksi baru di dalam transaksi yang sedang terbuka; `batal()` yang membatalkan semua perubahan di transaksi terdalam lalu menutupnya; dan `komit()` yang menutup transaksi terdalam dan menggabungkan perubahannya ke transaksi di luarnya (perubahan baru permanen setelah transaksi terluar dikomit). `batal()` atau `komit()` tanpa transaksi terbuka → `RuntimeError`, dan nilai `None` → `ValueError`. Kompleksitasnya: `ambil` dan `hitung` O(1) berapa pun kedalaman transaksinya, sedangkan `batal` dan `komit` sebanding dengan banyaknya kunci yang diubah di transaksi itu, bukan dengan ukuran seluruh data; 100.000 kunci dengan 2.000 transaksi bersarang harus tetap cepat. Jelaskan struktur data dan alasan kompleksitasnya. Gunakan hanya pustaka standar Python.
-````
 
 ## ud-068 · python
 
