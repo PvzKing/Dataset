@@ -1,28 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (15 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (14 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-066 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Basis data SQLite sebuah toko daring punya tabel berikut:
-
-```sql
-CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT NOT NULL, kota TEXT);
-CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER NOT NULL REFERENCES pelanggan(id),
-                      tanggal TEXT NOT NULL, status TEXT NOT NULL);
-CREATE TABLE item_pesanan (pesanan_id INTEGER NOT NULL REFERENCES pesanan(id), produk TEXT NOT NULL,
-                           jumlah INTEGER NOT NULL, harga_satuan INTEGER NOT NULL);
-```
-
-`tanggal` berformat `YYYY-MM-DD`. Tulis fungsi Python `laporan_penjualan(conn: sqlite3.Connection) -> list[tuple]` yang menjalankan **tepat satu** kueri SQL (CTE dan window function boleh; jangan membuat tabel sementara atau mengolah data mentah di Python) dan mengembalikan satu baris untuk setiap kombinasi bulan dan kota yang punya minimal satu pesanan berstatus `'selesai'`: `(bulan 'YYYY-MM', kota, omzet, jumlah_pelanggan, peringkat, omzet_kumulatif, pertumbuhan)`. Ketentuannya: hanya pesanan `'selesai'` yang dihitung; kota pelanggan yang NULL ditulis `'Tidak diketahui'`; omzet adalah jumlah `jumlah * harga_satuan` (pesanan selesai tanpa item tetap dihitung dengan omzet 0); jumlah_pelanggan adalah banyaknya pelanggan berbeda yang punya pesanan selesai di bulan dan kota itu; peringkat adalah peringkat padat (tanpa lompatan saat seri) kota dalam bulan yang sama menurut omzet terbesar; omzet_kumulatif adalah total omzet kota itu dari bulan pertamanya sampai bulan tersebut; pertumbuhan adalah persentase perubahan omzet dibanding **bulan kalender sebelumnya** untuk kota yang sama, dibulatkan 1 desimal, dan NULL jika bulan sebelumnya tidak ada atau omzetnya 0 (Januari dibandingkan dengan Desember tahun sebelumnya). Urutkan menurut bulan, peringkat, lalu nama kota. Jelaskan juga indeks apa yang akan Anda tambahkan jika tabelnya berisi jutaan baris. Gunakan hanya pustaka standar Python.
-````
 
 ## ud-067 · python
 
