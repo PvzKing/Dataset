@@ -2,112 +2,138 @@
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
 
-## ud-062 · fisika
+## ud-062 · python_debug
 
 ````text
 Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
 
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
+Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
 
 ---
 
-Atom hidrogen ditempatkan dalam medan listrik seragam yang lemah E sepanjang sumbu z, sehingga H′ = eEz. (a) Jelaskan mengapa efek Stark orde pertama lenyap untuk keadaan dasar sehingga dibutuhkan perhitungan orde kedua. (b) Untuk tingkat n = 2 yang terdegenerasi empat kali lipat (abaikan spin dan struktur halus), tentukan elemen matriks H′ yang tidak nol dengan aturan seleksi (paritas dan Δm = 0), hitung ⟨2,0,0|z|2,1,0⟩ secara eksplisit dari fungsi gelombang hidrogen, lalu diagonalkan matriks gangguannya untuk memperoleh pergeseran energi dan keadaan eigen yang benar. (c) Jelaskan mengapa efek ini linear terhadap E pada hidrogen, berbeda dari kebanyakan atom lain.
+Fungsi di bawah ini seharusnya mengelompokkan peristiwa klik menjadi sesi per pengguna. Masukannya list `(pengguna, waktu)` dengan waktu dalam detik (bilangan bulat, urutannya belum tentu naik). Untuk setiap pengguna, peristiwanya diurutkan menurut waktu, lalu sesi baru dimulai jika selisih dengan peristiwa sebelumnya lebih dari `jeda` detik (selisih yang tepat sama dengan `jeda` masih satu sesi). Hasilnya dict `pengguna → list[(mulai, selesai)]` yang urut menurut waktu. `jeda` negatif → `ValueError`, dan list masukan tidak boleh diubah. Tim QA melaporkan hasilnya kacau: kadang sesi terakhir hilang, panggilan kedua ikut memuat data panggilan pertama, dan data dari server yang tidak urut menghasilkan sesi yang aneh. Temukan semua bug-nya, jelaskan penyebab masing-masing, lalu tulis versi yang benar dengan nama fungsi yang sama.
+
+```python
+def kelompokkan_sesi(peristiwa, jeda, hasil={}):
+    terakhir = {}
+    for pengguna, waktu in peristiwa:
+        if pengguna not in hasil:
+            hasil[pengguna] = []
+        if pengguna in terakhir and waktu - terakhir[pengguna][1] >= jeda:
+            hasil[pengguna].append(tuple(terakhir[pengguna]))
+            terakhir[pengguna] = [waktu, waktu]
+        elif pengguna in terakhir:
+            terakhir[pengguna][1] = waktu
+        else:
+            terakhir[pengguna] = [waktu, waktu]
+    return hasil
+``` Gunakan hanya pustaka standar Python.
 ````
 
-## ud-063 · fisika
+## ud-063 · python
 
 ````text
 Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
 
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
+Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
 
 ---
 
-Pion bermuatan yang diam meluruh π⁺ → μ⁺ + ν_μ. Dengan m_π c² = 139,570 MeV dan m_μ c² = 105,658 MeV (anggap neutrino tak bermassa), turunkan dengan empat-momentum besar momentum, energi total, dan energi kinetik muon, serta energi neutrino. Kemudian, jika pion bergerak dengan energi total 1,00 GeV di laboratorium, tentukan rentang energi muon di laboratorium dan jarak rata-rata yang ditempuh pion sebelum meluruh (waktu hidup rata-rata pion diam τ = 2,603 × 10⁻⁸ s). Jelaskan juga mengapa peluruhan π⁺ → e⁺ν_e jauh lebih jarang walaupun ruang fasenya lebih besar (penindasan helisitas).
+Tulis fungsi `jalankan_dag(tugas: dict[str, tuple[Callable[[dict], object], list[str]]], pekerja: int) -> tuple[dict, dict, set]` yang menjalankan kumpulan tugas berdependensi secara paralel dengan thread. Setiap entri berbentuk `nama: (fungsi, dependensi)`, dan `fungsi` dipanggil dengan satu argumen berupa dict hasil dependensi langsungnya (`{nama_dependensi: hasil}`). Aturannya: (1) paling banyak `pekerja` fungsi berjalan bersamaan; (2) sebuah tugas langsung dijalankan begitu semua dependensinya selesai dengan sukses, tanpa menunggu tugas lain yang tidak berkaitan (jangan memproses per tingkat); (3) jika sebuah fungsi melempar `Exception`, catat exception itu dan jangan jalankan tugas apa pun yang bergantung padanya, langsung maupun tidak langsung, sementara tugas lain tetap berjalan; (4) kembalikan `(hasil, gagal, dilewati)`, yaitu dict nama → nilai kembalian untuk tugas yang sukses, dict nama → objek exception untuk tugas yang gagal, dan himpunan nama tugas yang tidak dijalankan karena dependensinya gagal. Sebelum menjalankan apa pun, lempar `ValueError` jika `pekerja < 1`, ada dependensi ke nama yang tidak ada, atau ada siklus (termasuk tugas yang bergantung pada dirinya sendiri). Rantai dependensi sepanjang ribuan tugas harus tertangani tanpa rekursi yang dalam. Gunakan hanya pustaka standar Python.
 ````
 
-## ud-064 · fisika
+## ud-064 · python
 
 ````text
 Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
 
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
+Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
 
 ---
 
-Dari metrik Schwarzschild, turunkan persamaan orbit partikel bermassa dalam bentuk d²u/dφ² + u = GM/h² + 3GMu²/c², dengan u = 1/r dan h momentum sudut per satuan massa. Selesaikan dengan teori gangguan untuk orbit yang hampir elips, dan tunjukkan bahwa perihelion maju sebesar Δφ = 6πGM/(c²a(1 − e²)) per orbit. Hitung angkanya untuk Merkurius (a = 5,791 × 10¹⁰ m, e = 0,2056, periode 87,969 hari, GM matahari = 1,32712 × 10²⁰ m³/s²) dalam detik busur per abad, lalu jelaskan hubungannya dengan presesi total teramati sekitar 5.600″ per abad.
+Tulis fungsi `verifikasi_jwt(token: str, kunci: bytes, sekarang: int, audiens: str | None = None, toleransi: int = 0) -> dict` yang memverifikasi JSON Web Token bertanda tangan HMAC-SHA256 dan mengembalikan payload-nya, atau melempar `ValueError` jika token tidak boleh dipercaya. Token terdiri atas tepat tiga segmen base64url tanpa padding (RFC 7515); karakter di luar alfabet base64url, termasuk `=`, `+`, dan `/`, ditolak. Header harus objek JSON dengan `alg` persis `"HS256"`: tolak `none`, `HS512`, huruf kecil, atau `alg` yang hilang, sekalipun tanda tangannya cocok untuk algoritme itu. Tanda tangan dihitung atas byte ASCII `header.payload` dan dibandingkan dengan perbandingan waktu-konstan. Payload harus objek JSON. Klaim `exp` dan `nbf`, jika ada, harus bilangan (int atau float, bukan bool); tolak jika `sekarang >= exp + toleransi` atau `sekarang < nbf - toleransi`. Klaim `aud` boleh berupa string atau list string: jika `audiens` diberikan, `aud` wajib ada dan memuatnya; jika token punya `aud` tetapi `audiens` tidak diberikan, tolak juga (RFC 7519 §4.1.3). Jelaskan juga serangan apa yang dicegah oleh setiap aturan. Gunakan hanya pustaka standar Python.
 ````
 
-## ud-065 · fisika
+## ud-065 · python
 
 ````text
 Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
 
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
+Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
 
 ---
 
-Untuk gas Bose ideal tanpa spin yang terdiri atas N partikel bermassa m dalam volume V, turunkan suhu kritis kondensasi Bose–Einstein T_c = (2πħ²/(m k_B)) (n/ζ(3/2))^(2/3), dengan n = N/V. Jelaskan peran potensial kimia μ → 0 dan mengapa pendekatan integral kontinu gagal menghitung partikel di keadaan dasar. Turunkan fraksi kondensat N₀/N = 1 − (T/T_c)^(3/2) untuk T < T_c. Hitung T_c untuk helium-4 cair dengan kerapatan 0,145 g/cm³, bandingkan dengan titik lambda 2,17 K, dan jelaskan penyebab perbedaannya.
+Tulis fungsi `urai_json(teks: str) -> object` yang mengurai dokumen JSON sesuai RFC 8259 tanpa memakai modul `json` (juga tanpa `eval` atau `ast`). Objek menjadi dict (untuk kunci kembar nilai terakhir yang menang, dengan posisi kunci mengikuti kemunculan pertamanya), larik menjadi list, string menjadi str, `true`/`false`/`null` menjadi True/False/None, angka tanpa pecahan dan eksponen menjadi int berapa pun besarnya, dan angka lain menjadi float. Escape yang sah hanya `\" \\ \/ \b \f \n \r \t \uXXXX`; pasangan surrogate seperti `😀` digabung menjadi satu karakter, sedangkan surrogate tunggal dibiarkan apa adanya (seperti modul `json`). Lempar `ValueError` untuk dokumen yang tidak sah, antara lain angka dengan nol di depan, `+1`, `.5`, `1.`, `NaN`/`Infinity`, koma di akhir, kunci tanpa tanda kutip, karakter kontrol mentah di dalam string, sisa teks setelah nilai, dan whitespace selain spasi, tab, LF, dan CR. Pengurai harus sanggup menangani larik atau objek bersarang sedalam 50.000 tingkat tanpa `RecursionError`, serta dokumen sebesar 0,5 MB dalam beberapa detik. Gunakan hanya pustaka standar Python.
 ````
 
-## ud-066 · fisika
+## ud-066 · python
 
 ````text
 Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
 
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
+Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
 
 ---
 
-Turunkan medan radiasi dan daya total yang dipancarkan dipol listrik berosilasi p(t) = p₀ cos ωt di zona jauh, termasuk distribusi sudut dP/dΩ ∝ sin²θ dan daya rata-rata P = p₀²ω⁴/(12πε₀c³). Gunakan model elektron yang terikat secara harmonik (frekuensi alami ω₀ ≫ ω) untuk menurunkan penampang hamburan Rayleigh σ ∝ ω⁴, lalu hitung rasio intensitas hamburan cahaya 450 nm terhadap 700 nm. Jelaskan mengapa langit berwarna biru dan bukan ungu, mengapa matahari terbenam tampak kemerahan, dan mengapa cahaya langit pada arah 90° dari matahari terpolarisasi.
+Basis data SQLite sebuah toko daring punya tabel berikut:
+
+```sql
+CREATE TABLE pelanggan (id INTEGER PRIMARY KEY, nama TEXT NOT NULL, kota TEXT);
+CREATE TABLE pesanan (id INTEGER PRIMARY KEY, pelanggan_id INTEGER NOT NULL REFERENCES pelanggan(id),
+                      tanggal TEXT NOT NULL, status TEXT NOT NULL);
+CREATE TABLE item_pesanan (pesanan_id INTEGER NOT NULL REFERENCES pesanan(id), produk TEXT NOT NULL,
+                           jumlah INTEGER NOT NULL, harga_satuan INTEGER NOT NULL);
+```
+
+`tanggal` berformat `YYYY-MM-DD`. Tulis fungsi Python `laporan_penjualan(conn: sqlite3.Connection) -> list[tuple]` yang menjalankan **tepat satu** kueri SQL (CTE dan window function boleh; jangan membuat tabel sementara atau mengolah data mentah di Python) dan mengembalikan satu baris untuk setiap kombinasi bulan dan kota yang punya minimal satu pesanan berstatus `'selesai'`: `(bulan 'YYYY-MM', kota, omzet, jumlah_pelanggan, peringkat, omzet_kumulatif, pertumbuhan)`. Ketentuannya: hanya pesanan `'selesai'` yang dihitung; kota pelanggan yang NULL ditulis `'Tidak diketahui'`; omzet adalah jumlah `jumlah * harga_satuan` (pesanan selesai tanpa item tetap dihitung dengan omzet 0); jumlah_pelanggan adalah banyaknya pelanggan berbeda yang punya pesanan selesai di bulan dan kota itu; peringkat adalah peringkat padat (tanpa lompatan saat seri) kota dalam bulan yang sama menurut omzet terbesar; omzet_kumulatif adalah total omzet kota itu dari bulan pertamanya sampai bulan tersebut; pertumbuhan adalah persentase perubahan omzet dibanding **bulan kalender sebelumnya** untuk kota yang sama, dibulatkan 1 desimal, dan NULL jika bulan sebelumnya tidak ada atau omzetnya 0 (Januari dibandingkan dengan Desember tahun sebelumnya). Urutkan menurut bulan, peringkat, lalu nama kota. Jelaskan juga indeks apa yang akan Anda tambahkan jika tabelnya berisi jutaan baris. Gunakan hanya pustaka standar Python.
 ````
 
-## ud-067 · fisika
+## ud-067 · python
 
 ````text
 Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
 
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
+Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
 
 ---
 
-Pendulum ganda terdiri atas dua massa m yang sama dan dua tali tak bermassa dengan panjang l yang sama, bergerak di bidang vertikal di bawah gravitasi g. Tuliskan Lagrangian dalam sudut θ₁ dan θ₂, turunkan persamaan geraknya, lalu linearkan untuk osilasi kecil. Tentukan frekuensi mode normal ω² = (g/l)(2 ∓ √2) dan rasio amplitudo θ₂/θ₁ pada setiap mode, beserta gambaran fisiknya. Jelaskan juga mengapa untuk simpangan besar sistem ini bersifat chaos dan apa artinya bagi prediksi jangka panjang.
+Rancang penyimpan kunci–nilai di memori yang mendukung transaksi bersarang. Tulis sebuah kelas dan fungsi `buat_penyimpan()` yang mengembalikan objek baru dari kelas itu, dengan metode: `atur(kunci, nilai)`; `ambil(kunci)` yang mengembalikan nilai atau `None`; `hapus(kunci)` (tanpa error jika kunci tidak ada); `hitung(nilai)` yang mengembalikan banyaknya kunci yang saat ini bernilai itu; `mulai()` yang membuka transaksi baru di dalam transaksi yang sedang terbuka; `batal()` yang membatalkan semua perubahan di transaksi terdalam lalu menutupnya; dan `komit()` yang menutup transaksi terdalam dan menggabungkan perubahannya ke transaksi di luarnya (perubahan baru permanen setelah transaksi terluar dikomit). `batal()` atau `komit()` tanpa transaksi terbuka → `RuntimeError`, dan nilai `None` → `ValueError`. Kompleksitasnya: `ambil` dan `hitung` O(1) berapa pun kedalaman transaksinya, sedangkan `batal` dan `komit` sebanding dengan banyaknya kunci yang diubah di transaksi itu, bukan dengan ukuran seluruh data; 100.000 kunci dengan 2.000 transaksi bersarang harus tetap cepat. Jelaskan struktur data dan alasan kompleksitasnya. Gunakan hanya pustaka standar Python.
 ````
 
-## ud-068 · fisika
+## ud-068 · python
 
 ````text
 Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
 
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
+Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
 
 ---
 
-Dalam model ikatan kuat (tight-binding) satu dimensi, elektron pada kisi berjarak a punya energi situs ε₀ dan integral loncatan −t (t > 0) hanya ke tetangga terdekat. Turunkan relasi dispersi E(k) = ε₀ − 2t cos(ka) dengan teorema Bloch, lalu tentukan lebar pita, kecepatan grup, dan massa efektif di dasar dan puncak pita. Hitung kerapatan keadaan g(E) per situs dan tunjukkan singularitas van Hove di tepi pita. Jelaskan mengapa pita yang terisi setengah bersifat logam, dan apa yang terjadi jika kisi mengalami dimerisasi (ketidakstabilan Peierls).
+Kali ini yang diminta adalah **tes**, bukan implementasi. Spesifikasi fungsi `gabung_rentang(rentang: list[tuple[int, int]]) -> list[tuple[int, int]]`: setiap rentang `(a, b)` adalah rentang bilangan bulat tertutup dengan a ≤ b (bilangan negatif boleh); rentang yang tumpang tindih atau bersebelahan, misalnya (1, 3) dan (4, 6), digabung; hasilnya list tuple yang urut menurut awal rentang; list masukan tidak boleh diubah; list kosong menghasilkan `[]`; dan rentang dengan a > b → `ValueError`. Tulis fungsi `uji_gabung_rentang(fungsi)` yang menguji sebuah implementasi `fungsi` terhadap spesifikasi itu: kembalikan `None` jika implementasinya benar, dan lempar `AssertionError` jika ada penyimpangan apa pun, termasuk jika implementasi itu melempar exception yang tidak semestinya. Fungsi uji Anda akan dijalankan pada beberapa implementasi benar yang ditulis dengan cara berbeda dan pada belasan implementasi salah dengan bug halus; semua implementasi salah harus tertangkap, dan tidak boleh ada implementasi benar yang ditolak. Jelaskan strategi pengujian Anda, misalnya kasus batas, tes acak dengan oracle, dan tes properti. Gunakan hanya pustaka standar Python.
 ````
 
-## ud-069 · fisika
+## ud-069 · python
 
 ````text
 Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
 
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
+Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
 
 ---
 
-Dalam QED tingkat pohon, turunkan penampang lintang diferensial dan total untuk e⁺e⁻ → μ⁺μ⁻ pada energi pusat massa √s yang jauh di atas massa kedua lepton: dσ/dΩ = (α²/4s)(1 + cos²θ) dan σ = 4πα²/(3s). Jelaskan diagram Feynman yang berperan, perata-rataan dan penjumlahan spin, serta asal faktor (1 + cos²θ). Hitung σ dalam nanobarn pada √s = 10 GeV (gunakan α ≈ 1/137 dan (ħc)² = 0,3894 GeV²·mb). Lalu jelaskan rasio R = σ(e⁺e⁻ → hadron)/σ(e⁺e⁻ → μ⁺μ⁻) dan bagaimana nilainya menunjukkan bahwa kuark punya tiga warna.
+Tulis fungsi `cron_berikutnya(ekspresi: str, setelah: datetime.datetime) -> datetime.datetime` yang mengembalikan waktu paling awal yang **lebih dari** `setelah` (detik dan mikrodetik dibuang) dan cocok dengan ekspresi cron lima kolom: menit (0–59), jam (0–23), tanggal (1–31), bulan (1–12 atau JAN–DEC), dan hari dalam minggu (0–7 atau SUN–SAT; 0 dan 7 sama-sama Minggu). Nama tidak peka huruf besar-kecil. Setiap kolom boleh berisi `*`, angka, rentang `a-b`, daftar dengan koma, dan langkah `/n` setelah `*`, rentang, atau angka (`5/20` berarti 5, 25, 45, seperti Vixie cron). Aturan tanggal dan hari juga mengikuti Vixie cron: jika kolom tanggal atau kolom hari diawali `*` (termasuk `*/2`), keduanya harus cocok; jika keduanya tidak diawali `*`, cukup salah satu yang cocok. Lempar `ValueError` untuk ekspresi yang tidak sah (jumlah kolom bukan lima, nilai di luar rentang, rentang terbalik, langkah 0, nama tak dikenal, atau bagian kosong) dan jika tidak ada waktu yang cocok dalam 50 tahun ke depan, misalnya tanggal 31 April. Pencarian harus cepat, jadi jangan memeriksa menit demi menit. Gunakan hanya pustaka standar Python.
 ````
 
-## ud-070 · fisika
+## ud-070 · web
 
 ````text
 Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
 
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
+Format jawaban: satu kalimat pembuka, lalu satu dokumen HTML lengkap dalam satu blok ```html. CSS dan JavaScript ada di dalam file itu, tanpa library, font, gambar, atau file dari luar. Halaman harus responsif sampai lebar 375 px, tanpa error JavaScript, dan akses localStorage dibungkus try/catch. Setelah kode, tulis bagian **Cek kebutuhan** berupa daftar `- **<hal yang diminta>** → <bagian kode yang memenuhinya>` untuk setiap permintaan, lalu **Catatan teknis** singkat.
 
 ---
 
-Dalam model kosmologi ΛCDM datar dengan Ω_m = 0,30 dan Ω_Λ = 0,70 (radiasi diabaikan) serta H₀ = 70 km/s/Mpc, tuliskan persamaan Friedmann dan turunkan umur alam semesta t₀ = (2/(3H₀√Ω_Λ)) arsinh(√(Ω_Λ/Ω_m)). Hitung t₀ dalam miliar tahun, pergeseran merah saat ekspansi mulai dipercepat (parameter perlambatan q = 0), dan pergeseran merah saat kerapatan materi sama dengan kerapatan energi gelap. Jelaskan arti fisis setiap besaran, dan bandingkan umur ini dengan umur 2/(3H₀) pada model Einstein–de Sitter.
+Buat komponen combobox pilih-banyak yang aksesibel dalam satu file HTML untuk memilih kota tujuan pengiriman dari minimal 100 nama kota/kabupaten di Indonesia yang disimpan di dalam file. Ikuti pola combobox ARIA 1.2: input `role="combobox"` dengan `aria-expanded`, `aria-controls`, `aria-autocomplete="list"`, dan `aria-activedescendant`, serta daftar `role="listbox"` berisi `role="option"` dengan `aria-selected`. Ketikan menyaring daftar tanpa peka huruf besar-kecil maupun diakritik, dengan debounce sekitar 150 ms, dan bagian yang cocok ditandai dengan `<mark>`. Keyboard: panah atas/bawah memindahkan sorotan (berputar di ujung daftar), Home/End, Enter memilih, Escape menutup daftar (Escape kedua mengosongkan input), dan Backspace pada input kosong menghapus pilihan terakhir. Pilihan tampil sebagai chip dengan tombol hapus ber-`aria-label` "Hapus <nama kota>"; maksimal 5 pilihan, disertai pesan yang jelas saat batas tercapai; jumlah hasil diumumkan lewat live region; dan klik di luar komponen menutup daftar. Ketikan pengguna tidak boleh pernah disisipkan sebagai HTML: mengetik `<img src=x onerror=alert(1)>` harus aman. Sediakan tombol Kirim yang menampilkan pilihan sebagai JSON.
 ````
 
 ## ud-071 · python
