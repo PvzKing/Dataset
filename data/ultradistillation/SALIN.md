@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (26 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (25 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-055 · sains
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Jelaskan mekanisme molekuler penyuntingan genom dengan CRISPR–Cas9 dari Streptococcus pyogenes: peran sgRNA dan urutan pemandunya, syarat PAM (NGG), cara Cas9 membuka DNA dan membentuk R-loop, serta domain HNH dan RuvC yang memotong masing-masing untai. Bandingkan jalur perbaikan NHEJ dan HDR beserta hasil suntingan yang biasanya timbul dari masing-masing. Jelaskan sumber efek di luar target (off-target) dan strategi untuk menguranginya, lalu bedakan base editing dan prime editing dari pemotongan untai ganda biasa.
-````
 
 ## ud-056 · sains
 
