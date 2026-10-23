@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (16 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (15 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-065 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Tulis fungsi `urai_json(teks: str) -> object` yang mengurai dokumen JSON sesuai RFC 8259 tanpa memakai modul `json` (juga tanpa `eval` atau `ast`). Objek menjadi dict (untuk kunci kembar nilai terakhir yang menang, dengan posisi kunci mengikuti kemunculan pertamanya), larik menjadi list, string menjadi str, `true`/`false`/`null` menjadi True/False/None, angka tanpa pecahan dan eksponen menjadi int berapa pun besarnya, dan angka lain menjadi float. Escape yang sah hanya `\" \\ \/ \b \f \n \r \t \uXXXX`; pasangan surrogate seperti `😀` digabung menjadi satu karakter, sedangkan surrogate tunggal dibiarkan apa adanya (seperti modul `json`). Lempar `ValueError` untuk dokumen yang tidak sah, antara lain angka dengan nol di depan, `+1`, `.5`, `1.`, `NaN`/`Infinity`, koma di akhir, kunci tanpa tanda kutip, karakter kontrol mentah di dalam string, sisa teks setelah nilai, dan whitespace selain spasi, tab, LF, dan CR. Pengurai harus sanggup menangani larik atau objek bersarang sedalam 50.000 tingkat tanpa `RecursionError`, serta dokumen sebesar 0,5 MB dalam beberapa detik. Gunakan hanya pustaka standar Python.
-````
 
 ## ud-066 · python
 
