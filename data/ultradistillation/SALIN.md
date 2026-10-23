@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (12 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (11 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-069 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Tulis fungsi `cron_berikutnya(ekspresi: str, setelah: datetime.datetime) -> datetime.datetime` yang mengembalikan waktu paling awal yang **lebih dari** `setelah` (detik dan mikrodetik dibuang) dan cocok dengan ekspresi cron lima kolom: menit (0–59), jam (0–23), tanggal (1–31), bulan (1–12 atau JAN–DEC), dan hari dalam minggu (0–7 atau SUN–SAT; 0 dan 7 sama-sama Minggu). Nama tidak peka huruf besar-kecil. Setiap kolom boleh berisi `*`, angka, rentang `a-b`, daftar dengan koma, dan langkah `/n` setelah `*`, rentang, atau angka (`5/20` berarti 5, 25, 45, seperti Vixie cron). Aturan tanggal dan hari juga mengikuti Vixie cron: jika kolom tanggal atau kolom hari diawali `*` (termasuk `*/2`), keduanya harus cocok; jika keduanya tidak diawali `*`, cukup salah satu yang cocok. Lempar `ValueError` untuk ekspresi yang tidak sah (jumlah kolom bukan lima, nilai di luar rentang, rentang terbalik, langkah 0, nama tak dikenal, atau bagian kosong) dan jika tidak ada waktu yang cocok dalam 50 tahun ke depan, misalnya tanggal 31 April. Pencarian harus cepat, jadi jangan memeriksa menit demi menit. Gunakan hanya pustaka standar Python.
-````
 
 ## ud-070 · web
 
