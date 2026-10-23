@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (28 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (27 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-053 · sains
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Hitung hasil ATP bersih dari oksidasi sempurna satu molekul asam palmitat (C16:0) menjadi CO₂ dan H₂O di sel hewan. Uraikan biaya aktivasi asam lemak, banyaknya putaran β-oksidasi, jumlah NADH, FADH₂, dan asetil-KoA yang dihasilkan, hasil siklus asam sitrat, dan konversinya menjadi ATP dengan rasio P/O modern (2,5 untuk NADH dan 1,5 untuk FADH₂). Bandingkan ATP per atom karbon dengan oksidasi glukosa, dan jelaskan mengapa lemak menyimpan energi lebih padat per gram daripada karbohidrat.
-````
 
 ## ud-054 · sains
 
