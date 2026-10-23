@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (11 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (10 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-070 · web
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: satu kalimat pembuka, lalu satu dokumen HTML lengkap dalam satu blok ```html. CSS dan JavaScript ada di dalam file itu, tanpa library, font, gambar, atau file dari luar. Halaman harus responsif sampai lebar 375 px, tanpa error JavaScript, dan akses localStorage dibungkus try/catch. Setelah kode, tulis bagian **Cek kebutuhan** berupa daftar `- **<hal yang diminta>** → <bagian kode yang memenuhinya>` untuk setiap permintaan, lalu **Catatan teknis** singkat.
-
----
-
-Buat komponen combobox pilih-banyak yang aksesibel dalam satu file HTML untuk memilih kota tujuan pengiriman dari minimal 100 nama kota/kabupaten di Indonesia yang disimpan di dalam file. Ikuti pola combobox ARIA 1.2: input `role="combobox"` dengan `aria-expanded`, `aria-controls`, `aria-autocomplete="list"`, dan `aria-activedescendant`, serta daftar `role="listbox"` berisi `role="option"` dengan `aria-selected`. Ketikan menyaring daftar tanpa peka huruf besar-kecil maupun diakritik, dengan debounce sekitar 150 ms, dan bagian yang cocok ditandai dengan `<mark>`. Keyboard: panah atas/bawah memindahkan sorotan (berputar di ujung daftar), Home/End, Enter memilih, Escape menutup daftar (Escape kedua mengosongkan input), dan Backspace pada input kosong menghapus pilihan terakhir. Pilihan tampil sebagai chip dengan tombol hapus ber-`aria-label` "Hapus <nama kota>"; maksimal 5 pilihan, disertai pesan yang jelas saat batas tercapai; jumlah hasil diumumkan lewat live region; dan klik di luar komponen menutup daftar. Ketikan pengguna tidak boleh pernah disisipkan sebagai HTML: mengetik `<img src=x onerror=alert(1)>` harus aman. Sediakan tombol Kirim yang menampilkan pilihan sebagai JSON.
-````
 
 ## ud-071 · python
 
