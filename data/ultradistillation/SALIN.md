@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (25 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (24 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-056 · sains
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan runtut dengan contoh, dan tunjukkan langkah perhitungannya.
-
----
-
-Sebuah senyawa organik bermolekul C₄H₈O₂ menunjukkan pita IR kuat di 1.740 cm⁻¹ dan tidak ada pita lebar di 2.500–3.300 cm⁻¹. Spektrum ¹H NMR-nya (CDCl₃) memberi δ 4,12 (kuartet, 2H, J = 7,1 Hz), δ 2,05 (singlet, 3H), dan δ 1,26 (triplet, 3H, J = 7,1 Hz). Hitung derajat ketidakjenuhannya, tentukan strukturnya, dan tetapkan setiap sinyal beserta alasan pergeseran kimia dan pola pemecahannya. Jelaskan juga bagaimana spektrum ini membedakannya dari isomer metil propanoat dan asam butanoat.
-````
 
 ## ud-057 · sains
 
