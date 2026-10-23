@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (13 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (12 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-068 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Kali ini yang diminta adalah **tes**, bukan implementasi. Spesifikasi fungsi `gabung_rentang(rentang: list[tuple[int, int]]) -> list[tuple[int, int]]`: setiap rentang `(a, b)` adalah rentang bilangan bulat tertutup dengan a ≤ b (bilangan negatif boleh); rentang yang tumpang tindih atau bersebelahan, misalnya (1, 3) dan (4, 6), digabung; hasilnya list tuple yang urut menurut awal rentang; list masukan tidak boleh diubah; list kosong menghasilkan `[]`; dan rentang dengan a > b → `ValueError`. Tulis fungsi `uji_gabung_rentang(fungsi)` yang menguji sebuah implementasi `fungsi` terhadap spesifikasi itu: kembalikan `None` jika implementasinya benar, dan lempar `AssertionError` jika ada penyimpangan apa pun, termasuk jika implementasi itu melempar exception yang tidak semestinya. Fungsi uji Anda akan dijalankan pada beberapa implementasi benar yang ditulis dengan cara berbeda dan pada belasan implementasi salah dengan bug halus; semua implementasi salah harus tertangkap, dan tidak boleh ada implementasi benar yang ditolak. Jelaskan strategi pengujian Anda, misalnya kasus batas, tes acak dengan oracle, dan tes properti. Gunakan hanya pustaka standar Python.
-````
 
 ## ud-069 · python
 
