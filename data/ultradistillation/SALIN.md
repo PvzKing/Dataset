@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (9 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (8 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-072 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Tulis fungsi `aliran_maksimum(n: int, sisi: list[tuple[int, int, int]], s: int, t: int) -> tuple[int, set[int]]`. Graf berarah punya simpul 0 sampai n−1; setiap sisi `(u, v, kapasitas)` berkapasitas bilangan bulat ≥ 0. Boleh ada sisi ganda dan sisi berlawanan arah; sisi dari simpul ke dirinya sendiri diabaikan. Kembalikan nilai aliran maksimum dari `s` ke `t` beserta himpunan simpul sisi-s dari potongan minimum, yaitu semua simpul yang masih bisa dicapai dari `s` di graf residu setelah aliran maksimum tercapai. Lempar `ValueError` jika `s == t`, jika `s`, `t`, atau ujung sisi di luar rentang, atau jika ada kapasitas negatif. Harus cepat untuk 2.000 simpul dan 20.000 sisi. Gunakan hanya pustaka standar Python.
-````
 
 ## ud-073 · python
 
