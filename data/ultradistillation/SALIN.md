@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (10 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (9 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-071 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Tulis fungsi `array_sufiks(s: str) -> tuple[list[int], list[int]]` yang mengembalikan suffix array dan LCP array dari string `s`. Suffix array berisi indeks awal semua sufiks `s`, diurutkan secara leksikografis menurut perbandingan string Python biasa (per titik kode Unicode). LCP array sama panjangnya: `lcp[0] = 0`, dan untuk i ≥ 1, `lcp[i]` adalah panjang awalan bersama terpanjang sufiks `sa[i-1]` dan `sa[i]`. String kosong menghasilkan `([], [])`. Fungsi harus selesai dalam beberapa detik untuk string 50.000 karakter, termasuk kasus terburuk seperti `'a' * 50000`, sehingga mengurutkan potongan `s[i:]` secara langsung tidak cukup. Gunakan hanya pustaka standar Python.
-````
 
 ## ud-072 · python
 
