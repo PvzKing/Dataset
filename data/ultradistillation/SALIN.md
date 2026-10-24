@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (7 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (6 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-074 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Tulis fungsi `kali_polinom(a: list[int], b: list[int]) -> list[int]` yang mengalikan dua polinom berkoefisien bilangan bulat; elemen ke-i adalah koefisien xⁱ, dan nilai mutlak setiap koefisien paling besar 10⁹ (boleh negatif). Hasilnya harus eksak dan panjangnya `len(a) + len(b) - 1` tanpa membuang nol di akhir; jika salah satu list kosong, kembalikan `[]`. Fungsi harus selesai dalam beberapa detik untuk dua polinom yang masing-masing punya 20.000 koefisien, sehingga perkalian O(n²) biasa tidak cukup, dan FFT dengan bilangan floating point biasa tidak eksak untuk koefisien sebesar ini. Gunakan hanya pustaka standar Python.
-````
 
 ## ud-075 · python
 
