@@ -1,18 +1,6 @@
-# Pertanyaan ultradistillation yang belum dijawab (6 dari 80)
+# Pertanyaan ultradistillation yang belum dijawab (5 dari 80)
 
 Salin satu blok ke **percakapan baru** di AI-nya. Setelah AI menjawab, salin jawabannya dengan tombol salin (supaya format Markdown dan blok kodenya ikut), lalu kirim ke chat dengan baris pertama `<id> · <nama AI dan versinya>`.
-
-## ud-075 · python
-
-````text
-Jawab pertanyaan di bawah garis dalam bahasa Indonesia yang baku tapi luwes. Langsung ke jawabannya: jangan membuka dengan basa-basi, jangan menyebut dirimu AI atau model bahasa, dan jangan menampilkan proses berpikir.
-
-Format jawaban: jelaskan pendekatannya dalam beberapa kalimat, lalu tulis solusi lengkap dalam satu blok ```python dengan nama fungsi persis seperti yang diminta, tanpa input() dan tanpa print di luar fungsi. Setelah itu beri contoh pemakaian singkat dan kasus khusus yang ditangani.
-
----
-
-Tulis fungsi `cari_banyak_pola(teks: str, pola: list[str]) -> dict[str, list[int]]` yang mencari semua kemunculan setiap pola di `teks`, termasuk yang tumpang tindih. Kunci dict adalah pola unik dengan urutan sesuai kemunculan pertamanya di `pola` (pola kembar cukup satu kunci); nilainya list indeks awal kemunculan secara naik, atau list kosong jika pola tidak muncul. List `pola` kosong menghasilkan `{}`, sedangkan pola berupa string kosong → `ValueError`. Harus selesai dalam beberapa detik untuk teks 300.000 karakter dan 30.000 pola sepanjang 8–12 karakter. Gunakan hanya pustaka standar Python.
-````
 
 ## ud-076 · python
 
